@@ -141,3 +141,13 @@ All style files use CSS Modules. You can directly modify the corresponding `.mod
 ## License
 
 MIT License
+
+## Subgraph
+
+How to create a subgraph:
+
+https://thegraph.com/docs/en/subgraphs/quick-start/
+
+How to deploy a subgraph:
+
+https://thegraph.com/docs/en/developer/quick-start/deploy-subgraph/
