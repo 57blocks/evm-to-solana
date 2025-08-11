@@ -38,13 +38,8 @@ contract Staking is ReentrancyGuard, Ownable {
         require(amount > 0, "Cannot stake 0");
 
         // Check if user is blacklisted
-        RestrictedStakingToken restrictedToken = RestrictedStakingToken(
-            address(stakingToken)
-        );
-        require(
-            !restrictedToken.isBlacklisted(msg.sender),
-            "Address is blacklisted"
-        );
+        RestrictedStakingToken restrictedToken = RestrictedStakingToken(address(stakingToken));
+        require(!restrictedToken.isBlacklisted(msg.sender), "Address is blacklisted");
 
         // Calculate and claim any pending rewards first
         if (stakes[msg.sender].amount > 0) {
@@ -68,19 +63,11 @@ contract Staking is ReentrancyGuard, Ownable {
 
     function unstake(uint256 amount) external nonReentrant {
         require(amount > 0, "Cannot unstake 0");
-        require(
-            stakes[msg.sender].amount >= amount,
-            "Insufficient staked amount"
-        );
+        require(stakes[msg.sender].amount >= amount, "Insufficient staked amount");
 
         // Check if user is blacklisted
-        RestrictedStakingToken restrictedToken = RestrictedStakingToken(
-            address(stakingToken)
-        );
-        require(
-            !restrictedToken.isBlacklisted(msg.sender),
-            "Address is blacklisted"
-        );
+        RestrictedStakingToken restrictedToken = RestrictedStakingToken(address(stakingToken));
+        require(!restrictedToken.isBlacklisted(msg.sender), "Address is blacklisted");
 
         // Calculate and claim any pending rewards first
         _claimRewards();
@@ -104,13 +91,8 @@ contract Staking is ReentrancyGuard, Ownable {
 
     function claimRewards() external nonReentrant {
         // Check if user is blacklisted
-        RestrictedStakingToken restrictedToken = RestrictedStakingToken(
-            address(stakingToken)
-        );
-        require(
-            !restrictedToken.isBlacklisted(msg.sender),
-            "Address is blacklisted"
-        );
+        RestrictedStakingToken restrictedToken = RestrictedStakingToken(address(stakingToken));
+        require(!restrictedToken.isBlacklisted(msg.sender), "Address is blacklisted");
 
         _claimRewards();
     }
@@ -135,46 +117,27 @@ contract Staking is ReentrancyGuard, Ownable {
         }
 
         // Calculate time since last reward calculation
-        uint256 timeSinceLastReward = block.timestamp -
-            userStake.lastRewardTime;
+        uint256 timeSinceLastReward = block.timestamp - userStake.lastRewardTime;
 
         // Calculate reward based on seconds to avoid precision loss
         // Formula: (amount * rate * time_in_seconds) / (seconds_per_day * precision)
-        uint256 reward = (userStake.amount * rewardRate * timeSinceLastReward) /
-            (SECONDS_PER_DAY * REWARD_PRECISION);
+        uint256 reward = (userStake.amount * rewardRate * timeSinceLastReward) / (SECONDS_PER_DAY * REWARD_PRECISION);
 
         return reward;
     }
 
-    function getStakeInfo(
-        address user
-    )
+    function getStakeInfo(address user)
         external
         view
-        returns (
-            uint256 stakedAmount,
-            uint256 stakingTimestamp,
-            uint256 pendingReward,
-            uint256 claimedReward
-        )
+        returns (uint256 stakedAmount, uint256 stakingTimestamp, uint256 pendingReward, uint256 claimedReward)
     {
         StakeInfo memory userStake = stakes[user];
-        return (
-            userStake.amount,
-            userStake.timestamp,
-            calculateReward(user),
-            userStake.rewardDebt
-        );
+        return (userStake.amount, userStake.timestamp, calculateReward(user), userStake.rewardDebt);
     }
 
     function setRewardRate(uint256 newRate) external onlyOwner {
         require(newRate > 0 && newRate <= 1000, "Invalid reward rate"); // Max 10% per day
         rewardRate = newRate;
         emit RewardRateUpdated(newRate);
-    }
-
-    // Emergency function to withdraw reward tokens
-    function withdrawRewardTokens(uint256 amount) external onlyOwner {
-        rewardToken.transfer(owner(), amount);
     }
 }

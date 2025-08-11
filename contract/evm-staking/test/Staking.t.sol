@@ -46,7 +46,7 @@ contract StakingTest is Test {
         staking.stake(stakeAmount);
         vm.stopPrank();
 
-        (uint256 stakedAmount, , , ) = staking.getStakeInfo(user1);
+        (uint256 stakedAmount,,,) = staking.getStakeInfo(user1);
         assertEq(stakedAmount, stakeAmount);
         assertEq(staking.totalStaked(), stakeAmount);
     }
@@ -64,7 +64,7 @@ contract StakingTest is Test {
         staking.unstake(unstakeAmount);
         vm.stopPrank();
 
-        (uint256 stakedAmount, , , ) = staking.getStakeInfo(user1);
+        (uint256 stakedAmount,,,) = staking.getStakeInfo(user1);
         assertEq(stakedAmount, stakeAmount - unstakeAmount);
         assertEq(staking.totalStaked(), stakeAmount - unstakeAmount);
     }
@@ -124,7 +124,7 @@ contract StakingTest is Test {
         staking.stake(secondStake);
         vm.stopPrank();
 
-        (uint256 stakedAmount, , , ) = staking.getStakeInfo(user1);
+        (uint256 stakedAmount,,,) = staking.getStakeInfo(user1);
         assertEq(stakedAmount, firstStake + secondStake);
     }
 
@@ -173,40 +173,26 @@ contract StakingTest is Test {
         vm.warp(block.timestamp + 12 hours);
 
         // Expected reward for 0.5 days at 1% daily rate
-        uint256 expectedReward = (stakeAmount * 100 * 12 hours) /
-            (86400 * 10000);
+        uint256 expectedReward = (stakeAmount * 100 * 12 hours) / (86400 * 10000);
         uint256 actualReward = staking.calculateReward(user1);
 
-        assertEq(
-            actualReward,
-            expectedReward,
-            "Reward calculation should be precise"
-        );
+        assertEq(actualReward, expectedReward, "Reward calculation should be precise");
 
         // Claim rewards and verify lastRewardTime is updated
         vm.prank(user1);
         staking.claimRewards();
 
         // Immediately check reward should be 0
-        assertEq(
-            staking.calculateReward(user1),
-            0,
-            "Reward should be 0 right after claiming"
-        );
+        assertEq(staking.calculateReward(user1), 0, "Reward should be 0 right after claiming");
 
         // Fast forward another 6 hours
         vm.warp(block.timestamp + 6 hours);
 
         // Should only calculate reward for the last 6 hours
-        uint256 expectedReward2 = (stakeAmount * 100 * 6 hours) /
-            (86400 * 10000);
+        uint256 expectedReward2 = (stakeAmount * 100 * 6 hours) / (86400 * 10000);
         uint256 actualReward2 = staking.calculateReward(user1);
 
-        assertEq(
-            actualReward2,
-            expectedReward2,
-            "Should only calculate reward since last claim"
-        );
+        assertEq(actualReward2, expectedReward2, "Should only calculate reward since last claim");
     }
 
     // Test that rewards accumulate properly without precision loss
@@ -230,11 +216,7 @@ contract StakingTest is Test {
 
         uint256 reward2 = staking.calculateReward(user1);
         uint256 expectedRewardForOneDay = (stakeAmount * 100) / 10000; // 1%
-        assertEq(
-            reward2,
-            expectedRewardForOneDay,
-            "Should have exactly 1% for 1 day"
-        );
+        assertEq(reward2, expectedRewardForOneDay, "Should have exactly 1% for 1 day");
     }
 
     // Test that claiming rewards doesn't reset staking duration
@@ -263,13 +245,8 @@ contract StakingTest is Test {
         uint256 balanceAfter = rewardToken.balanceOf(user1);
 
         // Should only get rewards for the second 12 hours
-        uint256 rewardForHalfDay = (stakeAmount * 100 * 12 hours) /
-            (86400 * 10000);
-        assertEq(
-            balanceAfter - balanceBefore,
-            rewardForHalfDay,
-            "Should only get rewards for time since last claim"
-        );
+        uint256 rewardForHalfDay = (stakeAmount * 100 * 12 hours) / (86400 * 10000);
+        assertEq(balanceAfter - balanceBefore, rewardForHalfDay, "Should only get rewards for time since last claim");
     }
 
     // Test multiple claims in short intervals
@@ -283,7 +260,7 @@ contract StakingTest is Test {
         uint256 totalRewardsClaimed = 0;
 
         // Claim every 6 hours for 2 days
-        for (uint i = 0; i < 8; i++) {
+        for (uint256 i = 0; i < 8; i++) {
             vm.warp(block.timestamp + 6 hours);
             uint256 balanceBefore = rewardToken.balanceOf(user1);
             staking.claimRewards();
@@ -295,10 +272,6 @@ contract StakingTest is Test {
 
         // Total rewards should be 2% (2 days * 1% per day)
         uint256 expectedTotalReward = (stakeAmount * 100 * 2) / 10000;
-        assertEq(
-            totalRewardsClaimed,
-            expectedTotalReward,
-            "Total rewards should equal 2 days worth"
-        );
+        assertEq(totalRewardsClaimed, expectedTotalReward, "Total rewards should equal 2 days worth");
     }
 }
