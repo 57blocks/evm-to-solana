@@ -5,7 +5,7 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  height: fit-content;
+  height: 100%;
   min-height: 400px;
   display: flex;
   flex-direction: column;
@@ -41,9 +41,14 @@
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   color: white;
   font-weight: 500;
+  width: 120px;
+  height: 40px;
+  position: relative;
+  overflow: hidden;
 }
 
 .refreshButton:hover:not(:disabled) {
@@ -57,6 +62,60 @@
   transform: none;
 }
 
+.buttonIcon {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.buttonText {
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+  position: relative;
+}
+
+.refreshIcon,
+.refreshText {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.spinnerIcon,
+.refreshingText {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.refreshing .refreshIcon,
+.refreshing .refreshText {
+  opacity: 0;
+}
+
+.refreshing .spinnerIcon,
+.refreshing .refreshingText {
+  opacity: 1;
+}
+
+.spinnerIcon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .error {
   background: rgba(245, 101, 101, 0.1);
   border: 1px solid rgba(245, 101, 101, 0.3);
@@ -64,6 +123,13 @@
   padding: 12px;
   margin-bottom: 16px;
   color: #c53030;
+}
+
+.content {
+  flex: 1;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
 }
 
 .loading {

@@ -91,16 +91,19 @@
   max-width: 1200px;
   margin-bottom: 3rem;
   padding: 0 1rem;
+  align-items: stretch;
 }
 
 .leftColumn {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .rightColumn {
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .historySection {

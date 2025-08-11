@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "../styles/StakingActions.module.css";
 import {
   useAccount,
@@ -8,36 +8,63 @@ import {
 import { STAKING_CONTRACT_ADDRESS, STAKING_TOKEN_ADDRESS } from "../../consts";
 import { stakingAbi } from "../../abi/stakeAbi";
 import { stakingTokenAbi } from "../../abi/StakingTokenABI";
+import {
+  convertToWei,
+  validateTokenAmount,
+  formatTokenAmount,
+} from "../utils/tokenUtils";
+import { useReadContract } from "wagmi";
+import { Hash } from "viem";
 
 interface StakeTokensProps {
   onStake: (amount: string) => void;
   isLoading?: boolean;
   onTransactionSuccess?: () => void;
+  onError: (message: string) => void;
 }
 
 const StakeTokens: React.FC<StakeTokensProps> = ({
   onStake,
   isLoading = false,
   onTransactionSuccess,
+  onError,
 }) => {
   const [stakeAmount, setStakeAmount] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isApproving, setIsApproving] = useState(false);
   const [approvalHash, setApprovalHash] = useState<string | null>(null);
+  const [stakeTransactionHash, setStakeTransactionHash] = useState<
+    string | null
+  >(null);
+  const stakeAmountRef = useRef("");
   const { isConnected, address } = useAccount();
 
   const {
     writeContract,
-    data: stakeHash,
+    data: writeData,
     error: writeError,
   } = useWriteContract();
+
+  // Query current allowance
+  const {
+    data: currentAllowance,
+    isLoading: isAllowanceLoading,
+    refetch: refetchAllowance,
+  } = useReadContract({
+    address: STAKING_TOKEN_ADDRESS,
+    abi: stakingTokenAbi,
+    functionName: "allowance",
+    args: [address, STAKING_CONTRACT_ADDRESS],
+    query: {
+      enabled: !!address && isConnected,
+    },
+  });
 
   const {
     isLoading: isStakingLoading,
     isSuccess: isStakingSuccess,
     error: isStakingError,
   } = useWaitForTransactionReceipt({
-    hash: stakeHash,
+    hash: stakeTransactionHash as Hash | undefined,
   });
 
   // Handle approval transaction
@@ -46,84 +73,151 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
     isSuccess: isApprovalSuccess,
     error: isApprovalError,
   } = useWaitForTransactionReceipt({
-    hash: approvalHash as `0x${string}` | undefined,
+    hash: approvalHash as Hash | undefined,
   });
 
-  // Set approval hash when writeContract data changes
+  // Track the current transaction type
+  const [currentTransactionType, setCurrentTransactionType] = useState<
+    "approve" | "stake" | null
+  >(null);
+
+  // Set approval hash when writeContract data changes for approval
   useEffect(() => {
-    if (stakeHash && isApproving && !approvalHash) {
-      setApprovalHash(stakeHash);
+    if (writeData && currentTransactionType === "approve" && !approvalHash) {
+      console.log("Setting approval hash:", writeData);
+      setApprovalHash(writeData);
     }
-  }, [stakeHash, isApproving, approvalHash]);
+  }, [writeData, currentTransactionType, approvalHash]);
+
+  // Set stake transaction hash when writeContract data changes for staking
+  useEffect(() => {
+    if (
+      writeData &&
+      currentTransactionType === "stake" &&
+      !stakeTransactionHash
+    ) {
+      console.log("Setting stake transaction hash:", writeData);
+      setStakeTransactionHash(writeData);
+    }
+  }, [writeData, currentTransactionType, stakeTransactionHash]);
 
   // Handle error messages
   useEffect(() => {
     if (writeError) {
-      setErrorMessage(
-        `Transaction failed: ${writeError.message || "Unknown error occurred"}`
+      // Determine which transaction failed based on currentTransactionType
+      if (currentTransactionType === "approve") {
+        onError(
+          `Approval failed: ${writeError.message || "Unknown error occurred"}`
+        );
+      } else if (currentTransactionType === "stake") {
+        onError(
+          `Staking failed: ${writeError.message || "Unknown error occurred"}`
+        );
+      } else {
+        onError(
+          `Transaction failed: ${
+            writeError.message || "Unknown error occurred"
+          }`
+        );
+      }
+      setIsApproving(false);
+      setCurrentTransactionType(null);
+    }
+  }, [writeError, currentTransactionType, onError]);
+
+  // Handle transaction receipt errors
+  useEffect(() => {
+    if (isStakingError) {
+      onError(
+        `Staking transaction failed: ${
+          isStakingError.message || "Transaction reverted"
+        }`
       );
       setIsApproving(false);
-    } else if (isStakingError) {
-      setErrorMessage(
-        `Staking failed: ${isStakingError.message || "Transaction reverted"}`
-      );
-      setIsApproving(false);
+      setCurrentTransactionType(null);
     } else if (isApprovalError) {
-      setErrorMessage(
-        `Approval failed: ${isApprovalError.message || "Approval reverted"}`
+      onError(
+        `Approval transaction failed: ${
+          isApprovalError.message || "Transaction reverted"
+        }`
       );
       setIsApproving(false);
-    } else if (isStakingSuccess) {
-      setErrorMessage(null);
+      setCurrentTransactionType(null);
+    }
+  }, [isStakingError, isApprovalError, onError]);
+
+  // Handle staking success
+  useEffect(() => {
+    if (isStakingSuccess) {
+      console.log("Staking transaction successful!");
       setIsApproving(false);
+      setCurrentTransactionType(null);
+
+      // Refresh allowance after successful staking
+      refetchAllowance();
+
       // Call the onStake callback when staking is successful
-      if (stakeAmount) {
-        onStake(stakeAmount);
+      const currentStakeAmount = stakeAmountRef.current;
+      if (currentStakeAmount) {
+        onStake(currentStakeAmount);
         setStakeAmount("");
+        stakeAmountRef.current = "";
         // Notify parent component to refresh stake information immediately after transaction success
         if (onTransactionSuccess) {
           onTransactionSuccess();
         }
       }
     }
+  }, [isStakingSuccess, onStake, onTransactionSuccess, refetchAllowance]);
+
+  // Debug: Monitor stake transaction state changes
+  useEffect(() => {
+    if (stakeTransactionHash) {
+      console.log("Stake transaction state:", {
+        hash: stakeTransactionHash,
+        isLoading: isStakingLoading,
+        isSuccess: isStakingSuccess,
+        error: isStakingError,
+      });
+    }
   }, [
-    writeError,
-    isStakingError,
-    isApprovalError,
+    stakeTransactionHash,
+    isStakingLoading,
     isStakingSuccess,
-    stakeAmount,
-    onStake,
+    isStakingError,
   ]);
 
   // Handle approval success
   useEffect(() => {
     if (isApprovalSuccess && isApproving) {
-      // After approval is successful, proceed with staking
-      try {
-        writeContract({
-          address: STAKING_CONTRACT_ADDRESS,
-          abi: stakingAbi,
-          functionName: "stake",
-          args: [stakeAmount],
-        });
-        // Clear approval hash after successful approval
-        setApprovalHash(null);
-      } catch (error) {
-        setErrorMessage(
-          `Failed to initiate stake: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
-        setIsApproving(false);
-        setApprovalHash(null);
-      }
+      // After approval is successful, refresh allowance and automatically proceed with staking
+      refetchAllowance();
+      setCurrentTransactionType("stake");
+      setIsApproving(false);
+
+      // Wait a bit for allowance to be updated, then automatically stake
+      setTimeout(() => {
+        if (stakeAmount && !isStakingLoading) {
+          const stakeAmountWei = convertToWei(stakeAmount);
+          writeContract({
+            address: STAKING_CONTRACT_ADDRESS,
+            abi: stakingAbi,
+            functionName: "stake",
+            args: [stakeAmountWei],
+          });
+        }
+      }, 2000); // Wait 2 seconds for allowance to be updated
     }
-  }, [isApprovalSuccess, isApproving, writeContract, stakeAmount]);
+  }, [
+    isApprovalSuccess,
+    isApproving,
+    refetchAllowance,
+    stakeAmount,
+    isStakingLoading,
+    writeContract,
+  ]);
 
   // Clear error message when user starts a new action
-  const clearError = () => {
-    setErrorMessage(null);
-  };
 
   const handleStake = async () => {
     if (!isConnected) {
@@ -136,43 +230,65 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
       isStakingLoading ||
       isLoading ||
       isApproving ||
-      isApprovalLoading
+      isApprovalLoading ||
+      isAllowanceLoading
     ) {
       return;
     }
 
-    // Validate input - check for negative numbers and decimals
-    const amount = parseInt(stakeAmount);
-    if (isNaN(amount) || amount <= 0) {
-      setErrorMessage("Please enter a valid positive integer");
+    // Validate input using utility function
+    const validation = validateTokenAmount(stakeAmount);
+    if (!validation.isValid) {
+      onError(validation.error || "Invalid amount");
       return;
     }
 
-    // Check if the input contains decimals
-    if (stakeAmount.includes(".") || stakeAmount.includes(",")) {
-      setErrorMessage("Please enter a whole number (no decimals)");
-      return;
-    }
+    // Convert to wei once
+    const stakeAmountWei = convertToWei(stakeAmount);
+    // Check if we need to approve first
+    if (
+      currentAllowance !== undefined &&
+      typeof currentAllowance === "bigint" &&
+      currentAllowance < stakeAmountWei
+    ) {
+      // Need to approve
+      setIsApproving(true);
+      setApprovalHash(null); // Clear any previous approval hash
+      setCurrentTransactionType("approve");
 
-    clearError(); // Clear any previous errors
-    setIsApproving(true);
-    setApprovalHash(null); // Clear any previous approval hash
-
-    try {
-      //Approve the staking contract to spend tokens
-      writeContract({
-        address: STAKING_TOKEN_ADDRESS,
-        abi: stakingTokenAbi,
-        functionName: "approve",
-        args: [stakeAmount],
-      });
-    } catch (error) {
-      setErrorMessage(
-        `Failed to approve tokens: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-      setIsApproving(false);
+      try {
+        // Approve the staking contract to spend tokens
+        writeContract({
+          address: STAKING_TOKEN_ADDRESS,
+          abi: stakingTokenAbi,
+          functionName: "approve",
+          args: [STAKING_CONTRACT_ADDRESS, stakeAmountWei],
+        });
+      } catch (error) {
+        onError(
+          `Failed to approve tokens: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+        setIsApproving(false);
+      }
+    } else {
+      // Already have sufficient allowance, proceed directly to staking
+      setCurrentTransactionType("stake");
+      try {
+        writeContract({
+          address: STAKING_CONTRACT_ADDRESS,
+          abi: stakingAbi,
+          functionName: "stake",
+          args: [stakeAmountWei],
+        });
+      } catch (error) {
+        onError(
+          `Failed to initiate stake: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
+      }
     }
   };
 
@@ -185,20 +301,21 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
 
   return (
     <div>
-      {/* Error Message Display */}
-      {errorMessage && (
-        <div className={styles.errorMessage}>
-          <div className={styles.errorContent}>
-            <span className={styles.errorIcon}>❌</span>
-            <p className={styles.errorText}>{errorMessage}</p>
-            <button
-              onClick={clearError}
-              className={styles.errorCloseButton}
-              aria-label="Close error message"
-            >
-              ×
-            </button>
-          </div>
+      {/* Show current allowance if connected */}
+      {isConnected &&
+      currentAllowance &&
+      typeof currentAllowance === "bigint" ? (
+        <div className={styles.allowanceInfo}>
+          <p>Current Allowance: {formatTokenAmount(currentAllowance)} tokens</p>
+        </div>
+      ) : null}
+
+      {/* Show approval success message */}
+      {isApprovalSuccess && !isApproving && (
+        <div className={styles.successMessage}>
+          <p>
+            ✅ Approval successful! Automatically proceeding with staking...
+          </p>
         </div>
       )}
 
@@ -218,11 +335,12 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
                 !value.includes(","))
             ) {
               setStakeAmount(value);
+              stakeAmountRef.current = value;
             }
           }}
           placeholder={
             isConnected
-              ? "Enter stake amount (whole number)"
+              ? "Enter stake amount (1 = 1 token)"
               : "Connect wallet first"
           }
           className={styles.input}

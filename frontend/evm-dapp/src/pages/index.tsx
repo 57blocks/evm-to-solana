@@ -1,12 +1,13 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { NextPage } from "next";
 import Head from "next/head";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useAccount } from "wagmi";
 import styles from "../styles/Home.module.css";
 import StakingActions from "../components/StakingActions";
 import HistoryTable from "../components/HistoryTable";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
+import ErrorModal from "../components/ErrorModal";
 import "dotenv/config";
 
 // Mock history records data
@@ -37,13 +38,20 @@ const mockHistoryRecords = [
 const Home: NextPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [historyRecords, setHistoryRecords] = useState(mockHistoryRecords);
+  const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
+    null
+  );
   const { address, isConnected } = useAccount();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
 
-  const handleTransactionSuccess = () => {
+  const handleTransactionSuccess = useCallback(() => {
     // Refresh stake information immediately after successful transaction
     stakeInfoRef.current?.refresh();
-  };
+  }, []);
+
+  const clearGlobalError = useCallback(() => {
+    setGlobalErrorMessage(null);
+  }, []);
 
   const handleStake = async (amount: string) => {
     if (!isConnected) {
@@ -103,6 +111,12 @@ const Home: NextPage = () => {
 
   return (
     <div className={styles.container}>
+      {/* Global Error Modal - displays in center of entire screen */}
+      <ErrorModal
+        errorMessage={globalErrorMessage}
+        onClose={clearGlobalError}
+      />
+
       <Head>
         <title>Staking Platform</title>
         <meta
@@ -159,6 +173,7 @@ const Home: NextPage = () => {
                 onStake={handleStake}
                 onUnstake={handleUnstake}
                 onTransactionSuccess={handleTransactionSuccess}
+                onError={setGlobalErrorMessage}
               />
             </div>
           </div>

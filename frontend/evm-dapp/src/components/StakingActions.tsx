@@ -9,6 +9,7 @@ interface StakingActionsProps {
   onUnstake: (amount: string) => void;
   isLoading?: boolean;
   onTransactionSuccess?: () => void;
+  onError: (message: string) => void;
 }
 
 const StakingActions: React.FC<StakingActionsProps> = ({
@@ -16,6 +17,7 @@ const StakingActions: React.FC<StakingActionsProps> = ({
   onUnstake,
   isLoading = false,
   onTransactionSuccess,
+  onError,
 }) => {
   const { isConnected } = useAccount();
 
@@ -41,6 +43,7 @@ const StakingActions: React.FC<StakingActionsProps> = ({
             onStake={onStake}
             isLoading={isLoading}
             onTransactionSuccess={onTransactionSuccess}
+            onError={onError}
           />
         </div>
 
@@ -55,6 +58,7 @@ const StakingActions: React.FC<StakingActionsProps> = ({
             onUnstake={onUnstake}
             isLoading={isLoading}
             onTransactionSuccess={onTransactionSuccess}
+            onError={onError}
           />
         </div>
       </div>

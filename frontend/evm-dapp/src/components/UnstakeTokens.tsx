@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import styles from "../styles/StakingActions.module.css";
 import {
   useAccount,
@@ -7,20 +7,23 @@ import {
 } from "wagmi";
 import { STAKING_CONTRACT_ADDRESS } from "../../consts";
 import { stakingAbi } from "../../abi/stakeAbi";
+import { convertToWei, validateTokenAmount } from "../utils/tokenUtils";
 
 interface UnstakeTokensProps {
   onUnstake: (amount: string) => void;
   isLoading?: boolean;
   onTransactionSuccess?: () => void;
+  onError: (message: string) => void;
 }
 
 const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
   onUnstake,
   isLoading = false,
   onTransactionSuccess,
+  onError,
 }) => {
   const [unstakeAmount, setUnstakeAmount] = useState("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const unstakeAmountRef = useRef("");
   const { isConnected } = useAccount();
 
   const {
@@ -40,39 +43,34 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
   // Handle error messages
   useEffect(() => {
     if (writeError) {
-      setErrorMessage(
+      onError(
         `Transaction failed: ${writeError.message || "Unknown error occurred"}`
       );
     } else if (isUnstakingError) {
-      setErrorMessage(
+      onError(
         `Unstaking failed: ${
           isUnstakingError.message || "Transaction reverted"
         }`
       );
-    } else if (isUnstakingSuccess) {
-      setErrorMessage(null);
+    }
+  }, [writeError, isUnstakingError, onError]);
+
+  // Handle unstaking success separately
+  useEffect(() => {
+    if (isUnstakingSuccess) {
       // Call the onUnstake callback when unstaking is successful
-      if (unstakeAmount) {
-        onUnstake(unstakeAmount);
+      const currentUnstakeAmount = unstakeAmountRef.current;
+      if (currentUnstakeAmount) {
+        onUnstake(currentUnstakeAmount);
         setUnstakeAmount("");
+        unstakeAmountRef.current = "";
         // Notify parent component to refresh stake information immediately after transaction success
         if (onTransactionSuccess) {
           onTransactionSuccess();
         }
       }
     }
-  }, [
-    writeError,
-    isUnstakingError,
-    isUnstakingSuccess,
-    unstakeAmount,
-    onUnstake,
-  ]);
-
-  // Clear error message when user starts a new action
-  const clearError = () => {
-    setErrorMessage(null);
-  };
+  }, [isUnstakingSuccess, onUnstake, onTransactionSuccess]);
 
   const handleUnstake = async () => {
     if (!isConnected) {
@@ -84,30 +82,23 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       return;
     }
 
-    // Validate input - check for negative numbers and decimals
-    const amount = parseInt(unstakeAmount);
-    if (isNaN(amount) || amount <= 0) {
-      setErrorMessage("Please enter a valid positive integer");
+    // Validate input using utility function
+    const validation = validateTokenAmount(unstakeAmount);
+    if (!validation.isValid) {
+      onError(validation.error || "Invalid amount");
       return;
     }
-
-    // Check if the input contains decimals
-    if (unstakeAmount.includes(".") || unstakeAmount.includes(",")) {
-      setErrorMessage("Please enter a whole number (no decimals)");
-      return;
-    }
-
-    clearError(); // Clear any previous errors
 
     try {
+      const unstakeAmountWei = convertToWei(unstakeAmount);
       writeContract({
         address: STAKING_CONTRACT_ADDRESS,
         abi: stakingAbi,
         functionName: "unstake",
-        args: [unstakeAmount],
+        args: [unstakeAmountWei],
       });
     } catch (error) {
-      setErrorMessage(
+      onError(
         `Failed to initiate unstake: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
@@ -119,23 +110,6 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
 
   return (
     <div>
-      {/* Error Message Display */}
-      {errorMessage && (
-        <div className={styles.errorMessage}>
-          <div className={styles.errorContent}>
-            <span className={styles.errorIcon}>❌</span>
-            <p className={styles.errorText}>{errorMessage}</p>
-            <button
-              onClick={clearError}
-              className={styles.errorCloseButton}
-              aria-label="Close error message"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className={styles.inputGroup}>
         <input
           type="number"
@@ -152,11 +126,12 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
                 !value.includes(","))
             ) {
               setUnstakeAmount(value);
+              unstakeAmountRef.current = value;
             }
           }}
           placeholder={
             isConnected
-              ? "Enter unstake amount (whole number)"
+              ? "Enter unstake amount (1 = 1 token)"
               : "Connect wallet first"
           }
           className={styles.input}

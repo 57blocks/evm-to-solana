@@ -8,7 +8,8 @@ import { useAccount, useReadContract } from "wagmi";
 import { STAKING_CONTRACT_ADDRESS } from "../../consts";
 import { stakingAbi } from "../../abi/stakeAbi";
 import styles from "../styles/StakeInfo.module.css";
-import { Address } from "viem";
+import { Address, parseEther } from "viem";
+import { formatTokenAmount } from "../utils/tokenUtils";
 
 interface StakeInfoData {
   stakedAmount: bigint;
@@ -50,6 +51,7 @@ const StakeInfo = forwardRef<StakeInfoRef>((props, ref) => {
     ) {
       const [stakedAmount, stakingTimestamp, pendingReward, claimedReward] =
         stakeInfoData;
+      console.log("stakeInfoData", stakeInfoData);
       setStakeInfo({
         stakedAmount,
         stakingTimestamp,
@@ -110,9 +112,18 @@ const StakeInfo = forwardRef<StakeInfoRef>((props, ref) => {
         <button
           onClick={handleRefresh}
           disabled={isLoading || isReading}
-          className={styles.refreshButton}
+          className={`${styles.refreshButton} ${
+            isLoading || isReading ? styles.refreshing : ""
+          }`}
         >
-          {isLoading || isReading ? "Loading..." : "🔄 Refresh"}
+          <span className={styles.buttonIcon}>
+            <span className={styles.refreshIcon}>🔄</span>
+            <span className={styles.spinnerIcon}>⟳</span>
+          </span>
+          <span className={styles.buttonText}>
+            <span className={styles.refreshText}>Refresh</span>
+            <span className={styles.refreshingText}>Refreshing...</span>
+          </span>
         </button>
       </div>
 
@@ -122,41 +133,49 @@ const StakeInfo = forwardRef<StakeInfoRef>((props, ref) => {
         </div>
       )}
 
-      {isReading || isLoading ? (
-        <div className={styles.loading}>
-          <p>Loading stake information...</p>
-        </div>
-      ) : stakeInfo ? (
-        <div className={styles.infoGrid}>
-          <div className={styles.infoCard}>
-            <h4 className={styles.infoTitle}>Staked Amount</h4>
-            <p className={styles.infoValue}>{stakeInfo.stakedAmount} Tokens</p>
+      <div className={styles.content}>
+        {isReading || isLoading ? (
+          <div className={styles.loading}>
+            <p>Loading stake information...</p>
           </div>
+        ) : stakeInfo ? (
+          <div className={styles.infoGrid}>
+            <div className={styles.infoCard}>
+              <h4 className={styles.infoTitle}>Staked Amount</h4>
+              <p className={styles.infoValue}>
+                {formatTokenAmount(stakeInfo.stakedAmount)} Tokens
+              </p>
+            </div>
 
-          <div className={styles.infoCard}>
-            <h4 className={styles.infoTitle}>Staking Date</h4>
-            <p className={styles.infoValue}>
-              {stakeInfo.stakingTimestamp > BigInt(0)
-                ? formatTimestamp(stakeInfo.stakingTimestamp)
-                : "Not staked yet"}
-            </p>
-          </div>
+            <div className={styles.infoCard}>
+              <h4 className={styles.infoTitle}>Staking Date</h4>
+              <p className={styles.infoValue}>
+                {stakeInfo.stakingTimestamp > BigInt(0)
+                  ? formatTimestamp(stakeInfo.stakingTimestamp)
+                  : "Not staked yet"}
+              </p>
+            </div>
 
-          <div className={styles.infoCard}>
-            <h4 className={styles.infoTitle}>Pending Rewards</h4>
-            <p className={styles.infoValue}>{stakeInfo.pendingReward} Tokens</p>
-          </div>
+            <div className={styles.infoCard}>
+              <h4 className={styles.infoTitle}>Pending Rewards</h4>
+              <p className={styles.infoValue}>
+                {formatTokenAmount(stakeInfo.pendingReward)} Tokens
+              </p>
+            </div>
 
-          <div className={styles.infoCard}>
-            <h4 className={styles.infoTitle}>Claimed Rewards</h4>
-            <p className={styles.infoValue}>{stakeInfo.claimedReward} Tokens</p>
+            <div className={styles.infoCard}>
+              <h4 className={styles.infoTitle}>Claimed Rewards</h4>
+              <p className={styles.infoValue}>
+                {formatTokenAmount(stakeInfo.claimedReward)} Tokens
+              </p>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className={styles.message}>
-          <p>No stake information found</p>
-        </div>
-      )}
+        ) : (
+          <div className={styles.message}>
+            <p>No stake information found</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 });
