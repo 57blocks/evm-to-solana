@@ -23,6 +23,8 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
   onError,
 }) => {
   const [unstakeAmount, setUnstakeAmount] = useState("");
+  const [isButtonClicked, setIsButtonClicked] = useState(false);
+  const [isWaitingForWallet, setIsWaitingForWallet] = useState(false);
   const unstakeAmountRef = useRef("");
   const { isConnected } = useAccount();
 
@@ -40,18 +42,27 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
     hash: unstakeHash,
   });
 
+  // Clear waiting state when we get the transaction hash
+  useEffect(() => {
+    if (unstakeHash) {
+      setIsWaitingForWallet(false);
+    }
+  }, [unstakeHash]);
+
   // Handle error messages
   useEffect(() => {
     if (writeError) {
       onError(
         `Transaction failed: ${writeError.message || "Unknown error occurred"}`
       );
+      setIsButtonClicked(false); // Re-enable button on write error
     } else if (isUnstakingError) {
       onError(
         `Unstaking failed: ${
           isUnstakingError.message || "Transaction reverted"
         }`
       );
+      setIsButtonClicked(false); // Re-enable button on transaction error
     }
   }, [writeError, isUnstakingError, onError]);
 
@@ -64,6 +75,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
         onUnstake(currentUnstakeAmount);
         setUnstakeAmount("");
         unstakeAmountRef.current = "";
+        setIsButtonClicked(false); // Re-enable button after success
         // Notify parent component to refresh stake information immediately after transaction success
         if (onTransactionSuccess) {
           onTransactionSuccess();
@@ -78,7 +90,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       return;
     }
 
-    if (!unstakeAmount || isUnstakingLoading || isLoading) {
+    if (!unstakeAmount || isUnstakingLoading || isLoading || isButtonClicked) {
       return;
     }
 
@@ -89,27 +101,44 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       return;
     }
 
+    // Immediately disable button to prevent multiple clicks
+    setIsButtonClicked(true);
+
     try {
       const unstakeAmountWei = convertToWei(unstakeAmount);
       writeContract({
-        address: STAKING_CONTRACT_ADDRESS,
+        address: STAKING_CONTRACT_ADDRESS as `0x${string}`,
         abi: stakingAbi,
         functionName: "unstake",
         args: [unstakeAmountWei],
       });
+      // Set waiting state after initiating the transaction
+      setIsWaitingForWallet(true);
     } catch (error) {
       onError(
         `Failed to initiate unstake: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+      setIsButtonClicked(false); // Re-enable button on error
     }
   };
 
-  const isDisabled = !isConnected || isUnstakingLoading || isLoading;
+  const isDisabled =
+    !isConnected || isUnstakingLoading || isLoading || isButtonClicked;
 
   return (
     <div>
+      {/* Show waiting for wallet confirmation message */}
+      {isWaitingForWallet && (
+        <div className={styles.walletConfirmationMessage}>
+          <p>
+            ⏳ Waiting for wallet confirmation... Please check your wallet and
+            confirm the unstaking transaction.
+          </p>
+        </div>
+      )}
+
       <div className={styles.inputGroup}>
         <input
           type="number"
@@ -144,9 +173,16 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
           }
           className={`${styles.button} ${styles.unstakeButton} ${
             isDisabled ? styles.disabledButton : ""
-          }`}
+          } ${isUnstakingLoading ? styles.loadingButton : ""}`}
         >
-          {isUnstakingLoading ? "Processing..." : "Unstake"}
+          {isUnstakingLoading ? (
+            <>
+              <span className={styles.buttonSpinner}>⟳</span>
+              Processing...
+            </>
+          ) : (
+            "Unstake"
+          )}
         </button>
       </div>
     </div>

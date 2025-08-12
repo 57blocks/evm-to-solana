@@ -3,51 +3,29 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import { useState, useRef, useCallback } from "react";
 import { useAccount } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query";
 import styles from "../styles/Home.module.css";
 import StakingActions from "../components/StakingActions";
-import HistoryTable from "../components/HistoryTable";
+import RewardHistory from "../components/RewardHistory";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
 import ErrorModal from "../components/ErrorModal";
 import "dotenv/config";
 
-// Mock history records data
-const mockHistoryRecords = [
-  {
-    id: "1",
-    type: "stake" as const,
-    amount: "1000",
-    timestamp: "2024-01-15 14:30:00",
-    status: "completed" as const,
-  },
-  {
-    id: "2",
-    type: "unstake" as const,
-    amount: "500",
-    timestamp: "2024-01-16 09:15:00",
-    status: "completed" as const,
-  },
-  {
-    id: "3",
-    type: "stake" as const,
-    amount: "2000",
-    timestamp: "2024-01-17 16:45:00",
-    status: "pending" as const,
-  },
-];
-
 const Home: NextPage = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [historyRecords, setHistoryRecords] = useState(mockHistoryRecords);
   const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
     null
   );
-  const { address, isConnected } = useAccount();
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const { isConnected } = useAccount();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
+  const queryClient = useQueryClient();
 
   const handleTransactionSuccess = useCallback(() => {
     // Refresh stake information immediately after successful transaction
     stakeInfoRef.current?.refresh();
-  }, []);
+    // Refresh reward history by invalidating the query
+    queryClient.invalidateQueries({ queryKey: ["reward-history"] });
+  }, [queryClient]);
 
   const clearGlobalError = useCallback(() => {
     setGlobalErrorMessage(null);
@@ -59,28 +37,14 @@ const Home: NextPage = () => {
       return;
     }
 
-    setIsLoading(true);
     try {
       // Add actual staking logic here
-      console.log("Staking amount:", amount);
+      // TODO: Implement actual staking contract interaction
 
       // Simulate API call delay
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Add new history record
-      const newRecord = {
-        id: Date.now().toString(),
-        type: "stake" as const,
-        amount,
-        timestamp: new Date().toLocaleString("en-US"),
-        status: "completed" as const,
-      };
-
-      setHistoryRecords((prev) => [newRecord, ...prev]);
     } catch (error) {
       console.error("Staking failed:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -92,18 +56,7 @@ const Home: NextPage = () => {
 
     try {
       // Unstaking logic is now handled in UnstakeTokens component
-      console.log("Unstaking amount:", amount);
-
-      // Add new history record
-      const newRecord = {
-        id: Date.now().toString(),
-        type: "unstake" as const,
-        amount,
-        timestamp: new Date().toLocaleString("en-US"),
-        status: "completed" as const,
-      };
-
-      setHistoryRecords((prev) => [newRecord, ...prev]);
+      // TODO: This function is no longer needed as UnstakeTokens handles unstaking
     } catch (error) {
       console.error("Unstaking failed:", error);
     }
@@ -116,6 +69,16 @@ const Home: NextPage = () => {
         errorMessage={globalErrorMessage}
         onClose={clearGlobalError}
       />
+
+      {/* Global Loading Indicator */}
+      {isGlobalLoading && (
+        <div className={styles.globalLoadingOverlay}>
+          <div className={styles.globalLoadingSpinner}>
+            <div className={styles.spinner}></div>
+            <p>Processing transaction...</p>
+          </div>
+        </div>
+      )}
 
       <Head>
         <title>Staking Platform</title>
@@ -182,7 +145,7 @@ const Home: NextPage = () => {
         {/* History Records Section - Only show if wallet is connected */}
         {isConnected && (
           <div className={styles.historySection}>
-            <HistoryTable records={historyRecords} />
+            <RewardHistory />
           </div>
         )}
       </main>

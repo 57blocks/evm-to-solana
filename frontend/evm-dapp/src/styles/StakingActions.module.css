@@ -172,6 +172,50 @@
   text-align: center;
 }
 
+/* Wallet Confirmation Message Styles */
+.walletConfirmationMessage {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  animation: slideIn 0.3s ease-out;
+}
+
+.walletConfirmationMessage p {
+  margin: 0;
+  color: #d97706;
+  font-weight: 500;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Allowance Update Message Styles */
+.allowanceUpdateMessage {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  animation: slideIn 0.3s ease-out;
+}
+
+.allowanceUpdateMessage p {
+  margin: 0;
+  color: #1d4ed8;
+  font-weight: 500;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 .allowanceInfo p {
   margin: 0;
   color: #1d4ed8;
@@ -325,6 +369,28 @@
   background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(245, 101, 101, 0.4);
+}
+
+/* Loading button states */
+.loadingButton {
+  position: relative;
+  cursor: wait !important;
+}
+
+.loadingButton:hover {
+  transform: none !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2) !important;
+}
+
+.buttonSpinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {

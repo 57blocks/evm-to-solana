@@ -31,10 +31,10 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
 }) => {
   const [stakeAmount, setStakeAmount] = useState("");
   const [isApproving, setIsApproving] = useState(false);
-  const [approvalHash, setApprovalHash] = useState<string | null>(null);
-  const [stakeTransactionHash, setStakeTransactionHash] = useState<
-    string | null
-  >(null);
+  const [approvalHash, setApprovalHash] = useState<Hash | null>(null);
+  const [stakeTransactionHash, setStakeTransactionHash] = useState<Hash | null>(
+    null
+  );
   const stakeAmountRef = useRef("");
   const { isConnected, address } = useAccount();
 
@@ -80,24 +80,26 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
   const [currentTransactionType, setCurrentTransactionType] = useState<
     "approve" | "stake" | null
   >(null);
+  const [isButtonClicked, setIsButtonClicked] = useState(false);
+  const [isWaitingForWallet, setIsWaitingForWallet] = useState(false);
 
   // Set approval hash when writeContract data changes for approval
   useEffect(() => {
     if (writeData && currentTransactionType === "approve" && !approvalHash) {
-      console.log("Setting approval hash:", writeData);
-      setApprovalHash(writeData);
+      setApprovalHash(writeData as Hash);
+      setIsWaitingForWallet(false); // Clear waiting state when we get the hash
     }
   }, [writeData, currentTransactionType, approvalHash]);
 
-  // Set stake transaction hash when writeContract data changes for staking
+  // Set stake transaction hash when writeContract data changes for approval
   useEffect(() => {
     if (
       writeData &&
       currentTransactionType === "stake" &&
       !stakeTransactionHash
     ) {
-      console.log("Setting stake transaction hash:", writeData);
-      setStakeTransactionHash(writeData);
+      setStakeTransactionHash(writeData as Hash);
+      setIsWaitingForWallet(false); // Clear waiting state when we get the hash
     }
   }, [writeData, currentTransactionType, stakeTransactionHash]);
 
@@ -152,6 +154,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
       console.log("Staking transaction successful!");
       setIsApproving(false);
       setCurrentTransactionType(null);
+      setIsButtonClicked(false); // Re-enable button after success
 
       // Refresh allowance after successful staking
       refetchAllowance();
@@ -170,35 +173,34 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
     }
   }, [isStakingSuccess, onStake, onTransactionSuccess, refetchAllowance]);
 
-  // Debug: Monitor stake transaction state changes
+  // Handle approval success and auto-stake when allowance is sufficient
   useEffect(() => {
-    if (stakeTransactionHash) {
-      console.log("Stake transaction state:", {
-        hash: stakeTransactionHash,
-        isLoading: isStakingLoading,
-        isSuccess: isStakingSuccess,
-        error: isStakingError,
-      });
-    }
-  }, [
-    stakeTransactionHash,
-    isStakingLoading,
-    isStakingSuccess,
-    isStakingError,
-  ]);
-
-  // Handle approval success
-  useEffect(() => {
-    if (isApprovalSuccess && isApproving) {
-      // After approval is successful, refresh allowance and automatically proceed with staking
+    if (isApprovalSuccess && isApproving && approvalHash) {
+      // After approval is successful, refresh allowance and check if we can proceed with staking
       refetchAllowance();
       setCurrentTransactionType("stake");
       setIsApproving(false);
+    }
+  }, [isApprovalSuccess, isApproving, approvalHash, refetchAllowance]);
 
-      // Wait a bit for allowance to be updated, then automatically stake
-      setTimeout(() => {
-        if (stakeAmount && !isStakingLoading) {
-          const stakeAmountWei = convertToWei(stakeAmount);
+  // Auto-stake when allowance becomes sufficient after approval
+  useEffect(() => {
+    if (
+      currentTransactionType === "stake" &&
+      !isApproving &&
+      !isStakingLoading &&
+      approvalHash
+    ) {
+      const currentStakeAmount = stakeAmountRef.current;
+      if (currentStakeAmount) {
+        const stakeAmountWei = convertToWei(currentStakeAmount);
+
+        // If allowance is sufficient, proceed with staking
+        if (
+          currentAllowance &&
+          typeof currentAllowance === "bigint" &&
+          currentAllowance >= stakeAmountWei
+        ) {
           writeContract({
             address: STAKING_CONTRACT_ADDRESS,
             abi: stakingAbi,
@@ -206,14 +208,14 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
             args: [stakeAmountWei],
           });
         }
-      }, 2000); // Wait 2 seconds for allowance to be updated
+      }
     }
   }, [
-    isApprovalSuccess,
+    currentTransactionType,
     isApproving,
-    refetchAllowance,
-    stakeAmount,
     isStakingLoading,
+    approvalHash,
+    currentAllowance,
     writeContract,
   ]);
 
@@ -231,7 +233,8 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
       isLoading ||
       isApproving ||
       isApprovalLoading ||
-      isAllowanceLoading
+      isAllowanceLoading ||
+      isButtonClicked
     ) {
       return;
     }
@@ -242,6 +245,9 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
       onError(validation.error || "Invalid amount");
       return;
     }
+
+    // Immediately disable button to prevent multiple clicks
+    setIsButtonClicked(true);
 
     // Convert to wei once
     const stakeAmountWei = convertToWei(stakeAmount);
@@ -264,6 +270,8 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
           functionName: "approve",
           args: [STAKING_CONTRACT_ADDRESS, stakeAmountWei],
         });
+        // Set waiting state after initiating the transaction
+        setIsWaitingForWallet(true);
       } catch (error) {
         onError(
           `Failed to approve tokens: ${
@@ -271,6 +279,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
           }`
         );
         setIsApproving(false);
+        setIsButtonClicked(false); // Re-enable button on error
       }
     } else {
       // Already have sufficient allowance, proceed directly to staking
@@ -282,12 +291,15 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
           functionName: "stake",
           args: [stakeAmountWei],
         });
+        // Set waiting state after initiating the transaction
+        setIsWaitingForWallet(true);
       } catch (error) {
         onError(
           `Failed to initiate stake: ${
             error instanceof Error ? error.message : "Unknown error"
           }`
         );
+        setIsButtonClicked(false); // Re-enable button on error
       }
     }
   };
@@ -297,18 +309,25 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
     isStakingLoading ||
     isLoading ||
     isApproving ||
-    isApprovalLoading;
+    isApprovalLoading ||
+    isButtonClicked;
 
   return (
     <div>
       {/* Show current allowance if connected */}
-      {isConnected &&
-      currentAllowance &&
-      typeof currentAllowance === "bigint" ? (
+      {isConnected && (
         <div className={styles.allowanceInfo}>
-          <p>Current Allowance: {formatTokenAmount(currentAllowance)} tokens</p>
+          {isAllowanceLoading ? (
+            <p>Loading allowance... ⏳</p>
+          ) : currentAllowance && typeof currentAllowance === "bigint" ? (
+            <p>
+              Current Allowance: {formatTokenAmount(currentAllowance)} tokens
+            </p>
+          ) : (
+            <p>Allowance not available</p>
+          )}
         </div>
-      ) : null}
+      )}
 
       {/* Show approval success message */}
       {isApprovalSuccess && !isApproving && (
@@ -318,6 +337,39 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
           </p>
         </div>
       )}
+
+      {/* Show waiting for wallet confirmation message */}
+      {isWaitingForWallet && currentTransactionType === "approve" && (
+        <div className={styles.walletConfirmationMessage}>
+          <p>
+            ⏳ Waiting for wallet confirmation... Please check your wallet and
+            confirm the approval transaction.
+          </p>
+        </div>
+      )}
+
+      {/* Show waiting for staking confirmation message */}
+      {isWaitingForWallet && currentTransactionType === "stake" && (
+        <div className={styles.walletConfirmationMessage}>
+          <p>
+            ⏳ Waiting for wallet confirmation... Please check your wallet and
+            confirm the staking transaction.
+          </p>
+        </div>
+      )}
+
+      {/* Show waiting for allowance update message */}
+      {currentTransactionType === "stake" &&
+        !isApproving &&
+        !isStakingLoading &&
+        approvalHash && (
+          <div className={styles.allowanceUpdateMessage}>
+            <p>
+              ⏳ Approval successful! Waiting for allowance to update on
+              blockchain...
+            </p>
+          </div>
+        )}
 
       <div className={styles.inputGroup}>
         <input
@@ -351,13 +403,23 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
           disabled={!stakeAmount || isDisabled || parseInt(stakeAmount) <= 0}
           className={`${styles.button} ${styles.stakeButton} ${
             isDisabled ? styles.disabledButton : ""
+          } ${
+            isApprovalLoading || isStakingLoading ? styles.loadingButton : ""
           }`}
         >
-          {isApprovalLoading
-            ? "Approving..."
-            : isStakingLoading
-            ? "Staking..."
-            : "Stake"}
+          {isApprovalLoading ? (
+            <>
+              <span className={styles.buttonSpinner}>⟳</span>
+              Approving...
+            </>
+          ) : isStakingLoading ? (
+            <>
+              <span className={styles.buttonSpinner}>⟳</span>
+              Staking...
+            </>
+          ) : (
+            "Stake"
+          )}
         </button>
       </div>
     </div>

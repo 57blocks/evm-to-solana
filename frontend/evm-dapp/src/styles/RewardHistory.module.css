@@ -10,14 +10,42 @@
   overflow: hidden;
 }
 
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem 2rem;
+}
+
 .tableTitle {
   margin: 0;
-  padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   font-size: 1.25rem;
   font-weight: 600;
-  text-align: center;
+}
+
+.refreshButton {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+.refreshButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.refreshButton:active {
+  transform: translateY(0);
 }
 
 .tableWrapper {
@@ -84,15 +112,65 @@
   background: rgba(248, 249, 250, 0.5);
 }
 
+.loadingMessage {
+  text-align: center;
+  color: #007bff;
+  font-style: italic;
+  padding: 2rem;
+  background: rgba(0, 123, 255, 0.1);
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loadingSpinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 123, 255, 0.3);
+  border-top: 3px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorMessage {
+  text-align: center;
+  color: #dc3545;
+  font-style: italic;
+  padding: 2rem;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  border-radius: 8px;
+  margin: 1rem;
+}
+
 @media (max-width: 768px) {
   .tableContainer {
     margin: 1rem;
     border-radius: 8px;
   }
   
-  .tableTitle {
+  .headerRow {
     padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .tableTitle {
     font-size: 1.1rem;
+  }
+  
+  .refreshButton {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
   }
   
   .table th,
