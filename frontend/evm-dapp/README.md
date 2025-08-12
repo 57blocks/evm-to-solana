@@ -1,153 +1,363 @@
-# Staking Platform
+# EVM Staking DApp
 
-A clean and modern staking platform that supports token staking and unstaking operations.
+A comprehensive staking DApp that demonstrates how to interact with Ethereum smart contracts using modern Web3 technologies. This repository serves as a practical guide for developers learning to build decentralized applications with contract reading, writing, and event tracking capabilities.
 
-## Features
+## 🚀 Features
 
-- 🔗 **Wallet Connection**: Support for multiple wallet connections using RainbowKit
-- 💰 **Staking Operations**: Support for token staking and unstaking
-- 📊 **Transaction History**: Real-time display of staking and unstaking history
-- 📱 **Responsive Design**: Support for desktop and mobile access
-- 🎨 **Modern UI**: Clean and elegant user interface design
+### Core Functionality
 
-## Page Layout
+- **🔗 Wallet Integration**: Seamless wallet connection using RainbowKit with support for multiple wallet providers
+- **📖 Contract Reading**: Real-time reading of smart contract state (allowance, balance, stake info) using Viem and Wagmi
+- **✍️ Contract Writing**: Interactive contract interactions including token approval, staking, and unstaking operations
+- **📊 Subgraph Integration**: Real-time event tracking and display of reward history using The Graph's subgraph
+- **💡 Smart Transaction Flow**: Intelligent approval and staking flow with automatic allowance checking
 
-### 1. Header Section
+### User Experience
 
-- Platform title
-- Wallet connection button
+- **Real-time Status Updates**: Live loading states for all blockchain operations
+- **Automatic Transaction Flow**: Smart approval → staking sequence with allowance validation
+- **Error Handling**: Comprehensive error display with user-friendly messages
 
-### 2. Staking Operations Section
+## 🛠️ Tech Stack
 
-- Token staking input field and button
-- Token unstaking input field and button
-- Real-time loading status display
+### Frontend Framework
 
-### 3. Transaction History Table
+- **Next.js 15**: React framework with App Router
+- **React 19**: Latest React with modern hooks and patterns
+- **TypeScript**: Full type safety throughout the application
 
-- Operation type (Stake/Unstake)
-- Operation amount
-- Operation time
-- Operation status (Completed/Pending/Failed)
+### Web3 Integration
 
-## Tech Stack
+- **Wagmi**: React hooks for Ethereum
+- **Viem**: Low-level Ethereum interface
+- **RainbowKit**: Wallet connection UI components
 
-- **Frontend Framework**: Next.js 15
-- **UI Components**: React 19
-- **Wallet Connection**: RainbowKit + Wagmi
-- **Styling**: CSS Modules
-- **Language**: TypeScript
-- **Node Version**: 22.10.0
+### Data & State Management
 
-## Development
+- **GraphQL**: Subgraph queries for blockchain events
 
-### Environment Setup
+### Development Tools
 
-1. Copy the environment variables template:
+- **Node.js**: v22.10.0+ required
+- **Package Manager**: npm, yarn, or pnpm supported
+
+## 🏗️ Project Structure
+
+```
+evm-dapp/
+├── src/
+│   ├── components/
+│   │   ├── StakeTokens.tsx          # Staking input and approval logic
+│   │   ├── UnstakeTokens.tsx        # Unstaking operations
+│   │   ├── StakeInfo.tsx            # Display stake information
+│   │   ├── StakingActions.tsx       # Container for staking components
+│   │   ├── RewardHistory.tsx        # Subgraph-based reward history
+│   │   └── ErrorModal.tsx           # Global error display
+│   ├── pages/
+│   │   └── index.tsx                # Main application page
+│   ├── styles/                      # CSS Modules for component styling
+│   ├── utils/
+│   │   └── tokenUtils.ts            # Token conversion utilities
+│   ├── abi/                         # Smart contract ABIs
+│   └── wagmi.ts                     # Wagmi configuration
+├── package.json                     # Dependencies and scripts
+├── tsconfig.json                    # TypeScript configuration
+├── next.config.js                   # Next.js configuration
+├── .env.example                     # Environment variables template
+└── README.md                        # Project documentation
+```
+
+## 🚀 Setup & Installation
+
+### Prerequisites
+
+- Node.js v22.10.0 or higher
+- npm, yarn, or pnpm package manager
+- MetaMask or other Web3 wallet
+- Access to Ethereum testnet (Sepolia recommended)
+
+### 1. Clone Repository
 
 ```bash
+git clone <repository-url>
+cd evm-to-solana-contract/frontend/evm-dapp
+```
+
+### 2. Install Dependencies
+
+```bash
+# Using npm
+npm install
+
+# Using yarn
+yarn install
+
+# Using pnpm
+pnpm install
+```
+
+### 3. Environment Configuration
+
+```bash
+# Copy environment template
 cp env.example .env.local
 ```
 
-2. Update `.env.local` with your actual values:
+Update `.env.local` with your configuration:
 
 ```bash
-# Alchemy RPC URL for Sepolia testnet
+# Graph API Key for subgraph queries
+NEXT_PUBLIC_GRAPH_API_KEY=your_graph_api_key_here
+
+# Alchemy RPC URL for Ethereum testnet
 NEXT_PUBLIC_ALCHEMY_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY
 
-# Enable testnets (true/false)
-NEXT_PUBLIC_ENABLE_TESTNETS=true
-
-# WalletConnect Project ID
-NEXT_PUBLIC_PROJECT_ID=YOUR_PROJECT_ID
 ```
 
-### Install Dependencies
+### 4. Start Development Server
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
 npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm start
+# or
+yarn dev
+# or
+pnpm dev
 ```
 
-## Project Structure
+The application will be available at `http://localhost:3000`
 
-```
-src/
-├── components/
-│   ├── StakingActions.tsx    # Staking operations component
-│   └── HistoryTable.tsx      # Transaction history table component
-├── pages/
-│   └── index.tsx             # Main page
-├── styles/
-│   ├── Home.module.css       # Main page styles
-│   ├── StakingActions.module.css  # Staking operations styles
-│   └── HistoryTable.module.css    # Transaction history table styles
-└── wagmi.ts                  # Wagmi configuration
-```
+## 🔧 Smart Contract Integration
 
-## Customization
+### Contract Reading
 
-### Contract interaction
-
-### Adding Smart Contract Integration
-
-Add actual smart contract interaction logic in the `handleStake` and `handleUnstake` functions in `src/pages/index.tsx`:
+The DApp demonstrates reading contract state using Wagmi hooks:
 
 ```typescript
-const handleStake = async (amount: string) => {
-  setIsLoading(true);
-  try {
-    // Add actual staking contract call
-    // const result = await stakeContract.stake(amount);
+// Reading allowance
+const { data: currentAllowance } = useReadContract({
+  address: STAKING_TOKEN_ADDRESS,
+  abi: stakingTokenAbi,
+  functionName: "allowance",
+  args: [address, STAKING_CONTRACT_ADDRESS],
+});
 
-    // Add new history record
-    const newRecord = {
-      id: Date.now().toString(),
-      type: "stake" as const,
-      amount,
-      timestamp: new Date().toLocaleString("en-US"),
-      status: "completed" as const,
-    };
+// Reading stake information
+const { data: stakeInfo } = useReadContract({
+  address: STAKING_CONTRACT_ADDRESS,
+  abi: stakingAbi,
+  functionName: "getStakeInfo",
+  args: [address],
+});
+```
 
-    setHistoryRecords((prev) => [newRecord, ...prev]);
-  } catch (error) {
-    console.error("Staking failed:", error);
-  } finally {
-    setIsLoading(false);
-  }
+### Contract Writing
+
+Interactive contract operations with proper error handling:
+
+```typescript
+// Token approval
+const { writeContract: approveContract } = useWriteContract();
+
+const handleApprove = () => {
+  approveContract({
+    address: STAKING_TOKEN_ADDRESS,
+    abi: stakingTokenAbi,
+    functionName: "approve",
+    args: [STAKING_CONTRACT_ADDRESS, amountWei],
+  });
+};
+
+// Staking operation
+const { writeContract: stakeContract } = useWriteContract();
+
+const handleStake = () => {
+  stakeContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: stakingAbi,
+    functionName: "stake",
+    args: [amountWei],
+  });
 };
 ```
 
-### Style Customization
+### Transaction Flow Management
 
-All style files use CSS Modules. You can directly modify the corresponding `.module.css` files to customize the appearance.
+Smart approval → staking sequence with allowance validation:
 
-## Browser Support
+```typescript
+// Check allowance before staking
+if (currentAllowance < stakeAmountWei) {
+  // First approve, then auto-stake when allowance updates
+  handleApprove();
+} else {
+  // Direct staking if allowance is sufficient
+  handleStake();
+}
+```
 
-- Chrome (Recommended)
-- Firefox
-- Safari
-- Edge
+## 📊 Subgraph Configuration
 
-## License
+### What is a Subgraph?
 
-MIT License
+A subgraph is a GraphQL API that indexes blockchain data, making it easy to query historical events and contract state changes.
 
-## Subgraph
+### Setting Up Your Subgraph
 
-How to create a subgraph:
+#### 1. Create Subgraph on The Graph
 
-https://thegraph.com/docs/en/subgraphs/quick-start/
+- Visit [Quick Start](https://thegraph.com/docs/it/subgraphs/quick-start/)
 
-How to deploy a subgraph:
+### Key Snapshots
 
-https://thegraph.com/docs/en/developer/quick-start/deploy-subgraph/
+| Step                       | Description                                        | Screenshot                                                  |
+| -------------------------- | -------------------------------------------------- | ----------------------------------------------------------- |
+| **1. Create Subgraph**     | Create a new subgraph on The Graph Studio          | ![Create subgraph](./snapshots/create-subgraph.png)         |
+| **2. Get Deploy Key**      | Obtain the deployment key for your subgraph        | ![How to get deploy key](./snapshots/deploy-key.png)        |
+| **3. Initialize Subgraph** | Set up your local subgraph development environment | ![Initialize subgraph](./snapshots/initialise-subgraph.png) |
+
+#### 2. Define Subgraph Schema
+
+Create a `schema.graphql` file:
+
+```graphql
+type RewardClaimed @entity {
+  id: ID!
+  user: Bytes!
+  reward: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+}
+```
+
+#### 4. Deploy Subgraph
+
+```bash
+# Authenticate with your deploy key
+graph auth --studio <deploy-key>
+
+# Deploy to The Graph
+graph deploy --studio <subgraph-name>
+```
+
+#### 5. Query from DApp
+
+```typescript
+const query = gql`
+  {
+    rewardClaimeds(first: 10, orderBy: blockNumber, orderDirection: desc) {
+      id
+      user
+      reward
+      blockNumber
+    }
+  }
+`;
+
+const { data, refetch, isLoading, error, isRefetching } = useQuery<{
+  rewardClaimeds: RewardRecord[];
+}>({
+  queryKey: ["reward-history"],
+  async queryFn() {
+    return await request(
+      process.env.NEXT_PUBLIC_GRAPH_URL || "",
+      query,
+      {},
+      headers
+    );
+  },
+  refetchInterval: 30000, // Refetch every 30 seconds
+  refetchOnWindowFocus: true, // Refetch when window gains focus
+  staleTime: 10000, // Data is considered stale after 10 seconds
+});
+```
+
+## 🔍 Key Learning Points
+
+### 1. Wallet Connection with RainbowKit
+
+- Automatic wallet detection and connection
+- Support for multiple wallet providers
+- Real-time connection state management
+
+### 2. Contract Interaction Patterns
+
+- Reading contract state with `useReadContract`
+- Writing to contracts with `useWriteContract`
+- Transaction receipt monitoring with `useWaitForTransactionReceipt`
+
+### 3. Transaction Flow Management
+
+- Approval → Staking sequence
+- Allowance validation and auto-staking
+- Error handling and user feedback
+
+### 4. Subgraph Integration
+
+- Real-time event tracking
+- Historical data queries
+- Automatic data refresh
+
+### 5. State Management
+
+- React Query for server state
+- Local state for UI interactions
+- Proper dependency management in useEffect
+
+## 🧪 Testing
+
+### Run Tests
+
+```bash
+npm run test
+npm run test:watch
+```
+
+### Test Coverage
+
+```bash
+npm run test:coverage
+```
+
+## 📦 Build & Deploy
+
+### Production Build
+
+```bash
+npm run build
+```
+
+### Start Production Server
+
+```bash
+npm start
+```
+
+### Deploy to Vercel
+
+```bash
+npm run deploy
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+If you encounter any issues or have questions:
+
+- Check the [Issues](../../issues) page
+- Review the [Documentation](https://wagmi.sh/)
+- Join our [Discord Community](https://discord.gg/wagmi)
+
+---
+
+**Happy Building! 🚀**
