@@ -1,0 +1,238 @@
+/* Comprehensive override of wallet-adapter-react-ui default styles */
+
+/* Main wallet button styles */
+.wallet-adapter-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 24px !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+  font-family: inherit !important;
+  min-width: auto !important;
+  height: auto !important;
+  line-height: 1 !important;
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+.wallet-adapter-button:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.wallet-adapter-button:active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  transform: translateY(0) !important;
+}
+
+.wallet-adapter-button:focus {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+}
+
+.wallet-adapter-button:disabled {
+  background: #ccc !important;
+  color: #666 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Wallet button trigger (dropdown trigger) */
+.wallet-adapter-button-trigger {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  min-width: 200px !important;
+  justify-content: space-between !important;
+  padding: 12px 24px !important;
+}
+
+.wallet-adapter-button-trigger:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Wallet dropdown styles */
+.wallet-adapter-dropdown {
+  position: relative !important;
+  display: inline-block !important;
+}
+
+.wallet-adapter-dropdown-list {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  margin-top: 8px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  min-width: 280px !important;
+  z-index: 1000 !important;
+  list-style: none !important;
+  margin: 0 !important;
+  animation: slideDown 0.3s ease !important;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wallet-adapter-dropdown-list.false {
+  display: none !important;
+}
+
+.wallet-adapter-dropdown-list.true {
+  display: block !important;
+}
+
+/* Dropdown list items */
+.wallet-adapter-dropdown-list-item {
+  padding: 12px 16px !important;
+  margin: 4px 0 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  color: #2d3748 !important;
+  font-size: 0.9rem !important;
+  font-weight: 500 !important;
+  border: none !important;
+  background: transparent !important;
+  text-align: left !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.wallet-adapter-dropdown-list-item:hover {
+  background: rgba(102, 126, 234, 0.1) !important;
+  color: #667eea !important;
+}
+
+.wallet-adapter-dropdown-list-item:focus {
+  background: rgba(102, 126, 234, 0.1) !important;
+  color: #667eea !important;
+  outline: none !important;
+}
+
+/* Wallet modal styles */
+.wallet-adapter-modal {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 9999 !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+.wallet-adapter-modal-wrapper {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 16px !important;
+  padding: 2rem !important;
+  max-width: 400px !important;
+  width: 90% !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.wallet-adapter-modal-title {
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  color: #2d3748 !important;
+  margin: 0 0 1rem 0 !important;
+  text-align: center !important;
+}
+
+.wallet-adapter-modal-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.wallet-adapter-modal-list-item {
+  margin: 8px 0 !important;
+}
+
+.wallet-adapter-modal-list-item button {
+  width: 100% !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  text-align: left !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.wallet-adapter-modal-list-item button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+.wallet-adapter-modal-list-item button:active {
+  transform: translateY(0) !important;
+}
+
+.wallet-adapter-modal-list-item button:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* Wallet adapter button text */
+.wallet-adapter-button-text {
+  color: white !important;
+  font-weight: 600 !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .wallet-adapter-button-trigger {
+    min-width: 180px !important;
+    padding: 10px 16px !important;
+  }
+  
+  .wallet-adapter-dropdown-list {
+    right: -20px !important;
+    min-width: 260px !important;
+  }
+  
+  .wallet-adapter-modal-wrapper {
+    margin: 1rem !important;
+    padding: 1.5rem !important;
+  }
+} 

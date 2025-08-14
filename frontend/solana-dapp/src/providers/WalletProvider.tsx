@@ -1,9 +1,49 @@
-import React, { FC, ReactNode } from "react";
+import React, { FC, ReactNode, useMemo, useEffect, useState } from "react";
+import {
+  ConnectionProvider,
+  WalletProvider as SolanaWalletProvider,
+} from "@solana/wallet-adapter-react";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
+import { SOLANA_CONFIG } from "../config/solana";
+
+// Import wallet adapter CSS
+import "@solana/wallet-adapter-react-ui/styles.css";
 
 interface WalletProviderProps {
   children: ReactNode;
 }
 
 export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
-  return <div>{children}</div>;
+  const [mounted, setMounted] = useState(false);
+  const { network, endpoint } = SOLANA_CONFIG;
+
+  // Fix hydration mismatch by ensuring component only renders on client
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading
+  // Only the wallets you configure here will be compiled into your application, and only the dependencies
+  // of wallets that your users connect to will be loaded
+  const wallets = useMemo(
+    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+    [network]
+  );
+
+  // Don't render wallet provider until component is mounted on client
+  if (!mounted) {
+    return <div>{children}</div>;
+  }
+
+  return (
+    <ConnectionProvider endpoint={endpoint}>
+      <SolanaWalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>{children}</WalletModalProvider>
+      </SolanaWalletProvider>
+    </ConnectionProvider>
+  );
 };

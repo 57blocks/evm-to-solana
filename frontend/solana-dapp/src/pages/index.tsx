@@ -1,19 +1,21 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
 import styles from "../styles/Home.module.css";
 import StakingActions from "../components/StakingActions";
 import RewardHistory from "../components/RewardHistory";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
 import ErrorModal from "../components/ErrorModal";
+import DynamicWalletButton from "../components/DynamicWalletButton";
 
 const Home: NextPage = () => {
   const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
     null
   );
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
-  const [isConnected, setIsConnected] = useState(false); // Mock connection state
+  const { connected } = useWallet();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
   const queryClient = useQueryClient();
 
@@ -29,7 +31,7 @@ const Home: NextPage = () => {
   }, []);
 
   const handleStake = async (amount: string) => {
-    if (!isConnected) {
+    if (!connected) {
       alert("Please connect your wallet first");
       return;
     }
@@ -43,7 +45,7 @@ const Home: NextPage = () => {
   };
 
   const handleUnstake = async (amount: string) => {
-    if (!isConnected) {
+    if (!connected) {
       alert("Please connect your wallet first");
       return;
     }
@@ -54,10 +56,6 @@ const Home: NextPage = () => {
     } catch (error) {
       console.error("Unstaking failed:", error);
     }
-  };
-
-  const toggleConnection = () => {
-    setIsConnected(!isConnected);
   };
 
   return (
@@ -88,21 +86,16 @@ const Home: NextPage = () => {
       </Head>
 
       <main className={styles.main}>
-        {/* Header Section - Mock Wallet Connection */}
+        {/* Header Section - Wallet Connection */}
         <header className={styles.header}>
           <h1 className={styles.pageTitle}>Solana Staking Platform</h1>
           <div className={styles.walletSection}>
-            <button
-              onClick={toggleConnection}
-              className={styles.mockWalletButton}
-            >
-              {isConnected ? "Disconnect Wallet" : "Connect Wallet"}
-            </button>
+            <DynamicWalletButton />
           </div>
         </header>
 
         {/* Show wallet connection message if not connected */}
-        {!isConnected && (
+        {!connected && (
           <div className={styles.walletMessage}>
             <div className={styles.messageCard}>
               <h2>Welcome to Solana Staking Platform</h2>
@@ -111,19 +104,14 @@ const Home: NextPage = () => {
                 tokens.
               </p>
               <div className={styles.connectPrompt}>
-                <button
-                  onClick={toggleConnection}
-                  className={styles.mockWalletButton}
-                >
-                  Connect Wallet
-                </button>
+                <DynamicWalletButton />
               </div>
             </div>
           </div>
         )}
 
         {/* Main Content Section - Only show if wallet is connected */}
-        {isConnected && (
+        {connected && (
           <div className={styles.contentGrid}>
             {/* Left Column - Stake Information */}
             <div className={styles.leftColumn}>
@@ -143,7 +131,7 @@ const Home: NextPage = () => {
         )}
 
         {/* History Records Section - Only show if wallet is connected */}
-        {isConnected && (
+        {connected && (
           <div className={styles.historySection}>
             <RewardHistory />
           </div>
