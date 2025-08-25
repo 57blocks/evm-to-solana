@@ -1,24 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
-import {
-  useAnchorWallet,
-  useConnection,
-  useWallet,
-} from "@solana/wallet-adapter-react";
+import React, { useState, useRef } from "react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakingActions.module.css";
-import { convertToWei, validateTokenAmount } from "../utils/tokenUtils";
-import { address } from "@solana/kit";
-import { createClient } from "../../client";
-import {
-  AnchorProvider,
-  BN,
-  Idl,
-  Program,
-  setProvider,
-} from "@coral-xyz/anchor";
-import idl from "./../idl/idl.json";
-import type { SolanaStaking } from "./../idl/type";
+import { validateTokenAmount } from "../utils/tokenUtils";
+import { BN } from "@coral-xyz/anchor";
 import { useProgram } from "../../hooks/useProgram";
-
+import { createStakingAccount } from "@/utils/account";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 interface StakeTokensProps {
   onStake: (amount: string) => void;
   onTransactionSuccess?: () => void;
@@ -34,11 +21,12 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
   const [isStaking, setIsStaking] = useState(false);
   const [isButtonClicked, setIsButtonClicked] = useState(false);
   const stakeAmountRef = useRef("");
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey, sendTransaction } = useWallet();
   const { program } = useProgram();
+  const { connection } = useConnection();
 
   const handleStake = async () => {
-    if (!connected || !publicKey || !program) {
+    if (!connected || !publicKey || !program || !sendTransaction) {
       onError("Please connect your wallet first");
       return;
     }
@@ -59,14 +47,29 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
     setIsStaking(true);
 
     try {
+      const {
+        stakingVaultPda,
+        rewardVaultPda,
+        statePda,
+        userStakeInfoPda,
+        blacklistPda,
+        stakingTokenAccount,
+        rewardTokenAccount,
+      } = await createStakingAccount(publicKey, sendTransaction, connection);
       const transaction = await program.methods
         .stake(new BN(stakeAmount))
         .accounts({
           user: publicKey,
-          state: new PublicKey(stakingVaultPda.toBase58()),
-          userStakeInfo: new PublicKey(rewardVaultPda.toBase58()),
+          state: statePda,
+          userStakeInfo: userStakeInfoPda,
+          userTokenAccount: stakingTokenAccount,
+          stakingVault: stakingVaultPda,
+          rewardVault: rewardVaultPda,
+          userRewardAccount: rewardTokenAccount,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          blacklistEntry: blacklistPda,
         });
-
+      console.log("transaction", transaction);
       // Call success callback
       onStake(stakeAmount);
       setStakeAmount("");
