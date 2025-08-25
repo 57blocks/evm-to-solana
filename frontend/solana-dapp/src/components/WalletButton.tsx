@@ -4,9 +4,9 @@ import {
   WalletModalProvider,
   WalletMultiButton,
 } from "@solana/wallet-adapter-react-ui";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";
 import styles from "../styles/WalletButton.module.css";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const WalletButton = () => {
   const { connected, publicKey, wallet, disconnect } = useWallet();
