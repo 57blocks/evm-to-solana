@@ -1,0 +1,13 @@
+{
+  "programId": "B2hHcUhK56zA2CLRAcpqpmrK5662qDnnQ3tx8AqjfYAD",
+  "stakingMint": "HXnRNQr25LNAxC5Z6fHyRJvUAmsenj5dkpjG3CRz4hve",
+  "rewardMint": "8JpEiC5n5QDsYd9tZyBXPQjJXwDKH9oK4s5JmhQZPrpy",
+  "statePda": "AJiytKnF4sVrfs8YGQiivjdgRGsyBqH1peeLzeJz7EvY",
+  "stakingVaultPda": "5rwdzrjEFWr6diTFhmNLK3VdeD6msuuUe2gZNuwAKk82",
+  "rewardVaultPda": "GEDJX2MxwN2H2S5z83KjwzdemHDWZZ48N2se5dGFG2JD",
+  "admin": "44fgvGQjJuwiuw4fofNPsmwDFqZsBJBGjHH8V2Td6HdY",
+  "rewardRate": 500,
+  "initializeTx": "3FLEX5GCmwsCmBtbBQQVHWiNmKxbdGFCLmsfFKHEUGMYGz5TiBcTJWxnLAB6fBBcUQhBfWWBDQqQgHzf3CFVgX31",
+  "network": "devnet",
+  "timestamp": "2025-08-29T06:39:21.712Z"
+}
