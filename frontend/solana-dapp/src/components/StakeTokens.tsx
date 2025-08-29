@@ -1,11 +1,9 @@
 import React, { useState, useRef } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakingActions.module.css";
 import { validateTokenAmount } from "../utils/tokenUtils";
-import { BN } from "@coral-xyz/anchor";
 import { useProgram } from "../../hooks/useProgram";
-import { createStakingAccount } from "@/utils/account";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { useStake } from "../hooks/useStake";
 interface StakeTokensProps {
   onStake: (amount: string) => void;
   onTransactionSuccess?: () => void;
@@ -23,8 +21,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
   const stakeAmountRef = useRef("");
   const { connected, publicKey, sendTransaction } = useWallet();
   const { program } = useProgram();
-  const { connection } = useConnection();
-
+  const { stake } = useStake();
   const handleStake = async () => {
     if (!connected || !publicKey || !program || !sendTransaction) {
       onError("Please connect your wallet first");
@@ -47,30 +44,11 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
     setIsStaking(true);
 
     try {
-      const {
-        statePda,
-        userStakeInfoPda,
-        blacklistPda,
-        userTokenAccount,
-        userRewardAccount,
-      } = await createStakingAccount(publicKey);
-      const state = await program.account.globalState.fetch(statePda);
-
-      const transaction = await program.methods
-        .stake(new BN(stakeAmount))
-        .accounts({
-          user: publicKey,
-          state: statePda,
-          userStakeInfo: userStakeInfoPda,
-          userTokenAccount: userTokenAccount,
-          stakingVault: state.stakingVault,
-          rewardVault: state.rewardVault,
-          userRewardAccount: userRewardAccount,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          blacklistEntry: blacklistPda,
-        })
-        .rpc();
-      console.log("transaction", transaction);
+      const stakeResult = await stake(stakeAmount);
+      if (!stakeResult?.success) {
+        onError("Staking failed");
+        return;
+      }
       // Call success callback
       onStake(stakeAmount);
       setStakeAmount("");
