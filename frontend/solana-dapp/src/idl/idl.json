@@ -1,5 +1,5 @@
 {
-  "address": "1gGFthN24CB1p2LEvmhpnJVHAHm3koZDQnHgDoe6Ra2",
+  "address": "B2hHcUhK56zA2CLRAcpqpmrK5662qDnnQ3tx8AqjfYAD",
   "metadata": {
     "name": "solana_staking",
     "version": "0.1.0",
@@ -68,6 +68,10 @@
                   115,
                   116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
               },
               {
                 "kind": "arg",
@@ -145,6 +149,10 @@
               },
               {
                 "kind": "account",
+                "path": "state"
+              },
+              {
+                "kind": "account",
                 "path": "user"
               }
             ]
@@ -200,6 +208,10 @@
                   115,
                   116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
               },
               {
                 "kind": "account",
@@ -407,6 +419,10 @@
                 ]
               },
               {
+                "kind": "account",
+                "path": "state"
+              },
+              {
                 "kind": "arg",
                 "path": "address"
               }
@@ -476,6 +492,10 @@
                   107,
                   101
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
               },
               {
                 "kind": "account",
@@ -568,6 +588,10 @@
                   115,
                   116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
               },
               {
                 "kind": "account",
@@ -654,6 +678,10 @@
               },
               {
                 "kind": "account",
+                "path": "state"
+              },
+              {
+                "kind": "account",
                 "path": "user"
               }
             ]
@@ -743,6 +771,10 @@
                   115,
                   116
                 ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
               },
               {
                 "kind": "account",

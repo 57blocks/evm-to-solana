@@ -48,27 +48,28 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
 
     try {
       const {
-        stakingVaultPda,
-        rewardVaultPda,
         statePda,
         userStakeInfoPda,
         blacklistPda,
-        stakingTokenAccount,
-        rewardTokenAccount,
-      } = await createStakingAccount(publicKey, sendTransaction, connection);
+        userTokenAccount,
+        userRewardAccount,
+      } = await createStakingAccount(publicKey);
+      const state = await program.account.globalState.fetch(statePda);
+
       const transaction = await program.methods
         .stake(new BN(stakeAmount))
         .accounts({
           user: publicKey,
           state: statePda,
           userStakeInfo: userStakeInfoPda,
-          userTokenAccount: stakingTokenAccount,
-          stakingVault: stakingVaultPda,
-          rewardVault: rewardVaultPda,
-          userRewardAccount: rewardTokenAccount,
+          userTokenAccount: userTokenAccount,
+          stakingVault: state.stakingVault,
+          rewardVault: state.rewardVault,
+          userRewardAccount: userRewardAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
           blacklistEntry: blacklistPda,
-        });
+        })
+        .rpc();
       console.log("transaction", transaction);
       // Call success callback
       onStake(stakeAmount);

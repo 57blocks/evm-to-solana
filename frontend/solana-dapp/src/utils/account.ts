@@ -1,67 +1,44 @@
-import { Address, getProgramDerivedAddress, KeyPairSigner } from "@solana/kit";
-import { Connection, PublicKey } from "@solana/web3.js";
-import { createMintAccount } from "./createMintAccount";
-import idl from "@/idl/idl.json";
-import { WalletAdapterProps } from "@solana/wallet-adapter-base";
+import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import idl from "@/idl/idl.json";
 
-export const createStakingAccount = async (
-  publicKey: PublicKey,
-  sendTransaction: WalletAdapterProps["sendTransaction"],
-  connection: Connection
-) => {
-  const programAddress = new PublicKey(idl.address);
-  const stakingMint = await createMintAccount(
-    publicKey,
-    sendTransaction,
-    connection
+export const createStakingAccount = async (publicKey: PublicKey) => {
+  const programAddress = new PublicKey(idl.address); // Updated with actual deployed mint addresses
+  const stakingMint = new PublicKey(
+    "HXnRNQr25LNAxC5Z6fHyRJvUAmsenj5dkpjG3CRz4hve"
   );
-  const rewardMint = await createMintAccount(
-    publicKey,
-    sendTransaction,
-    connection
+  const rewardMint = new PublicKey(
+    "8JpEiC5n5QDsYd9tZyBXPQjJXwDKH9oK4s5JmhQZPrpy"
   );
-  //TODO: need to check stakingMint is valid
-  const [statePda] = await PublicKey.findProgramAddressSync(
+  const [statePda] = PublicKey.findProgramAddressSync(
     [Buffer.from("state"), stakingMint.toBuffer()],
     programAddress
   );
 
-  const [stakingVaultPda] = await PublicKey.findProgramAddressSync(
-    [Buffer.from("staking_vault"), statePda.toBuffer()],
-    programAddress
-  );
-
-  const [rewardVaultPda] = await PublicKey.findProgramAddressSync(
-    [Buffer.from("reward_vault"), statePda.toBuffer()],
-    programAddress
-  );
-  const [userStakeInfoPda] = await PublicKey.findProgramAddressSync(
+  const [userStakeInfoPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("stake"), statePda.toBuffer(), publicKey.toBuffer()],
     programAddress
   );
-  const [blacklistPda] = await PublicKey.findProgramAddressSync(
+
+  const userTokenAccount = getAssociatedTokenAddressSync(
+    stakingMint,
+    publicKey
+  );
+
+  const userRewardAccount = getAssociatedTokenAddressSync(
+    rewardMint,
+    publicKey
+  );
+
+  const [blacklistPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("blacklist"), statePda.toBuffer(), publicKey.toBuffer()],
     programAddress
   );
-
-  const stakingTokenAccount = getAssociatedTokenAddressSync(
-    stakingMint,
-    publicKey
-  );
-  const rewardTokenAccount = getAssociatedTokenAddressSync(
-    rewardMint,
-    publicKey
-  );
   return {
-    stakingMint,
-    rewardMint,
     statePda,
-    stakingVaultPda,
-    rewardVaultPda,
     userStakeInfoPda,
     blacklistPda,
-    stakingTokenAccount,
-    rewardTokenAccount,
+    userTokenAccount,
+    userRewardAccount,
   };
 };
