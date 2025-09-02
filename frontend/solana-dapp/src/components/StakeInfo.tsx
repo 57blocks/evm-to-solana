@@ -3,58 +3,69 @@ import React, {
   useEffect,
   useImperativeHandle,
   forwardRef,
+  useCallback,
 } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakeInfo.module.css";
 import useUserStakeInfo from "@/hooks/useUserStakeInfo";
 import { UserStakeInfo } from "@/hooks/useUserStakeInfo";
+import { useProgram } from "@/hooks/useProgram";
 
 export interface StakeInfoRef {
   refresh: () => void;
 }
 
-const StakeInfo = forwardRef<StakeInfoRef>((props, ref) => {
+const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
   const { publicKey, connected } = useWallet();
   const [stakeInfo, setStakeInfo] = useState<UserStakeInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { fetchUserStakeInfo } = useUserStakeInfo();
+  const { program } = useProgram();
 
-  useEffect(() => {
-    if (connected && publicKey) {
-      setIsLoading(true);
-      const getUserStakeInfo = async () => {
-        const userStakeInfo = await fetchUserStakeInfo(publicKey);
-        setStakeInfo(userStakeInfo ?? null);
-        setIsLoading(false);
-      };
-      void getUserStakeInfo();
-    }
-  }, [connected, publicKey]);
+  const loadStakeInfo = useCallback(async () => {
+    if (!publicKey || !program) return;
 
-  const handleRefresh = async () => {
     setIsLoading(true);
+    setError(null);
+
     try {
-      if (!publicKey) {
-        throw new Error("Public key is not set");
-      }
       const userStakeInfo = await fetchUserStakeInfo(publicKey);
       setStakeInfo(userStakeInfo ?? null);
-    } catch (error) {
-      setError(
-        `Failed to refresh: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setError(`Failed to load stake info: ${errorMessage}`);
+      console.error("Error loading stake info:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [publicKey, fetchUserStakeInfo, program]);
+
+  useEffect(() => {
+    if (connected && publicKey && program) {
+      void loadStakeInfo();
+    } else {
+      setStakeInfo(null);
+      setError(null);
+    }
+  }, [connected, publicKey, program]);
+
+  const handleRefresh = useCallback(async () => {
+    if (!publicKey) {
+      setError("Public key is not set");
+      return;
+    }
+    await loadStakeInfo();
+  }, [publicKey, loadStakeInfo]);
 
   // Expose refresh method to parent component
-  useImperativeHandle(ref, () => ({
-    refresh: handleRefresh,
-  }));
+  useImperativeHandle(
+    ref,
+    () => ({
+      refresh: handleRefresh,
+    }),
+    [handleRefresh]
+  );
 
   if (!connected) {
     return (

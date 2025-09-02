@@ -11,19 +11,22 @@ export type UserStakeInfo = {
 };
 const useUserStakeInfo = () => {
   const { program } = useProgram();
+
   const fetchUserStakeInfo = async (
     publicKey: PublicKey
   ): Promise<UserStakeInfo | undefined> => {
-    console.log("publicKey", publicKey);
+    if (!program) {
+      console.log("Program is not ready yet");
+      return undefined;
+    }
+
     const { userStakeInfoPda } = await createStakingAccount(publicKey);
-    console.log("userStakeInfoPda", userStakeInfoPda);
-    const userStakeInfo = await program?.account.userStakeInfo.fetch(
+    const userStakeInfo = await program.account.userStakeInfo.fetch(
       userStakeInfoPda
     );
     if (!userStakeInfo) {
       return undefined;
     }
-    console.log("userStakeInfo", userStakeInfo);
     const stakeAmount = Number(userStakeInfo?.amount ?? BigInt(0));
     const rewardDebt = Number(userStakeInfo.rewardDebt ?? BigInt(0));
 
