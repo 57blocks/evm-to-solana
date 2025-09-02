@@ -1,7 +1,8 @@
 import React, { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakingActions.module.css";
-import { validateTokenAmount } from "../utils/tokenUtils";
+import { convertToLamports, validateTokenAmount } from "../utils/tokenUtils";
+import { useUnstake } from "@/hooks/useUnstake";
 
 interface UnstakeTokensProps {
   onUnstake: (amount: string) => void;
@@ -17,6 +18,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
   const [unstakeAmount, setUnstakeAmount] = useState("");
   const [isUnstaking, setIsUnstaking] = useState(false);
   const [isButtonClicked, setIsButtonClicked] = useState(false);
+  const { unstake } = useUnstake();
   const unstakeAmountRef = useRef("");
   const { connected, publicKey } = useWallet();
 
@@ -42,11 +44,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
     setIsUnstaking(true);
 
     try {
-      // TODO: Implement actual Solana unstaking logic
-      console.log("Unstaking amount:", unstakeAmount);
-
-      // Simulate transaction delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await unstake(convertToLamports(unstakeAmount).toString());
 
       // Call success callback
       onUnstake(unstakeAmount);

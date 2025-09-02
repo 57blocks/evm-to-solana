@@ -1,7 +1,6 @@
 import React from "react";
 import styles from "../styles/RewardHistory.module.css";
 import { useQuery } from "@tanstack/react-query";
-import { formatTokenAmount } from "../utils/tokenUtils";
 
 interface RewardHistoryProps {}
 
@@ -13,7 +12,6 @@ interface RewardRecord {
 }
 
 const RewardHistory: React.FC<RewardHistoryProps> = () => {
-  // Mock data for now - TODO: Replace with actual Solana program queries
   const { data, refetch, isLoading, error, isRefetching } = useQuery<{
     rewardClaimeds: RewardRecord[];
   }>({
@@ -122,7 +120,7 @@ const RewardHistory: React.FC<RewardHistoryProps> = () => {
                   <td className={styles.userAddress}>
                     {record.user.slice(0, 4)}...{record.user.slice(-4)}
                   </td>
-                  <td>{formatTokenAmount(BigInt(record.reward))}</td>
+                  <td>{record.reward}</td>
                   <td>{record.blockNumber}</td>
                 </tr>
               ))

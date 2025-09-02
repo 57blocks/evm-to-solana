@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakingActions.module.css";
-import { validateTokenAmount } from "../utils/tokenUtils";
+import { convertToLamports, validateTokenAmount } from "../utils/tokenUtils";
 import { useProgram } from "../../hooks/useProgram";
 import { useStake } from "../hooks/useStake";
 interface StakeTokensProps {
@@ -50,7 +50,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
         return;
       }
       // Call success callback
-      onStake(stakeAmount);
+      onStake(convertToLamports(stakeAmount).toString());
       setStakeAmount("");
       stakeAmountRef.current = "";
 

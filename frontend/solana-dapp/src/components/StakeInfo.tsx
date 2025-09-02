@@ -6,14 +6,8 @@ import React, {
 } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakeInfo.module.css";
-import { formatTokenAmount } from "../utils/tokenUtils";
-
-interface StakeInfoData {
-  stakedAmount: bigint;
-  stakingTimestamp: bigint;
-  pendingReward: bigint;
-  claimedReward: bigint;
-}
+import useUserStakeInfo from "@/hooks/useUserStakeInfo";
+import { UserStakeInfo } from "@/hooks/useUserStakeInfo";
 
 export interface StakeInfoRef {
   refresh: () => void;
@@ -21,38 +15,31 @@ export interface StakeInfoRef {
 
 const StakeInfo = forwardRef<StakeInfoRef>((props, ref) => {
   const { publicKey, connected } = useWallet();
-  const [stakeInfo, setStakeInfo] = useState<StakeInfoData | null>(null);
+  const [stakeInfo, setStakeInfo] = useState<UserStakeInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { fetchUserStakeInfo } = useUserStakeInfo();
 
-  // Mock data for now - TODO: Replace with actual Solana program calls
   useEffect(() => {
     if (connected && publicKey) {
-      // Simulate loading stake info
       setIsLoading(true);
-      setTimeout(() => {
-        setStakeInfo({
-          stakedAmount: BigInt(1000000000), // 1 token in lamports
-          stakingTimestamp: BigInt(Math.floor(Date.now() / 1000)),
-          pendingReward: BigInt(50000000), // 0.05 token
-          claimedReward: BigInt(200000000), // 0.2 token
-        });
+      const getUserStakeInfo = async () => {
+        const userStakeInfo = await fetchUserStakeInfo(publicKey);
+        setStakeInfo(userStakeInfo ?? null);
         setIsLoading(false);
-      }, 1000);
+      };
+      void getUserStakeInfo();
     }
   }, [connected, publicKey]);
-
-  const formatTimestamp = (timestamp: bigint) => {
-    if (timestamp === BigInt(0)) return "Not staked yet";
-    const date = new Date(Number(timestamp) * 1000);
-    return date.toLocaleString("en-US");
-  };
 
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement actual refresh logic
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (!publicKey) {
+        throw new Error("Public key is not set");
+      }
+      const userStakeInfo = await fetchUserStakeInfo(publicKey);
+      setStakeInfo(userStakeInfo ?? null);
     } catch (error) {
       setError(
         `Failed to refresh: ${
@@ -138,27 +125,21 @@ const StakeInfo = forwardRef<StakeInfoRef>((props, ref) => {
           <div className={styles.infoGrid}>
             <div className={styles.infoItem}>
               <label>Staked Amount:</label>
-              <span className={styles.value}>
-                {formatTokenAmount(stakeInfo.stakedAmount)} tokens
-              </span>
+              <span className={styles.value}>{stakeInfo.amount} tokens</span>
             </div>
             <div className={styles.infoItem}>
               <label>Staking Time:</label>
+              <span className={styles.value}>{stakeInfo.stakeTimestamp}</span>
+            </div>
+            <div className={styles.infoItem}>
+              <label>Reward Debt:</label>
               <span className={styles.value}>
-                {formatTimestamp(stakeInfo.stakingTimestamp)}
+                {stakeInfo.rewardDebt} tokens
               </span>
             </div>
             <div className={styles.infoItem}>
-              <label>Pending Reward:</label>
-              <span className={styles.value}>
-                {formatTokenAmount(stakeInfo.pendingReward)} tokens
-              </span>
-            </div>
-            <div className={styles.infoItem}>
-              <label>Claimed Reward:</label>
-              <span className={styles.value}>
-                {formatTokenAmount(stakeInfo.claimedReward)} tokens
-              </span>
+              <label>Last Claim Time:</label>
+              <span className={styles.value}>{stakeInfo.lastClaimTime}</span>
             </div>
           </div>
         ) : (
