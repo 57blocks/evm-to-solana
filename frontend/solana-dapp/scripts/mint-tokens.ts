@@ -36,74 +36,13 @@ const TEST_WALLET_PRIVATE_KEY = [
 ];
 
 /**
- * Get wallet private key from various sources
- */
-function getWalletPrivateKey(): number[] {
-  // Option 1: Environment variable (highest priority)
-  const envPrivateKey = process.env.WALLET_PRIVATE_KEY;
-  if (envPrivateKey) {
-    try {
-      const parsed = JSON.parse(envPrivateKey);
-      if (Array.isArray(parsed) && parsed.length === 64) {
-        console.log("🔐 Using private key from environment variable");
-        return parsed;
-      }
-    } catch (error) {
-      console.warn(
-        "⚠️  Invalid WALLET_PRIVATE_KEY format in environment variable"
-      );
-    }
-  }
-
-  // Option 2: .env file
-  try {
-    const envPath = "./.env";
-    if (fs.existsSync(envPath)) {
-      const envContent = fs.readFileSync(envPath, "utf8");
-      const envMatch = envContent.match(/WALLET_PRIVATE_KEY\s*=\s*(\[.*\])/);
-      if (envMatch) {
-        try {
-          const parsed = JSON.parse(envMatch[1]);
-          if (Array.isArray(parsed) && parsed.length === 64) {
-            console.log("🔐 Using private key from .env file");
-            return parsed;
-          }
-        } catch (error) {
-          console.warn("⚠️  Invalid WALLET_PRIVATE_KEY format in .env file");
-        }
-      }
-    }
-  } catch (error) {
-    // Ignore .env file errors
-  }
-
-  // Option 3: Test wallet (fallback)
-  console.log("🔐 Using test wallet private key (development mode)");
-  return TEST_WALLET_PRIVATE_KEY;
-}
-
-/**
  * Main function to execute the token minting process
  */
 async function main() {
   console.log("🪙 Starting token minting process for target wallet...\n");
 
   // Get private key from available sources
-  const walletPrivateKey = getWalletPrivateKey();
-
-  // Validate private key configuration
-  if (walletPrivateKey.length !== 64) {
-    console.error("❌ Error: Invalid private key length");
-    console.log("📝 Setup instructions:");
-    console.log(
-      "1. Set environment variable: export WALLET_PRIVATE_KEY='[123,45,67,...]'"
-    );
-    console.log(
-      "2. Or create .env file with: WALLET_PRIVATE_KEY='[123,45,67,...]'"
-    );
-    console.log("3. Or use the test wallet (development only)");
-    process.exit(1);
-  }
+  const walletPrivateKey = TEST_WALLET_PRIVATE_KEY;
 
   // Initialize Solana connection to devnet
   const connection = new Connection(
@@ -136,25 +75,9 @@ async function main() {
 
   // Load deployment configuration
   let deploymentInfo;
-  try {
-    // First attempt: read from current directory
-    deploymentInfo = JSON.parse(
-      fs.readFileSync("./deployment-info.json", "utf8")
-    );
-    console.log("📋 Using deployment info from current directory");
-  } catch (error) {
-    try {
-      // Second attempt: read from contract directory
-      deploymentInfo = JSON.parse(
-        fs.readFileSync("./deployment-info.json", "utf8")
-      );
-      console.log("📋 Using deployment info from contract directory");
-    } catch (error2) {
-      console.error("❌ deployment-info.json file not found");
-      console.log("💡 Please run the initialization script first");
-      process.exit(1);
-    }
-  }
+  deploymentInfo = JSON.parse(
+    fs.readFileSync("./scripts/deployment-info.json", "utf8")
+  );
 
   // Extract token mint addresses from deployment info
   const stakingMint = new PublicKey(deploymentInfo.stakingMint);
