@@ -44,7 +44,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
     setIsUnstaking(true);
 
     try {
-      await unstake(convertToLamports(unstakeAmount).toString());
+      await unstake(unstakeAmount);
 
       // Call success callback
       onUnstake(unstakeAmount);

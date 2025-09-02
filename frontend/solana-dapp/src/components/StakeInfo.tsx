@@ -35,7 +35,6 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error";
       setError(`Failed to load stake info: ${errorMessage}`);
-      console.error("Error loading stake info:", err);
     } finally {
       setIsLoading(false);
     }
@@ -85,20 +84,6 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
         <div className={styles.loading}>
           <div className={styles.loadingSpinner}></div>
           <p>Loading stake information...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={styles.container}>
-        <h3 className={styles.title}>Stake Information</h3>
-        <div className={styles.error}>
-          <p>{error}</p>
-          <button onClick={handleRefresh} className={styles.retryButton}>
-            Retry
-          </button>
         </div>
       </div>
     );

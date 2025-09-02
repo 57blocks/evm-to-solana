@@ -1,7 +1,7 @@
 import { useProgram } from "../../hooks/useProgram";
 import { PublicKey } from "@solana/web3.js";
 import { createStakingAccount } from "@/utils/account";
-import { formatTimestamp } from "@/utils/tokenUtils";
+import { convertFromLamports, formatTimestamp } from "@/utils/tokenUtils";
 export type UserStakeInfo = {
   owner: PublicKey;
   amount: number;
@@ -27,8 +27,10 @@ const useUserStakeInfo = () => {
     if (!userStakeInfo) {
       return undefined;
     }
-    const stakeAmount = Number(userStakeInfo?.amount ?? BigInt(0));
-    const rewardDebt = Number(userStakeInfo.rewardDebt ?? BigInt(0));
+    const stakeAmount = convertFromLamports(userStakeInfo?.amount ?? BigInt(0));
+    const rewardDebt = convertFromLamports(
+      userStakeInfo.rewardDebt ?? BigInt(0)
+    );
 
     return {
       owner: userStakeInfo.owner,

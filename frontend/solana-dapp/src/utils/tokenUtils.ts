@@ -13,6 +13,12 @@ export const convertToLamports = (
   const multiplier = Math.pow(10, decimals);
   return BigInt(Math.floor(numAmount * multiplier));
 };
+export const convertFromLamports = (
+  amount: bigint,
+  decimals: number = DEFAULT_DECIMALS
+): number => {
+  return Number(amount) / Math.pow(10, decimals);
+};
 
 export const validateTokenAmount = (
   amount: string

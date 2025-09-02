@@ -5,6 +5,7 @@ import { createStakingAccount } from "../utils/account";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { BN } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
+import { convertToLamports } from "@/utils/tokenUtils";
 
 export const useStake = () => {
   const { publicKey } = useWallet();
@@ -40,12 +41,10 @@ export const useStake = () => {
       // Fetch current state
       const state = await program.account.globalState.fetch(statePda);
 
-      // Execute stake transaction
       const transaction = await program.methods
-        .stake(new BN(stakeAmount))
+        .stake(new BN(convertToLamports(stakeAmount)))
         .accounts({
           user: publicKey,
-          //TODO: Need to fix this use anchor types
           //@ts-ignore
           state: statePda,
           userStakeInfo: userStakeInfoPda,
@@ -59,7 +58,6 @@ export const useStake = () => {
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
-
       return { success: true, transaction };
     } catch (err) {
       const errorMessage =

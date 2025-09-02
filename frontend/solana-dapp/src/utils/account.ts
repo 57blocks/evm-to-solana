@@ -3,7 +3,7 @@ import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import idl from "@/idl/idl.json";
 
 export const createStakingAccount = async (publicKey: PublicKey) => {
-  const programAddress = new PublicKey(idl.address); // Updated with actual deployed mint addresses
+  const programAddress = new PublicKey(idl.address);
   const stakingMint = new PublicKey(
     "HXnRNQr25LNAxC5Z6fHyRJvUAmsenj5dkpjG3CRz4hve"
   );

@@ -5,6 +5,7 @@ import { createStakingAccount } from "../utils/account";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { BN } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
+import { convertToLamports } from "@/utils/tokenUtils";
 
 export const useUnstake = () => {
   const { publicKey } = useWallet();
@@ -23,7 +24,6 @@ export const useUnstake = () => {
       setError("Invalid unstake amount");
       return;
     }
-
     setIsUnstaking(true);
     setError(null);
 
@@ -39,10 +39,9 @@ export const useUnstake = () => {
       const state = await program.account.globalState.fetch(statePda);
 
       const transaction = await program.methods
-        .unstake(new BN(unstakeAmount))
+        .unstake(new BN(convertToLamports(unstakeAmount)))
         .accounts({
           user: publicKey,
-          //TODO: Need to fix this use anchor types
           //@ts-ignore
           state: statePda,
           userStakeInfo: userStakeInfoPda,
@@ -55,7 +54,6 @@ export const useUnstake = () => {
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
-
       return { success: true, transaction };
     } catch (err) {
       const errorMessage =
