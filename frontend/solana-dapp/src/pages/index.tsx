@@ -1,6 +1,6 @@
 import type { NextPage } from "next";
 import Head from "next/head";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
 import styles from "../styles/Home.module.css";
@@ -29,34 +29,6 @@ const Home: NextPage = () => {
   const clearGlobalError = useCallback(() => {
     setGlobalErrorMessage(null);
   }, []);
-
-  const handleStake = async (amount: string) => {
-    if (!connected) {
-      alert("Please connect your wallet first");
-      return;
-    }
-
-    try {
-      // TODO: Implement actual Solana staking logic
-      console.log("Staking amount:", amount);
-    } catch (error) {
-      console.error("Staking failed:", error);
-    }
-  };
-
-  const handleUnstake = async (amount: string) => {
-    if (!connected) {
-      alert("Please connect your wallet first");
-      return;
-    }
-
-    try {
-      // TODO: Implement actual Solana unstaking logic
-      console.log("Unstaking amount:", amount);
-    } catch (error) {
-      console.error("Unstaking failed:", error);
-    }
-  };
 
   return (
     <div className={styles.container}>
@@ -121,8 +93,6 @@ const Home: NextPage = () => {
             {/* Right Column - Staking Actions */}
             <div className={styles.rightColumn}>
               <StakingActions
-                onStake={handleStake}
-                onUnstake={handleUnstake}
                 onTransactionSuccess={handleTransactionSuccess}
                 onError={setGlobalErrorMessage}
               />

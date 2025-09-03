@@ -7,17 +7,11 @@ A comprehensive staking DApp built for the Solana blockchain that demonstrates h
 ### Core Functionality
 
 - **🔗 Wallet Integration**: Seamless Solana wallet connection using Wallet Adapter
-- **📖 Program Reading**: Real-time reading of Solana program state
+- **📖 Program Reading**: Real-time reading of Solana program state and user stake information
 - **✍️ Program Writing**: Interactive program interactions including staking and unstaking operations
-- **📊 Subgraph Integration**: Real-time event tracking and display of reward history
-- **💡 Smart Transaction Flow**: Intelligent staking flow with proper error handling
-
-### User Experience
-
-- **Real-time Status Updates**: Live loading states for all blockchain operations
-- **Automatic Transaction Flow**: Smart staking sequence with validation
-- **Error Handling**: Comprehensive error display with user-friendly messages
-- **Responsive Design**: Modern UI with smooth animations and mobile-friendly layout
+- **📊 Real-time Updates**: Live stake information and reward tracking
+- **💡 Smart Transaction Flow**: Intelligent staking flow with proper error handling and validation
+- **🛡️ Input Validation**: Built-in validation for token amounts and user inputs
 
 ## 🛠️ Tech Stack
 
@@ -33,16 +27,17 @@ A comprehensive staking DApp built for the Solana blockchain that demonstrates h
 - **@solana/wallet-adapter-react**: Wallet connection components
 - **@solana/wallet-adapter-react-ui**: Wallet UI components
 - **@solana/wallet-adapter-wallets**: Multiple wallet support
+- **@coral-xyz/anchor**: Solana program interaction framework
+- **@solana/spl-token**: Token program utilities
 
 ### Data & State Management
 
 - **React Query**: Server state management and caching
-- **GraphQL**: Subgraph queries for blockchain events
 - **CSS Modules**: Scoped styling with animations
 
 ### Development Tools
 
-- **Node.js**: v22.10.0+ required
+- **Node.js**: v22.12.0+ required (see .nvmrc)
 - **Package Manager**: npm, yarn, or pnpm supported
 
 ## 🏗️ Project Structure
@@ -51,24 +46,39 @@ A comprehensive staking DApp built for the Solana blockchain that demonstrates h
 solana-dapp/
 ├── src/
 │   ├── components/
-│   │   ├── StakeTokens.tsx          # Staking input and logic
-│   │   ├── UnstakeTokens.tsx        # Unstaking operations
-│   │   ├── StakeInfo.tsx            # Display stake information
+│   │   ├── StakeTokens.tsx          # Staking input and logic with useStake hook
+│   │   ├── UnstakeTokens.tsx        # Unstaking operations with useUnstake hook
+│   │   ├── StakeInfo.tsx            # Display stake information with useUserStakeInfo hook
 │   │   ├── StakingActions.tsx       # Container for staking components
-│   │   ├── RewardHistory.tsx        # Subgraph-based reward history
+│   │   ├── RewardHistory.tsx        # Reward history display
 │   │   ├── ErrorModal.tsx           # Global error display
-│   │   └── WalletConnectionButton.tsx # Solana wallet connection
+│   │   ├── WalletButton.tsx         # Solana wallet connection
+│   │   └── DynamicWalletButton.tsx  # Dynamic wallet button component
+│   ├── hooks/
+│   │   ├── useStake.ts              # Staking logic and transaction handling
+│   │   ├── useUnstake.ts            # Unstaking logic and transaction handling
+│   │   ├── useUserStakeInfo.ts      # User stake information fetching
+│   │   └── useProgram.ts            # Solana program connection
 │   ├── pages/
 │   │   └── index.tsx                # Main application page
 │   ├── styles/                      # CSS Modules for component styling
 │   ├── utils/
-│   │   └── tokenUtils.ts            # Token conversion utilities
-│   ├── abi/                         # Program IDLs (Interface Definition Language)
-│   └── wagmi.ts                     # Solana configuration
+│   │   ├── tokenUtils.ts            # Token conversion utilities and validation
+│   │   └── account.ts               # Account creation utilities
+│   ├── config/
+│   │   └── solana.ts                # Solana network configuration
+│   ├── providers/
+│   │   └── WalletProvider.tsx       # Wallet provider wrapper
+│   └── idl/
+│       ├── idl.json                 # Program IDL (Interface Definition Language)
+│       └── type.ts                  # TypeScript types for the program
+├── scripts/
+│   ├── mint-tokens.ts               # Token minting script for testing
+│   └── deployment-info.json        # Deployment configuration
 ├── package.json                     # Dependencies and scripts
 ├── tsconfig.json                    # TypeScript configuration
 ├── next.config.js                   # Next.js configuration
-├── .env.example                     # Environment variables template
+├── .nvmrc                           # Node.js version specification
 └── README.md                        # Project documentation
 ```
 
@@ -76,10 +86,11 @@ solana-dapp/
 
 ### Prerequisites
 
-- Node.js v22.10.0 or higher
+- Node.js v22.12.0 or higher (see .nvmrc file)
 - npm, yarn, or pnpm package manager
 - Solana wallet (Phantom, Solflare, etc.)
 - Access to Solana network (devnet recommended for testing)
+- Get devnet solana tokens for testing to [faucet](https://faucet.solana.com/)
 
 ### 1. Clone Repository
 
@@ -101,28 +112,25 @@ yarn install
 pnpm install
 ```
 
-### 3. Environment Configuration
+### 3. Get Test Tokens
+
+**🚨 Important: You need tokens to test the staking functionality!**
+
+Use the mint-token script to get test tokens to your wallet:
 
 ```bash
-# Copy environment template
-cp env.example .env.local
+# 1. Update the TARGET_WALLET in scripts/mint-tokens.ts with your wallet address
+# 2. Run the minting script
+npx tsx scripts/mint-tokens.ts
 ```
 
-Update `.env.local` with your configuration:
+This script will:
 
-```bash
-# Solana RPC URL (default: devnet)
-NEXT_PUBLIC_SOLANA_RPC_URL=https://api.devnet.solana.com
+- Mint 1000 staking tokens to your wallet
+- Mint 100 reward tokens to your wallet
+- Create the necessary token accounts automatically
 
-# Solana Network (devnet, testnet, mainnet-beta)
-NEXT_PUBLIC_SOLANA_NETWORK=devnet
-
-# Graph API Key for subgraph queries (optional)
-NEXT_PUBLIC_GRAPH_API_KEY=your_graph_api_key_here
-
-# Graph URL for subgraph queries (optional)
-NEXT_PUBLIC_GRAPH_URL=https://api.studio.thegraph.com/query/your_subgraph_id/version/latest
-```
+**Note**: The script uses a test wallet for transaction fees. If the balance is not enough, you can send SOL to the wallet by using the [faucet](https://faucet.solana.com/). Make sure to update the `TARGET_WALLET` constant in the script with your actual wallet address.
 
 ### 4. Start Development Server
 
@@ -140,16 +148,16 @@ The application will be available at `http://localhost:3000`
 
 ### Program Reading
 
-The DApp demonstrates reading program state using Solana web3.js:
+The DApp demonstrates reading program state using Anchor framework:
 
 ```typescript
-// Reading account data
-const connection = new Connection(rpcUrl);
-const accountInfo = await connection.getAccountInfo(publicKey);
-
 // Reading program state
-const programId = new PublicKey(PROGRAM_ID);
-const stateAccount = await connection.getAccountInfo(statePublicKey);
+const state = await program.account.globalState.fetch(statePda);
+
+// Reading user stake information
+const userStakeInfo = await program.account.userStakeInfo.fetch(
+  userStakeInfoPda
+);
 ```
 
 ### Program Writing
@@ -157,80 +165,44 @@ const stateAccount = await connection.getAccountInfo(statePublicKey);
 Interactive program operations with proper error handling:
 
 ```typescript
-// Creating and sending transaction
-const transaction = new Transaction();
-transaction
-  .add
-  // Add your instruction here
-  ();
-
-const signature = await sendAndConfirmTransaction(connection, transaction, [
-  wallet,
-]);
+// Staking tokens
+const transaction = await program.methods
+  .stake(new BN(convertToLamports(stakeAmount)))
+  .accounts({
+    user: publicKey,
+    state: statePda,
+    userStakeInfo: userStakeInfoPda,
+    // ... other accounts
+  })
+  .rpc();
 ```
 
-### Transaction Flow Management
+## 🪙 Token Minting Script
 
-Smart staking sequence with validation:
+### Purpose
+
+The `scripts/mint-tokens.ts` script is essential for testing the staking functionality. It mints both staking and reward tokens to your wallet address.
+
+### How to Use
+
+1. **Update Target Wallet**: Open `scripts/mint-tokens.ts` and change the `TARGET_WALLET` constant to your wallet address:
 
 ```typescript
-// Validate input before staking
-if (validateStakeAmount(amount)) {
-  // Create and send staking transaction
-  await stakeTokens(amount, wallet, connection);
-} else {
-  throw new Error("Invalid stake amount");
-}
+const TARGET_WALLET = "your wallet address here";
 ```
 
-## 📊 Subgraph Configuration
+2. **Run the Script**:
 
-### What is a Subgraph?
-
-A subgraph is a GraphQL API that indexes blockchain data, making it easy to query historical events and program state changes.
-
-### Setting Up Your Subgraph
-
-#### 1. Create Subgraph on The Graph
-
-- Visit [The Graph Studio](https://thegraph.com/studio/)
-- Create a new subgraph for your Solana project
-- Note your Graph API key
-
-#### 2. Define Subgraph Schema
-
-Create a `schema.graphql` file:
-
-```graphql
-type RewardClaimed @entity {
-  id: ID!
-  user: String!
-  reward: BigInt!
-  slot: BigInt!
-  timestamp: BigInt!
-}
+```bash
+npx tsx scripts/mint-tokens.ts
 ```
 
-#### 3. Query from DApp
+### Security Notes
 
-```typescript
-const query = gql`
-  {
-    rewardClaimeds(orderBy: slot, orderDirection: desc) {
-      id
-      user
-      reward
-      slot
-    }
-  }
-`;
-
-const { data } = useQuery({
-  queryKey: ["reward-history"],
-  queryFn: () => request(url, query, {}, headers),
-  refetchInterval: 30000, // Auto-refresh every 30 seconds
-});
-```
+- The script uses a test wallet with hardcoded private keys for development
+- Never use this wallet for production or with real funds
+- The private key is only for paying transaction fees during minting
+- Always use environment variables for production deployments
 
 ## 🔍 Key Learning Points
 
@@ -242,61 +214,18 @@ const { data } = useQuery({
 
 ### 2. Program Interaction Patterns
 
-- Reading program state with `getAccountInfo`
-- Writing to programs with `sendAndConfirmTransaction`
+- Reading program state with Anchor framework
+- Writing to programs with `program.methods`
 - Transaction confirmation and error handling
+- Type-safe account mapping with proper TypeScript integration
+- Extracting and parsing on-chain events from transaction logs
 
-### 3. Transaction Flow Management
+## 🚨 Important Notes
 
-- Input validation and error handling
-- User feedback and loading states
-- Proper error display and recovery
-
-### 4. Subgraph Integration
-
-- Real-time event tracking
-- Historical data queries
-- Automatic data refresh
-
-### 5. State Management
-
-- React Query for server state
-- Local state for UI interactions
-- Proper dependency management in useEffect
-
-## 🧪 Testing
-
-### Run Tests
-
-```bash
-npm run test
-npm run test:watch
-```
-
-### Test Coverage
-
-```bash
-npm run test:coverage
-```
-
-## 📦 Build & Deploy
-
-### Production Build
-
-```bash
-npm run build
-```
-
-### Start Production Server
-
-```bash
-npm start
-```
-
-### Deploy to Vercel
-
-```bash
-npm run deploy
-```
+1. **Test Tokens Required**: You must run the mint-token script to get tokens before testing staking functionality
+2. **Devnet Only**: This DApp is configured for Solana devnet for testing purposes
+3. **Test Wallet**: The minting script uses a test wallet - never use it for real funds
+4. **Program Deployment**: The staking program is already deployed on devnet with the addresses in `deployment-info.json`
+5. **Node.js Version**: Use Node.js v22.12.0+ as specified in .nvmrc
 
 **Happy Building on Solana! 🚀**

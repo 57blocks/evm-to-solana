@@ -5,23 +5,22 @@ import { createStakingAccount } from "../utils/account";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { BN } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
-import { convertToLamports } from "@/utils/tokenUtils";
+import { convertToLamports, ERROR_MESSAGES } from "@/utils/tokenUtils";
 
 export const useStake = () => {
   const { publicKey } = useWallet();
   const { program } = useProgram();
-
   const [isStaking, setIsStaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const stake = async (stakeAmount: string) => {
     if (!publicKey || !program) {
-      setError("Wallet not connected or program not available");
+      setError(ERROR_MESSAGES.WALLET_NOT_CONNECTED);
       return;
     }
 
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
-      setError("Invalid stake amount");
+      setError(ERROR_MESSAGES.INVALID_STAKE_AMOUNT);
       return;
     }
 
@@ -61,7 +60,7 @@ export const useStake = () => {
       return { success: true, transaction };
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Staking failed";
+        err instanceof Error ? err.message : ERROR_MESSAGES.STAKING_FAILED;
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {

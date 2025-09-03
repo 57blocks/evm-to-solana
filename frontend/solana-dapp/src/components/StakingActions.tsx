@@ -4,15 +4,11 @@ import StakeTokens from "./StakeTokens";
 import UnstakeTokens from "./UnstakeTokens";
 
 interface StakingActionsProps {
-  onStake: (amount: string) => void;
-  onUnstake: (amount: string) => void;
   onTransactionSuccess?: () => void;
   onError: (message: string) => void;
 }
 
 const StakingActions: React.FC<StakingActionsProps> = ({
-  onStake,
-  onUnstake,
   onTransactionSuccess,
   onError,
 }) => {
@@ -24,7 +20,6 @@ const StakingActions: React.FC<StakingActionsProps> = ({
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>Stake Tokens</h3>
         <StakeTokens
-          onStake={onStake}
           onTransactionSuccess={onTransactionSuccess}
           onError={onError}
         />
@@ -34,7 +29,6 @@ const StakingActions: React.FC<StakingActionsProps> = ({
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>Unstake Tokens</h3>
         <UnstakeTokens
-          onUnstake={onUnstake}
           onTransactionSuccess={onTransactionSuccess}
           onError={onError}
         />

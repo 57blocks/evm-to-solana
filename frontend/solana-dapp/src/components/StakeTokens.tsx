@@ -1,17 +1,16 @@
 import React, { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakingActions.module.css";
-import { convertToLamports, validateTokenAmount } from "../utils/tokenUtils";
+import { validateTokenAmount } from "../utils/tokenUtils";
 import { useProgram } from "../../hooks/useProgram";
 import { useStake } from "../hooks/useStake";
+
 interface StakeTokensProps {
-  onStake: (amount: string) => void;
   onTransactionSuccess?: () => void;
   onError: (message: string) => void;
 }
 
 const StakeTokens: React.FC<StakeTokensProps> = ({
-  onStake,
   onTransactionSuccess,
   onError,
 }) => {
@@ -22,6 +21,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
   const { connected, publicKey, sendTransaction } = useWallet();
   const { program } = useProgram();
   const { stake } = useStake();
+
   const handleStake = async () => {
     if (!connected || !publicKey || !program || !sendTransaction) {
       onError("Please connect your wallet first");
@@ -49,8 +49,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
         onError("Staking failed");
         return;
       }
-      // Call success callback
-      onStake(convertToLamports(stakeAmount).toString());
+
       setStakeAmount("");
       stakeAmountRef.current = "";
 

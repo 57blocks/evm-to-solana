@@ -2,21 +2,27 @@ import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import idl from "@/idl/idl.json";
 
+// Extract mint addresses into constants for clarity and maintainability
+const STAKING_MINT_ADDRESS = "HXnRNQr25LNAxC5Z6fHyRJvUAmsenj5dkpjG3CRz4hve";
+const REWARD_MINT_ADDRESS = "8JpEiC5n5QDsYd9tZyBXPQjJXwDKH9oK4s5JmhQZPrpy";
+
+// PDA seed constants
+const STATE_SEED = "state";
+const STAKE_SEED = "stake";
+const BLACKLIST_SEED = "blacklist";
+
 export const createStakingAccount = async (publicKey: PublicKey) => {
   const programAddress = new PublicKey(idl.address);
-  const stakingMint = new PublicKey(
-    "HXnRNQr25LNAxC5Z6fHyRJvUAmsenj5dkpjG3CRz4hve"
-  );
-  const rewardMint = new PublicKey(
-    "8JpEiC5n5QDsYd9tZyBXPQjJXwDKH9oK4s5JmhQZPrpy"
-  );
+  const stakingMint = new PublicKey(STAKING_MINT_ADDRESS);
+  const rewardMint = new PublicKey(REWARD_MINT_ADDRESS);
+
   const [statePda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("state"), stakingMint.toBuffer()],
+    [Buffer.from(STATE_SEED), stakingMint.toBuffer()],
     programAddress
   );
 
   const [userStakeInfoPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("stake"), statePda.toBuffer(), publicKey.toBuffer()],
+    [Buffer.from(STAKE_SEED), statePda.toBuffer(), publicKey.toBuffer()],
     programAddress
   );
 
@@ -31,9 +37,10 @@ export const createStakingAccount = async (publicKey: PublicKey) => {
   );
 
   const [blacklistPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("blacklist"), statePda.toBuffer(), publicKey.toBuffer()],
+    [Buffer.from(BLACKLIST_SEED), statePda.toBuffer(), publicKey.toBuffer()],
     programAddress
   );
+
   return {
     statePda,
     userStakeInfoPda,

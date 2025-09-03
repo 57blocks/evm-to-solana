@@ -5,13 +5,11 @@ import { convertToLamports, validateTokenAmount } from "../utils/tokenUtils";
 import { useUnstake } from "@/hooks/useUnstake";
 
 interface UnstakeTokensProps {
-  onUnstake: (amount: string) => void;
   onTransactionSuccess?: () => void;
   onError: (message: string) => void;
 }
 
 const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
-  onUnstake,
   onTransactionSuccess,
   onError,
 }) => {
@@ -46,8 +44,6 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
     try {
       await unstake(unstakeAmount);
 
-      // Call success callback
-      onUnstake(unstakeAmount);
       setUnstakeAmount("");
       unstakeAmountRef.current = "";
 

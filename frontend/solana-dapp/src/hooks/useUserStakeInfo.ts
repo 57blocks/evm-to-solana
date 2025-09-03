@@ -16,7 +16,6 @@ const useUserStakeInfo = () => {
     publicKey: PublicKey
   ): Promise<UserStakeInfo | undefined> => {
     if (!program) {
-      console.log("Program is not ready yet");
       return undefined;
     }
 
