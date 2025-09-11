@@ -3,7 +3,7 @@ import { http } from "wagmi";
 import { sepolia } from "wagmi/chains";
 
 export const config = getDefaultConfig({
-  appName: "RainbowKit App",
+  appName: "Stake App",
   projectId: "EVM-DAPP",
   chains: [sepolia],
   transports: {

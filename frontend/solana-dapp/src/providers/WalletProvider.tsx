@@ -1,3 +1,4 @@
+"use client";
 import React, { FC, ReactNode, useMemo, useEffect, useState } from "react";
 import {
   ConnectionProvider,
@@ -18,13 +19,7 @@ interface WalletProviderProps {
 }
 
 export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
-  const [mounted, setMounted] = useState(false);
   const { network, endpoint } = SOLANA_CONFIG;
-
-  // Fix hydration mismatch by ensuring component only renders on client
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading
   // Only the wallets you configure here will be compiled into your application, and only the dependencies
@@ -33,11 +28,6 @@ export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
     () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
     [network]
   );
-
-  // Don't render wallet provider until component is mounted on client
-  if (!mounted) {
-    return <div>{children}</div>;
-  }
 
   return (
     <ConnectionProvider endpoint={endpoint}>

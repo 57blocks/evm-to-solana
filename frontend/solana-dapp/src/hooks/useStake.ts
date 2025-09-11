@@ -57,6 +57,9 @@ export const useStake = () => {
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
+      // program.addEventListener("staked", (event) => {
+      //   console.log("staked", event);
+      // });
       return { success: true, transaction };
     } catch (err) {
       const errorMessage =
