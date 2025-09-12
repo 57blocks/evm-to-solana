@@ -1,20 +1,9 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import styles from "../styles/StakingActions.module.css";
-import {
-  useAccount,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from "wagmi";
-import { STAKING_CONTRACT_ADDRESS, STAKING_TOKEN_ADDRESS } from "../../consts";
-import { stakingAbi } from "../../abi/stakeAbi";
-import { stakingTokenAbi } from "../../abi/StakingTokenABI";
-import {
-  convertToWei,
-  validateTokenAmount,
-  formatTokenAmount,
-} from "../utils/tokenUtils";
-import { useReadContract } from "wagmi";
-import { Hash } from "viem";
+import { useAccount } from "wagmi";
+import { formatTokenAmount } from "../utils/tokenUtils";
+import { useStakeEvents } from "../hooks/useStakeEvents";
+import { useStake } from "../hooks/useStake";
 
 interface StakeTokensProps {
   onTransactionSuccess?: () => void;
@@ -25,285 +14,30 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
   onTransactionSuccess,
   onError,
 }) => {
-  const [stakeAmount, setStakeAmount] = useState("");
-  const [isApproving, setIsApproving] = useState(false);
-  const [approvalHash, setApprovalHash] = useState<Hash | null>(null);
-  const [stakeTransactionHash, setStakeTransactionHash] = useState<Hash | null>(
-    null
-  );
-  const stakeAmountRef = useRef("");
-  const { isConnected, address } = useAccount();
+  const { address, isConnected } = useAccount();
 
+  // Use custom hooks
   const {
-    writeContract,
-    data: writeData,
-    error: writeError,
-  } = useWriteContract();
-
-  // Query current allowance
-  const {
-    data: currentAllowance,
-    isLoading: isAllowanceLoading,
-    refetch: refetchAllowance,
-  } = useReadContract({
-    address: STAKING_TOKEN_ADDRESS,
-    abi: stakingTokenAbi,
-    functionName: "allowance",
-    args: [address, STAKING_CONTRACT_ADDRESS],
-    query: {
-      enabled: !!address && isConnected,
-    },
-  });
-
-  const {
-    isLoading: isStakingLoading,
-    isSuccess: isStakingSuccess,
-    error: isStakingError,
-  } = useWaitForTransactionReceipt({
-    hash: stakeTransactionHash as Hash | undefined,
-  });
-
-  // Handle approval transaction
-  const {
-    isLoading: isApprovalLoading,
-    isSuccess: isApprovalSuccess,
-    error: isApprovalError,
-  } = useWaitForTransactionReceipt({
-    hash: approvalHash as Hash | undefined,
-  });
-
-  // Track the current transaction type
-  const [currentTransactionType, setCurrentTransactionType] = useState<
-    "approve" | "stake" | null
-  >(null);
-  const [isButtonClicked, setIsButtonClicked] = useState(false);
-  const [isWaitingForWallet, setIsWaitingForWallet] = useState(false);
-
-  // Set approval hash when writeContract data changes for approval
-  useEffect(() => {
-    if (writeData && currentTransactionType === "approve" && !approvalHash) {
-      setApprovalHash(writeData as Hash);
-      setIsWaitingForWallet(false); // Clear waiting state when we get the hash
-    }
-  }, [writeData, currentTransactionType, approvalHash]);
-
-  // Set stake transaction hash when writeContract data changes for approval
-  useEffect(() => {
-    if (
-      writeData &&
-      currentTransactionType === "stake" &&
-      !stakeTransactionHash
-    ) {
-      setStakeTransactionHash(writeData as Hash);
-      setIsWaitingForWallet(false); // Clear waiting state when we get the hash
-    }
-  }, [writeData, currentTransactionType, stakeTransactionHash]);
-
-  // Handle error messages
-  useEffect(() => {
-    if (writeError) {
-      // Determine which transaction failed based on currentTransactionType
-      if (currentTransactionType === "approve") {
-        onError(
-          `Approval failed: ${writeError.message || "Unknown error occurred"}`
-        );
-      } else if (currentTransactionType === "stake") {
-        onError(
-          `Staking failed: ${writeError.message || "Unknown error occurred"}`
-        );
-      } else {
-        onError(
-          `Transaction failed: ${
-            writeError.message || "Unknown error occurred"
-          }`
-        );
-      }
-      setIsApproving(false);
-      setCurrentTransactionType(null);
-    }
-  }, [writeError, currentTransactionType, onError]);
-
-  // Handle transaction receipt errors
-  useEffect(() => {
-    if (isStakingError) {
-      onError(
-        `Staking transaction failed: ${
-          isStakingError.message || "Transaction reverted"
-        }`
-      );
-      setIsApproving(false);
-      setCurrentTransactionType(null);
-    } else if (isApprovalError) {
-      onError(
-        `Approval transaction failed: ${
-          isApprovalError.message || "Transaction reverted"
-        }`
-      );
-      setIsApproving(false);
-      setCurrentTransactionType(null);
-    }
-  }, [isStakingError, isApprovalError, onError]);
-
-  // Handle staking success
-  useEffect(() => {
-    if (isStakingSuccess) {
-      console.log("Staking transaction successful!");
-      setIsApproving(false);
-      setCurrentTransactionType(null);
-      setIsButtonClicked(false); // Re-enable button after success
-
-      // Refresh allowance after successful staking
-      refetchAllowance();
-
-      // Clear form and notify parent when staking is successful
-      const currentStakeAmount = stakeAmountRef.current;
-      if (currentStakeAmount) {
-        setStakeAmount("");
-        stakeAmountRef.current = "";
-        // Notify parent component to refresh stake information immediately after transaction success
-        if (onTransactionSuccess) {
-          onTransactionSuccess();
-        }
-      }
-    }
-  }, [isStakingSuccess, onTransactionSuccess, refetchAllowance]);
-
-  // Handle approval success and auto-stake when allowance is sufficient
-  useEffect(() => {
-    if (isApprovalSuccess && isApproving && approvalHash) {
-      // After approval is successful, refresh allowance and check if we can proceed with staking
-      refetchAllowance();
-      setCurrentTransactionType("stake");
-      setIsApproving(false);
-    }
-  }, [isApprovalSuccess, isApproving, approvalHash, refetchAllowance]);
-
-  // Auto-stake when allowance becomes sufficient after approval
-  useEffect(() => {
-    if (
-      currentTransactionType === "stake" &&
-      !isApproving &&
-      !isStakingLoading &&
-      approvalHash
-    ) {
-      const currentStakeAmount = stakeAmountRef.current;
-      if (currentStakeAmount) {
-        const stakeAmountWei = convertToWei(currentStakeAmount);
-
-        // If allowance is sufficient, proceed with staking
-        if (
-          currentAllowance &&
-          typeof currentAllowance === "bigint" &&
-          currentAllowance >= stakeAmountWei
-        ) {
-          writeContract({
-            address: STAKING_CONTRACT_ADDRESS,
-            abi: stakingAbi,
-            functionName: "stake",
-            args: [stakeAmountWei],
-          });
-        }
-      }
-    }
-  }, [
-    currentTransactionType,
+    stakeAmount,
     isApproving,
-    isStakingLoading,
-    approvalHash,
+    isWaitingForWallet,
     currentAllowance,
-    writeContract,
-  ]);
+    isStakingLoading,
+    isApprovalLoading,
+    isAllowanceLoading,
+    approvalHash,
+    stakeTransactionHash,
+    isApprovalSuccess,
+    setStakeAmount,
+    handleStake,
+    isDisabled,
+  } = useStake(onTransactionSuccess, onError);
 
-  // Clear error message when user starts a new action
-
-  const handleStake = async () => {
-    if (!isConnected) {
-      alert("Please connect your wallet first");
-      return;
-    }
-
-    if (
-      !stakeAmount ||
-      isStakingLoading ||
-      isApproving ||
-      isApprovalLoading ||
-      isAllowanceLoading ||
-      isButtonClicked
-    ) {
-      return;
-    }
-
-    // Validate input using utility function
-    const validation = validateTokenAmount(stakeAmount);
-    if (!validation.isValid) {
-      onError(validation.error || "Invalid amount");
-      return;
-    }
-
-    // Immediately disable button to prevent multiple clicks
-    setIsButtonClicked(true);
-
-    // Convert to wei once
-    const stakeAmountWei = convertToWei(stakeAmount);
-    // Check if we need to approve first
-    if (
-      currentAllowance !== undefined &&
-      typeof currentAllowance === "bigint" &&
-      currentAllowance < stakeAmountWei
-    ) {
-      // Need to approve
-      setIsApproving(true);
-      setApprovalHash(null); // Clear any previous approval hash
-      setCurrentTransactionType("approve");
-
-      try {
-        // Approve the staking contract to spend tokens
-        writeContract({
-          address: STAKING_TOKEN_ADDRESS,
-          abi: stakingTokenAbi,
-          functionName: "approve",
-          args: [STAKING_CONTRACT_ADDRESS, stakeAmountWei],
-        });
-        // Set waiting state after initiating the transaction
-        setIsWaitingForWallet(true);
-      } catch (error) {
-        onError(
-          `Failed to approve tokens: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
-        setIsApproving(false);
-        setIsButtonClicked(false); // Re-enable button on error
-      }
-    } else {
-      // Already have sufficient allowance, proceed directly to staking
-      setCurrentTransactionType("stake");
-      try {
-        writeContract({
-          address: STAKING_CONTRACT_ADDRESS,
-          abi: stakingAbi,
-          functionName: "stake",
-          args: [stakeAmountWei],
-        });
-        // Set waiting state after initiating the transaction
-        setIsWaitingForWallet(true);
-      } catch (error) {
-        onError(
-          `Failed to initiate stake: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
-        setIsButtonClicked(false); // Re-enable button on error
-      }
-    }
-  };
-
-  const isDisabled =
-    !isConnected ||
-    isStakingLoading ||
-    isApproving ||
-    isApprovalLoading ||
-    isButtonClicked;
+  const { latestStakeEvent, clearLatestStakeEvent } = useStakeEvents({
+    userAddress: address,
+    isConnected,
+    currentTransactionHash: stakeTransactionHash,
+  });
 
   return (
     <div>
@@ -332,7 +66,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
       )}
 
       {/* Show waiting for wallet confirmation message */}
-      {isWaitingForWallet && currentTransactionType === "approve" && (
+      {isWaitingForWallet && approvalHash && !stakeTransactionHash && (
         <div className={styles.walletConfirmationMessage}>
           <p>
             ⏳ Waiting for wallet confirmation... Please check your wallet and
@@ -342,7 +76,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
       )}
 
       {/* Show waiting for staking confirmation message */}
-      {isWaitingForWallet && currentTransactionType === "stake" && (
+      {isWaitingForWallet && stakeTransactionHash && (
         <div className={styles.walletConfirmationMessage}>
           <p>
             ⏳ Waiting for wallet confirmation... Please check your wallet and
@@ -352,7 +86,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
       )}
 
       {/* Show waiting for allowance update message */}
-      {currentTransactionType === "stake" &&
+      {isApprovalSuccess &&
         !isApproving &&
         !isStakingLoading &&
         approvalHash && (
@@ -363,6 +97,52 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
             </p>
           </div>
         )}
+
+      {/* Show latest stake event info */}
+      {latestStakeEvent && (
+        <div className={styles.eventInfo}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h4>📊 Latest Stake Event</h4>
+            <button
+              onClick={clearLatestStakeEvent}
+              className={styles.clearEventButton}
+              title="Clear event display"
+            >
+              ✕
+            </button>
+          </div>
+          <div className={styles.eventDetails}>
+            <p>
+              <strong>User:</strong> {latestStakeEvent.user}
+            </p>
+            <p>
+              <strong>Amount:</strong>{" "}
+              {formatTokenAmount(latestStakeEvent.amount)} tokens
+            </p>
+            <p>
+              <strong>Block:</strong> {latestStakeEvent.blockNumber.toString()}
+            </p>
+            <p>
+              <strong>Transaction:</strong>{" "}
+              <a
+                href={`https://sepolia.etherscan.io/tx/${latestStakeEvent.transactionHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.transactionLink}
+              >
+                {latestStakeEvent.transactionHash.slice(0, 10)}...
+                {latestStakeEvent.transactionHash.slice(-8)}
+              </a>
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className={styles.inputGroup}>
         <input
@@ -380,7 +160,6 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
                 !value.includes(","))
             ) {
               setStakeAmount(value);
-              stakeAmountRef.current = value;
             }
           }}
           placeholder={
