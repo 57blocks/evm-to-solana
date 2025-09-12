@@ -27,7 +27,10 @@ export const createStakingAccount = async (publicKey: PublicKey) => {
     [STAKE_SEED, statePda.toBuffer(), publicKey.toBuffer()],
     programAddress
   );
-
+  const [blacklistPda] = PublicKey.findProgramAddressSync(
+    [BLACKLIST_SEED, statePda.toBuffer(), publicKey.toBuffer()],
+    programAddress
+  );
   const userTokenAccount = getAssociatedTokenAddressSync(
     stakingMint,
     publicKey
@@ -36,11 +39,6 @@ export const createStakingAccount = async (publicKey: PublicKey) => {
   const userRewardAccount = getAssociatedTokenAddressSync(
     rewardMint,
     publicKey
-  );
-
-  const [blacklistPda] = PublicKey.findProgramAddressSync(
-    [BLACKLIST_SEED, statePda.toBuffer(), publicKey.toBuffer()],
-    programAddress
   );
 
   return {

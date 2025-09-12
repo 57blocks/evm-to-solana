@@ -14,7 +14,6 @@ const Home: NextPage = () => {
   const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
     null
   );
-  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const { connected } = useWallet();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
   const queryClient = useQueryClient();
@@ -37,16 +36,6 @@ const Home: NextPage = () => {
         errorMessage={globalErrorMessage}
         onClose={clearGlobalError}
       />
-
-      {/* Global Loading Indicator */}
-      {isGlobalLoading && (
-        <div className={styles.globalLoadingOverlay}>
-          <div className={styles.globalLoadingSpinner}>
-            <div className={styles.spinner}></div>
-            <p>Processing transaction...</p>
-          </div>
-        </div>
-      )}
 
       <Head>
         <title>Solana Staking Platform</title>

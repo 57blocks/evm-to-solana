@@ -10,15 +10,11 @@ import { stakingAbi } from "../../abi/stakeAbi";
 import { convertToWei, validateTokenAmount } from "../utils/tokenUtils";
 
 interface UnstakeTokensProps {
-  onUnstake: (amount: string) => void;
-  isLoading?: boolean;
   onTransactionSuccess?: () => void;
   onError: (message: string) => void;
 }
 
 const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
-  onUnstake,
-  isLoading = false,
   onTransactionSuccess,
   onError,
 }) => {
@@ -69,10 +65,9 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
   // Handle unstaking success separately
   useEffect(() => {
     if (isUnstakingSuccess) {
-      // Call the onUnstake callback when unstaking is successful
+      // Clear form and notify parent when unstaking is successful
       const currentUnstakeAmount = unstakeAmountRef.current;
       if (currentUnstakeAmount) {
-        onUnstake(currentUnstakeAmount);
         setUnstakeAmount("");
         unstakeAmountRef.current = "";
         setIsButtonClicked(false); // Re-enable button after success
@@ -82,7 +77,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
         }
       }
     }
-  }, [isUnstakingSuccess, onUnstake, onTransactionSuccess]);
+  }, [isUnstakingSuccess, onTransactionSuccess]);
 
   const handleUnstake = async () => {
     if (!isConnected) {
@@ -90,7 +85,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       return;
     }
 
-    if (!unstakeAmount || isUnstakingLoading || isLoading || isButtonClicked) {
+    if (!unstakeAmount || isUnstakingLoading || isButtonClicked) {
       return;
     }
 
@@ -124,8 +119,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
     }
   };
 
-  const isDisabled =
-    !isConnected || isUnstakingLoading || isLoading || isButtonClicked;
+  const isDisabled = !isConnected || isUnstakingLoading || isButtonClicked;
 
   return (
     <div>

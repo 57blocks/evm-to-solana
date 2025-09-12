@@ -5,17 +5,11 @@ import StakeTokens from "./StakeTokens";
 import UnstakeTokens from "./UnstakeTokens";
 
 interface StakingActionsProps {
-  onStake: (amount: string) => void;
-  onUnstake: (amount: string) => void;
-  isLoading?: boolean;
   onTransactionSuccess?: () => void;
   onError: (message: string) => void;
 }
 
 const StakingActions: React.FC<StakingActionsProps> = ({
-  onStake,
-  onUnstake,
-  isLoading = false,
   onTransactionSuccess,
   onError,
 }) => {
@@ -40,8 +34,6 @@ const StakingActions: React.FC<StakingActionsProps> = ({
         >
           <h3 className={styles.actionTitle}>Stake Tokens</h3>
           <StakeTokens
-            onStake={onStake}
-            isLoading={isLoading}
             onTransactionSuccess={onTransactionSuccess}
             onError={onError}
           />
@@ -55,8 +47,6 @@ const StakingActions: React.FC<StakingActionsProps> = ({
         >
           <h3 className={styles.actionTitle}>Unstake Tokens</h3>
           <UnstakeTokens
-            onUnstake={onUnstake}
-            isLoading={isLoading}
             onTransactionSuccess={onTransactionSuccess}
             onError={onError}
           />

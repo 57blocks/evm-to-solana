@@ -9,13 +9,11 @@ import StakingActions from "../components/StakingActions";
 import RewardHistory from "../components/RewardHistory";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
 import ErrorModal from "../components/ErrorModal";
-import "dotenv/config";
 
 const Home: NextPage = () => {
   const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
     null
   );
-  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
   const { isConnected } = useAccount();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
   const queryClient = useQueryClient();
@@ -31,37 +29,6 @@ const Home: NextPage = () => {
     setGlobalErrorMessage(null);
   }, []);
 
-  const handleStake = async (amount: string) => {
-    if (!isConnected) {
-      alert("Please connect your wallet first");
-      return;
-    }
-
-    try {
-      // Add actual staking logic here
-      // TODO: Implement actual staking contract interaction
-
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    } catch (error) {
-      console.error("Staking failed:", error);
-    }
-  };
-
-  const handleUnstake = async (amount: string) => {
-    if (!isConnected) {
-      alert("Please connect your wallet first");
-      return;
-    }
-
-    try {
-      // Unstaking logic is now handled in UnstakeTokens component
-      // TODO: This function is no longer needed as UnstakeTokens handles unstaking
-    } catch (error) {
-      console.error("Unstaking failed:", error);
-    }
-  };
-
   return (
     <div className={styles.container}>
       {/* Global Error Modal - displays in center of entire screen */}
@@ -69,16 +36,6 @@ const Home: NextPage = () => {
         errorMessage={globalErrorMessage}
         onClose={clearGlobalError}
       />
-
-      {/* Global Loading Indicator */}
-      {isGlobalLoading && (
-        <div className={styles.globalLoadingOverlay}>
-          <div className={styles.globalLoadingSpinner}>
-            <div className={styles.spinner}></div>
-            <p>Processing transaction...</p>
-          </div>
-        </div>
-      )}
 
       <Head>
         <title>Staking Platform</title>
@@ -133,8 +90,6 @@ const Home: NextPage = () => {
             {/* Right Column - Staking Actions */}
             <div className={styles.rightColumn}>
               <StakingActions
-                onStake={handleStake}
-                onUnstake={handleUnstake}
                 onTransactionSuccess={handleTransactionSuccess}
                 onError={setGlobalErrorMessage}
               />

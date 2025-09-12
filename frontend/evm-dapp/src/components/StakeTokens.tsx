@@ -17,15 +17,11 @@ import { useReadContract } from "wagmi";
 import { Hash } from "viem";
 
 interface StakeTokensProps {
-  onStake: (amount: string) => void;
-  isLoading?: boolean;
   onTransactionSuccess?: () => void;
   onError: (message: string) => void;
 }
 
 const StakeTokens: React.FC<StakeTokensProps> = ({
-  onStake,
-  isLoading = false,
   onTransactionSuccess,
   onError,
 }) => {
@@ -159,10 +155,9 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
       // Refresh allowance after successful staking
       refetchAllowance();
 
-      // Call the onStake callback when staking is successful
+      // Clear form and notify parent when staking is successful
       const currentStakeAmount = stakeAmountRef.current;
       if (currentStakeAmount) {
-        onStake(currentStakeAmount);
         setStakeAmount("");
         stakeAmountRef.current = "";
         // Notify parent component to refresh stake information immediately after transaction success
@@ -171,7 +166,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
         }
       }
     }
-  }, [isStakingSuccess, onStake, onTransactionSuccess, refetchAllowance]);
+  }, [isStakingSuccess, onTransactionSuccess, refetchAllowance]);
 
   // Handle approval success and auto-stake when allowance is sufficient
   useEffect(() => {
@@ -230,7 +225,6 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
     if (
       !stakeAmount ||
       isStakingLoading ||
-      isLoading ||
       isApproving ||
       isApprovalLoading ||
       isAllowanceLoading ||
@@ -307,7 +301,6 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
   const isDisabled =
     !isConnected ||
     isStakingLoading ||
-    isLoading ||
     isApproving ||
     isApprovalLoading ||
     isButtonClicked;
