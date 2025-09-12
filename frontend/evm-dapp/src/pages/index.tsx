@@ -9,14 +9,25 @@ import StakingActions from "../components/StakingActions";
 import RewardHistory from "../components/RewardHistory";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
 import ErrorModal from "../components/ErrorModal";
+import GlobalToast from "../components/GlobalToast";
+import { useStakeEvents } from "../hooks/useStakeEvents";
 
 const Home: NextPage = () => {
   const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
     null
   );
-  const { isConnected } = useAccount();
+  const [currentStakeTransactionHash, setCurrentStakeTransactionHash] =
+    useState<`0x${string}` | null>(null);
+  const { isConnected, address } = useAccount();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
   const queryClient = useQueryClient();
+
+  // Monitor stake events for the current transaction
+  const { latestStakeEvent, clearLatestStakeEvent } = useStakeEvents({
+    userAddress: address,
+    isConnected,
+    currentTransactionHash: currentStakeTransactionHash,
+  });
 
   const handleTransactionSuccess = useCallback(() => {
     // Refresh stake information immediately after successful transaction
@@ -25,9 +36,23 @@ const Home: NextPage = () => {
     queryClient.invalidateQueries({ queryKey: ["reward-history"] });
   }, [queryClient]);
 
+  const handleStakeTransactionStart = useCallback((transactionHash: string) => {
+    setCurrentStakeTransactionHash(transactionHash as `0x${string}`);
+  }, []);
+
+  const handleStakeComplete = useCallback(() => {
+    // Clear the transaction hash after event is processed
+    setCurrentStakeTransactionHash(null);
+  }, []);
+
   const clearGlobalError = useCallback(() => {
     setGlobalErrorMessage(null);
   }, []);
+
+  const clearStakeEvent = useCallback(() => {
+    clearLatestStakeEvent();
+    handleStakeComplete();
+  }, [clearLatestStakeEvent, handleStakeComplete]);
 
   return (
     <div className={styles.container}>
@@ -92,6 +117,7 @@ const Home: NextPage = () => {
               <StakingActions
                 onTransactionSuccess={handleTransactionSuccess}
                 onError={setGlobalErrorMessage}
+                onStakeTransactionStart={handleStakeTransactionStart}
               />
             </div>
           </div>
@@ -104,6 +130,9 @@ const Home: NextPage = () => {
           </div>
         )}
       </main>
+
+      {/* Global Toast - Full Screen Overlay */}
+      <GlobalToast stakeEvent={latestStakeEvent} onClose={clearStakeEvent} />
     </div>
   );
 };

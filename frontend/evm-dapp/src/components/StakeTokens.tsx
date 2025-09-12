@@ -2,17 +2,18 @@ import React from "react";
 import styles from "../styles/StakingActions.module.css";
 import { useAccount } from "wagmi";
 import { formatTokenAmount } from "../utils/tokenUtils";
-import { useStakeEvents } from "../hooks/useStakeEvents";
 import { useStake } from "../hooks/useStake";
 
 interface StakeTokensProps {
   onTransactionSuccess?: () => void;
   onError: (message: string) => void;
+  onStakeTransactionStart?: (transactionHash: string) => void;
 }
 
 const StakeTokens: React.FC<StakeTokensProps> = ({
   onTransactionSuccess,
   onError,
+  onStakeTransactionStart,
 }) => {
   const { address, isConnected } = useAccount();
 
@@ -31,13 +32,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
     setStakeAmount,
     handleStake,
     isDisabled,
-  } = useStake(onTransactionSuccess, onError);
-
-  const { latestStakeEvent, clearLatestStakeEvent } = useStakeEvents({
-    userAddress: address,
-    isConnected,
-    currentTransactionHash: stakeTransactionHash,
-  });
+  } = useStake(onTransactionSuccess, onError, onStakeTransactionStart);
 
   return (
     <div>
@@ -97,52 +92,6 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
             </p>
           </div>
         )}
-
-      {/* Show latest stake event info */}
-      {latestStakeEvent && (
-        <div className={styles.eventInfo}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h4>📊 Latest Stake Event</h4>
-            <button
-              onClick={clearLatestStakeEvent}
-              className={styles.clearEventButton}
-              title="Clear event display"
-            >
-              ✕
-            </button>
-          </div>
-          <div className={styles.eventDetails}>
-            <p>
-              <strong>User:</strong> {latestStakeEvent.user}
-            </p>
-            <p>
-              <strong>Amount:</strong>{" "}
-              {formatTokenAmount(latestStakeEvent.amount)} tokens
-            </p>
-            <p>
-              <strong>Block:</strong> {latestStakeEvent.blockNumber.toString()}
-            </p>
-            <p>
-              <strong>Transaction:</strong>{" "}
-              <a
-                href={`https://sepolia.etherscan.io/tx/${latestStakeEvent.transactionHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.transactionLink}
-              >
-                {latestStakeEvent.transactionHash.slice(0, 10)}...
-                {latestStakeEvent.transactionHash.slice(-8)}
-              </a>
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className={styles.inputGroup}>
         <input

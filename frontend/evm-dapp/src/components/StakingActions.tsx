@@ -7,11 +7,13 @@ import UnstakeTokens from "./UnstakeTokens";
 interface StakingActionsProps {
   onTransactionSuccess?: () => void;
   onError: (message: string) => void;
+  onStakeTransactionStart?: (transactionHash: string) => void;
 }
 
 const StakingActions: React.FC<StakingActionsProps> = ({
   onTransactionSuccess,
   onError,
+  onStakeTransactionStart,
 }) => {
   const { isConnected } = useAccount();
 
@@ -36,6 +38,7 @@ const StakingActions: React.FC<StakingActionsProps> = ({
           <StakeTokens
             onTransactionSuccess={onTransactionSuccess}
             onError={onError}
+            onStakeTransactionStart={onStakeTransactionStart}
           />
         </div>
 

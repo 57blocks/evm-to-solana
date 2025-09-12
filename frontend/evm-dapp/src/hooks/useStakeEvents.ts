@@ -67,33 +67,28 @@ export const useStakeEvents = ({
         if (
           isStakedEventLog(latestLog) &&
           latestLog.blockNumber !== null &&
-          latestLog.transactionHash !== null
+          latestLog.transactionHash !== null &&
+          currentTransactionHash && // Only process when we have a pending transaction
+          latestLog.transactionHash === currentTransactionHash // And it must match the current transaction
         ) {
-          setLatestStakeEvent({
+          const eventData = {
             user: latestLog.args.user,
             amount: latestLog.args.amount,
             blockNumber: latestLog.blockNumber,
             transactionHash: latestLog.transactionHash,
-          });
+          };
+          setLatestStakeEvent(eventData);
+          console.log("Stake event confirmed for our transaction:", eventData);
         }
       }
     },
     enabled: !!userAddress && isConnected,
   });
 
-  // Handle stake event detection for current transaction
+  // Clear event when user changes or disconnects
   useEffect(() => {
-    if (
-      latestStakeEvent &&
-      currentTransactionHash &&
-      latestStakeEvent.transactionHash === currentTransactionHash
-    ) {
-      console.log(
-        "Stake event confirmed for our transaction:",
-        latestStakeEvent
-      );
-    }
-  }, [latestStakeEvent, currentTransactionHash]);
+    setLatestStakeEvent(null);
+  }, [userAddress]);
 
   const clearLatestStakeEvent = () => {
     setLatestStakeEvent(null);

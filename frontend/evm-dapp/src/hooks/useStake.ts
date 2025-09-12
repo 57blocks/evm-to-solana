@@ -40,7 +40,8 @@ export interface UseStakeReturn {
 
 export const useStake = (
   onTransactionSuccess?: () => void,
-  onError?: (message: string) => void
+  onError?: (message: string) => void,
+  onStakeTransactionStart?: (transactionHash: string) => void
 ): UseStakeReturn => {
   const [stakeAmount, setStakeAmount] = useState("");
   const [isApproving, setIsApproving] = useState(false);
@@ -110,10 +111,21 @@ export const useStake = (
       currentTransactionType === "stake" &&
       !stakeTransactionHash
     ) {
-      setStakeTransactionHash(writeData as Hash);
+      const txHash = writeData as Hash;
+      setStakeTransactionHash(txHash);
       setIsWaitingForWallet(false);
+
+      // Notify parent about the transaction start
+      if (onStakeTransactionStart) {
+        onStakeTransactionStart(txHash);
+      }
     }
-  }, [writeData, currentTransactionType, stakeTransactionHash]);
+  }, [
+    writeData,
+    currentTransactionType,
+    stakeTransactionHash,
+    onStakeTransactionStart,
+  ]);
 
   // Handle error messages
   useEffect(() => {
@@ -133,9 +145,14 @@ export const useStake = (
           }`
         );
       }
+
+      // Reset all transaction states on error
       setIsApproving(false);
       setCurrentTransactionType(null);
       setIsButtonClicked(false);
+      setApprovalHash(null);
+      setStakeTransactionHash(null);
+      setIsWaitingForWallet(false);
     }
   }, [writeError, currentTransactionType, onError]);
 
@@ -155,9 +172,14 @@ export const useStake = (
           }`
         );
       }
+
+      // Reset all transaction states on error
       setIsApproving(false);
       setCurrentTransactionType(null);
       setIsButtonClicked(false);
+      setApprovalHash(null);
+      setStakeTransactionHash(null);
+      setIsWaitingForWallet(false);
     }
   }, [isStakingError, isApprovalError, onError]);
 
@@ -168,6 +190,11 @@ export const useStake = (
       setIsApproving(false);
       setCurrentTransactionType(null);
       setIsButtonClicked(false);
+
+      // Reset transaction hashes to allow new transactions
+      setApprovalHash(null);
+      setStakeTransactionHash(null);
+      setIsWaitingForWallet(false);
 
       // Refresh allowance after successful staking
       refetchAllowance();
