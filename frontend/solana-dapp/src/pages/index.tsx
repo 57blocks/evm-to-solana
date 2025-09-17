@@ -9,14 +9,22 @@ import RewardHistory from "../components/RewardHistory";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
 import ErrorModal from "../components/ErrorModal";
 import DynamicWalletButton from "../components/DynamicWalletButton";
+import GlobalToast from "../components/GlobalToast";
+import { useStakeEvents } from "../hooks/useStakeEvents";
 
 const Home: NextPage = () => {
   const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
     null
   );
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
   const queryClient = useQueryClient();
+
+  // Monitor stake events
+  const { latestStakeEvent, clearLatestStakeEvent } = useStakeEvents({
+    userAddress: publicKey || undefined,
+    isConnected: connected,
+  });
 
   const handleTransactionSuccess = useCallback(() => {
     // Refresh stake information immediately after successful transaction
@@ -28,6 +36,10 @@ const Home: NextPage = () => {
   const clearGlobalError = useCallback(() => {
     setGlobalErrorMessage(null);
   }, []);
+
+  const clearStakeEvent = useCallback(() => {
+    clearLatestStakeEvent();
+  }, [clearLatestStakeEvent]);
 
   return (
     <div className={styles.container}>
@@ -96,6 +108,7 @@ const Home: NextPage = () => {
           </div>
         )}
       </main>
+      <GlobalToast stakeEvent={latestStakeEvent} onClose={clearStakeEvent} />
     </div>
   );
 };

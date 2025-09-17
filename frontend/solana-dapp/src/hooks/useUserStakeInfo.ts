@@ -1,4 +1,4 @@
-import { useProgram } from "../../hooks/useProgram";
+import { useProgram } from "./useProgram";
 import { PublicKey } from "@solana/web3.js";
 import { createStakingAccount } from "@/utils/account";
 import { convertFromLamports, formatTimestamp } from "@/utils/tokenUtils";

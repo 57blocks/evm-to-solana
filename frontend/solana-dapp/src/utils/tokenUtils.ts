@@ -65,6 +65,26 @@ export const validateTokenAmount = (
   return { isValid: true };
 };
 
+export const formatTokenAmount = (
+  lamportAmount: bigint,
+  decimals: number = DEFAULT_DECIMALS
+): string => {
+  if (lamportAmount === BigInt(0)) return "0";
+
+  const tokenAmount = convertFromLamports(lamportAmount, decimals);
+
+  // Simple formatting: just show the token amount with appropriate decimal places
+  if (tokenAmount >= 1) {
+    return tokenAmount.toFixed(4);
+  } else if (tokenAmount >= 0.01) {
+    return tokenAmount.toFixed(6);
+  } else if (tokenAmount >= 0.0001) {
+    return tokenAmount.toFixed(8);
+  } else {
+    return tokenAmount.toFixed(decimals);
+  }
+};
+
 export const formatTimestamp = (timestamp: bigint) => {
   const timestampNumber = Number(timestamp);
   if (timestampNumber === 0) return "-";

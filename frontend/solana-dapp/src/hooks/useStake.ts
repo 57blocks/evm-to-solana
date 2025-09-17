@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import { createStakingAccount } from "../utils/account";
@@ -7,23 +7,58 @@ import { BN } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import { convertToLamports, ERROR_MESSAGES } from "@/utils/tokenUtils";
 
-export const useStake = () => {
+export interface UseStakeReturn {
+  // State
+  stakeAmount: string;
+  isStaking: boolean;
+  error: string | null;
+  transactionSignature: string | null;
+
+  // Actions
+  setStakeAmount: (amount: string) => void;
+  handleStake: () => Promise<void>;
+  resetError: () => void;
+
+  // Computed states
+  isDisabled: boolean;
+}
+
+export const useStake = (
+  onTransactionSuccess?: () => void,
+  onError?: (message: string) => void
+): UseStakeReturn => {
   const { publicKey } = useWallet();
   const { program } = useProgram();
+  const [stakeAmount, setStakeAmount] = useState("");
   const [isStaking, setIsStaking] = useState(false);
+  const [isButtonClicked, setIsButtonClicked] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [transactionSignature, setTransactionSignature] = useState<
+    string | null
+  >(null);
+  const stakeAmountRef = useRef("");
 
-  const stake = async (stakeAmount: string) => {
+  const handleStake = async () => {
     if (!publicKey || !program) {
-      setError(ERROR_MESSAGES.WALLET_NOT_CONNECTED);
+      const errorMsg = ERROR_MESSAGES.WALLET_NOT_CONNECTED;
+      setError(errorMsg);
+      onError?.(errorMsg);
       return;
     }
 
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
-      setError(ERROR_MESSAGES.INVALID_STAKE_AMOUNT);
+      const errorMsg = ERROR_MESSAGES.INVALID_STAKE_AMOUNT;
+      setError(errorMsg);
+      onError?.(errorMsg);
       return;
     }
 
+    if (isStaking || isButtonClicked) {
+      return;
+    }
+
+    // Immediately disable button to prevent multiple clicks
+    setIsButtonClicked(true);
     setIsStaking(true);
     setError(null);
 
@@ -40,7 +75,7 @@ export const useStake = () => {
       // Fetch current state
       const state = await program.account.globalState.fetch(statePda);
 
-      const transaction = await program.methods
+      const txSignature = await program.methods
         .stake(new BN(convertToLamports(stakeAmount)))
         .accounts({
           user: publicKey,
@@ -57,17 +92,36 @@ export const useStake = () => {
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
-      // program.addEventListener("staked", (event) => {
-      //   console.log("staked", event);
-      // });
-      return { success: true, transaction };
+
+      console.log("Staking transaction sent! Signature:", txSignature);
+
+      // Wait for transaction confirmation before proceeding
+      const connection = program.provider.connection;
+      await connection.confirmTransaction(txSignature, "confirmed");
+
+      console.log("Staking transaction confirmed! Signature:", txSignature);
+
+      // Set transaction signature AFTER confirmation
+      setTransactionSignature(txSignature);
+
+      // Reset form and notify parent
+      setStakeAmount("");
+      stakeAmountRef.current = "";
+      if (onTransactionSuccess) {
+        onTransactionSuccess();
+      }
+
+      // Reset transaction signature after success
+      setTransactionSignature(null);
     } catch (err) {
+      console.error("Staking failed:", err);
       const errorMessage =
         err instanceof Error ? err.message : ERROR_MESSAGES.STAKING_FAILED;
       setError(errorMessage);
-      return { success: false, error: errorMessage };
+      onError?.(errorMessage);
     } finally {
       setIsStaking(false);
+      setIsButtonClicked(false);
     }
   };
 
@@ -75,10 +129,21 @@ export const useStake = () => {
     setError(null);
   };
 
+  const isDisabled = !publicKey || isStaking || isButtonClicked;
+
   return {
-    stake,
+    // State
+    stakeAmount,
     isStaking,
     error,
+    transactionSignature,
+
+    // Actions
+    setStakeAmount,
+    handleStake,
     resetError,
+
+    // Computed states
+    isDisabled,
   };
 };

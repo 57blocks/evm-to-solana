@@ -1,8 +1,6 @@
-import React, { useState, useRef } from "react";
+import React from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakingActions.module.css";
-import { validateTokenAmount } from "../utils/tokenUtils";
-import { useProgram } from "../../hooks/useProgram";
 import { useStake } from "../hooks/useStake";
 
 interface StakeTokensProps {
@@ -14,61 +12,11 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
   onTransactionSuccess,
   onError,
 }) => {
-  const [stakeAmount, setStakeAmount] = useState("");
-  const [isStaking, setIsStaking] = useState(false);
-  const [isButtonClicked, setIsButtonClicked] = useState(false);
-  const stakeAmountRef = useRef("");
-  const { connected, publicKey, sendTransaction } = useWallet();
-  const { program } = useProgram();
-  const { stake } = useStake();
+  const { connected } = useWallet();
 
-  const handleStake = async () => {
-    if (!connected || !publicKey || !program || !sendTransaction) {
-      onError("Please connect your wallet first");
-      return;
-    }
-
-    if (!stakeAmount || isStaking || isButtonClicked) {
-      return;
-    }
-
-    // Validate input using utility function
-    const validation = validateTokenAmount(stakeAmount);
-    if (!validation.isValid) {
-      onError(validation.error || "Invalid amount");
-      return;
-    }
-
-    // Immediately disable button to prevent multiple clicks
-    setIsButtonClicked(true);
-    setIsStaking(true);
-
-    try {
-      const stakeResult = await stake(stakeAmount);
-      if (!stakeResult?.success) {
-        onError("Staking failed");
-        return;
-      }
-
-      setStakeAmount("");
-      stakeAmountRef.current = "";
-
-      if (onTransactionSuccess) {
-        onTransactionSuccess();
-      }
-    } catch (error) {
-      onError(
-        `Failed to stake: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setIsStaking(false);
-      setIsButtonClicked(false);
-    }
-  };
-
-  const isDisabled = !connected || isStaking || isButtonClicked;
+  // Use custom hook
+  const { stakeAmount, isStaking, setStakeAmount, handleStake, isDisabled } =
+    useStake(onTransactionSuccess, onError);
 
   return (
     <div>
@@ -88,7 +36,6 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
                 !value.includes(","))
             ) {
               setStakeAmount(value);
-              stakeAmountRef.current = value;
             }
           }}
           placeholder={
