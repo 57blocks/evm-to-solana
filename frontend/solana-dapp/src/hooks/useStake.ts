@@ -71,7 +71,7 @@ export const useStake = (
         userTokenAccount,
         userRewardAccount,
       } = await createStakingAccount(publicKey);
-
+      console.log("Staking account addresses created", stakeAmount);
       // Fetch current state
       const state = await program.account.globalState.fetch(statePda);
 
@@ -94,12 +94,6 @@ export const useStake = (
         .rpc();
 
       console.log("Staking transaction sent! Signature:", txSignature);
-
-      // Wait for transaction confirmation before proceeding
-      const connection = program.provider.connection;
-      await connection.confirmTransaction(txSignature, "confirmed");
-
-      console.log("Staking transaction confirmed! Signature:", txSignature);
 
       // Set transaction signature AFTER confirmation
       setTransactionSignature(txSignature);

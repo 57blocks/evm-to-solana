@@ -73,16 +73,25 @@ export const formatTokenAmount = (
 
   const tokenAmount = convertFromLamports(lamportAmount, decimals);
 
-  // Simple formatting: just show the token amount with appropriate decimal places
+  // Format with appropriate decimal places, removing trailing zeros
+  let formatted: string;
+
   if (tokenAmount >= 1) {
-    return tokenAmount.toFixed(4);
+    // For amounts >= 1, show up to 4 decimal places but remove trailing zeros
+    formatted = tokenAmount.toFixed(4);
   } else if (tokenAmount >= 0.01) {
-    return tokenAmount.toFixed(6);
+    // For amounts >= 0.01, show up to 6 decimal places
+    formatted = tokenAmount.toFixed(6);
   } else if (tokenAmount >= 0.0001) {
-    return tokenAmount.toFixed(8);
+    // For amounts >= 0.0001, show up to 8 decimal places
+    formatted = tokenAmount.toFixed(8);
   } else {
-    return tokenAmount.toFixed(decimals);
+    // For very small amounts, show full precision
+    formatted = tokenAmount.toFixed(decimals);
   }
+
+  // Remove trailing zeros and unnecessary decimal point
+  return formatted.replace(/\.?0+$/, "");
 };
 
 export const formatTimestamp = (timestamp: bigint) => {
