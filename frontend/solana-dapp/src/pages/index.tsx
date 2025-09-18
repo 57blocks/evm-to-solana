@@ -5,7 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
 import styles from "../styles/Home.module.css";
 import StakingActions from "../components/StakingActions";
-import RewardHistory from "../components/RewardHistory";
+import StakeByLookupTable from "../components/StakeByLookupTable";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
 import ErrorModal from "../components/ErrorModal";
 import DynamicWalletButton from "../components/DynamicWalletButton";
@@ -29,9 +29,7 @@ const Home: NextPage = () => {
   const handleTransactionSuccess = useCallback(() => {
     // Refresh stake information immediately after successful transaction
     stakeInfoRef.current?.refresh();
-    // Refresh reward history by invalidating the query
-    queryClient.invalidateQueries({ queryKey: ["reward-history"] });
-  }, [queryClient]);
+  }, []);
 
   const clearGlobalError = useCallback(() => {
     setGlobalErrorMessage(null);
@@ -101,10 +99,13 @@ const Home: NextPage = () => {
           </div>
         )}
 
-        {/* History Records Section - Only show if wallet is connected */}
+        {/* Lookup Table Staking Section - Only show if wallet is connected */}
         {connected && (
           <div className={styles.historySection}>
-            <RewardHistory />
+            <StakeByLookupTable
+              onTransactionSuccess={handleTransactionSuccess}
+              onError={setGlobalErrorMessage}
+            />
           </div>
         )}
       </main>
