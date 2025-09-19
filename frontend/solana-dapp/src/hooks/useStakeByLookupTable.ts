@@ -150,15 +150,17 @@ export const useStakeByAlt = (
   };
 
   /**
-   * Create traditional stake transaction (without ALT optimization)
-   * Simpler approach without Address Lookup Table complexity
+   * Create versioned stake transaction using Address Lookup Table (ALT)
+   * ALT optimizes transaction size by referencing accounts by index
    */
-  const createStakeTransaction = async (
+  const createVersionedStakeTransaction = async (
     program: any,
     accounts: AltAccountInfo & { user: PublicKey },
-    amount: BN
-  ): Promise<Transaction> => {
+    amount: BN,
+    alt: AddressLookupTableAccount
+  ): Promise<VersionedTransaction> => {
     // Create stake instruction with account information
+    // ALT will optimize the transaction size by referencing accounts by index
     const stakeInstruction = await program.methods
       .stake(amount)
       .accounts({
@@ -176,14 +178,16 @@ export const useStakeByAlt = (
       })
       .instruction();
 
-    // Create traditional transaction
-    const tx = new Transaction().add(stakeInstruction);
-    tx.recentBlockhash = (
-      await program.provider.connection.getLatestBlockhash()
-    ).blockhash;
-    tx.feePayer = accounts.user;
+    const blockhash = (await program.provider.connection.getLatestBlockhash())
+      .blockhash;
 
-    return tx;
+    const messageV0 = new TransactionMessage({
+      payerKey: accounts.user,
+      recentBlockhash: blockhash,
+      instructions: [stakeInstruction],
+    }).compileToV0Message([alt]);
+
+    return new VersionedTransaction(messageV0);
   };
 
   /**
@@ -239,11 +243,19 @@ export const useStakeByAlt = (
         clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
       };
 
-      // Create traditional transaction (simpler approach)
-      const tx = await createStakeTransaction(
+      // Get or create Address Lookup Table (ALT)
+      const alt = await getOrCreateAlt(
+        program.provider.connection,
+        publicKey,
+        accounts
+      );
+
+      // Create versioned stake transaction using ALT
+      const versionedTx = await createVersionedStakeTransaction(
         program,
         { ...accounts, user: publicKey },
-        new BN(convertToLamports(stakeAmount))
+        new BN(convertToLamports(stakeAmount)),
+        alt
       );
 
       if (!signTransaction) {
@@ -251,11 +263,11 @@ export const useStakeByAlt = (
       }
 
       console.log("📝 Signing stake transaction...");
-      const signedTx = await signTransaction(tx);
+      const signedVersionedTx = await signTransaction(versionedTx);
 
       console.log("📤 Sending stake transaction...");
       const signature = await program.provider.connection.sendRawTransaction(
-        signedTx.serialize()
+        signedVersionedTx.serialize()
       );
 
       console.log("⏳ Confirming stake transaction...");
@@ -278,9 +290,7 @@ export const useStakeByAlt = (
 
       setTransactionSignature(null);
     } catch (err) {
-      console.log("🚀 Starting stake process...");
-      console.log("🎉 Stake successful! Signature:", signature);
-      console.error("Staking failed:", err);
+      console.error("Address Lookup Table (ALT) staking failed:", err);
       const errorMessage =
         err instanceof Error ? err.message : ERROR_MESSAGES.STAKING_FAILED;
       setError(errorMessage);
