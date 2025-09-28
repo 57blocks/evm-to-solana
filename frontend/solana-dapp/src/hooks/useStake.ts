@@ -1,11 +1,8 @@
 import { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
-import { createStakingAccount } from "../utils/account";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { BN } from "@coral-xyz/anchor";
-import * as anchor from "@coral-xyz/anchor";
-import { convertToLamports, ERROR_MESSAGES } from "@/utils/tokenUtils";
+import { executeStakeTransaction } from "../utils/stakingUtils";
+import { ERROR_MESSAGES } from "@/utils/tokenUtils";
 
 export interface UseStakeReturn {
   // State
@@ -63,35 +60,13 @@ export const useStake = (
     setError(null);
 
     try {
-      // Get staking account addresses
-      const {
-        statePda,
-        userStakeInfoPda,
-        blacklistPda,
-        userTokenAccount,
-        userRewardAccount,
-      } = await createStakingAccount(publicKey);
-      console.log("Staking account addresses created", stakeAmount);
-      // Fetch current state
-      const state = await program.account.globalState.fetch(statePda);
+      console.log("Executing stake transaction", stakeAmount);
 
-      const txSignature = await program.methods
-        .stake(new BN(convertToLamports(stakeAmount)))
-        .accounts({
-          user: publicKey,
-          //@ts-ignore
-          state: statePda,
-          userStakeInfo: userStakeInfoPda,
-          userTokenAccount: userTokenAccount,
-          stakingVault: state.stakingVault,
-          rewardVault: state.rewardVault,
-          userRewardAccount: userRewardAccount,
-          tokenProgram: TOKEN_PROGRAM_ID,
-          blacklistEntry: blacklistPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-        })
-        .rpc();
+      const txSignature = await executeStakeTransaction({
+        publicKey,
+        program,
+        stakeAmount,
+      });
 
       console.log("Staking transaction sent! Signature:", txSignature);
 

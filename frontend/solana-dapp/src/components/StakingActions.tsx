@@ -2,7 +2,6 @@ import React from "react";
 import styles from "../styles/StakingActions.module.css";
 import StakeTokens from "./StakeTokens";
 import UnstakeTokens from "./UnstakeTokens";
-import StakeByLookupTable from "./StakeByLookupTable";
 
 interface StakingActionsProps {
   onTransactionSuccess?: () => void;

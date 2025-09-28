@@ -5,8 +5,8 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useQueryClient } from "@tanstack/react-query";
 import styles from "../styles/Home.module.css";
 import StakingActions from "../components/StakingActions";
-import StakeByLookupTable from "../components/StakeByLookupTable";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
+import { StakingDemos } from "../components/StakingDemos";
 import ErrorModal from "../components/ErrorModal";
 import DynamicWalletButton from "../components/DynamicWalletButton";
 import GlobalToast from "../components/GlobalToast";
@@ -48,9 +48,9 @@ const Home: NextPage = () => {
       />
 
       <Head>
-        <title>Solana Staking Platform</title>
+        <title>Solana Staking Platform - ALT & Priority Fee Demos</title>
         <meta
-          content="A clean and modern Solana staking platform"
+          content="Solana staking platform with separate ALT and Priority Fee optimization demos"
           name="description"
         />
         <link href="/favicon.ico" rel="icon" />
@@ -59,7 +59,9 @@ const Home: NextPage = () => {
       <main className={styles.main}>
         {/* Header Section - Wallet Connection */}
         <header className={styles.header}>
-          <h1 className={styles.pageTitle}>Solana Staking Platform</h1>
+          <h1 className={styles.pageTitle}>
+            Solana Staking Platform - ALT & Priority Fee Demos
+          </h1>
           <div className={styles.walletSection}>
             <DynamicWalletButton />
           </div>
@@ -99,13 +101,10 @@ const Home: NextPage = () => {
           </div>
         )}
 
-        {/* Lookup Table Staking Section - Only show if wallet is connected */}
+        {/* Optimization Demos - Only show if wallet is connected */}
         {connected && (
           <div className={styles.historySection}>
-            <StakeByLookupTable
-              onTransactionSuccess={handleTransactionSuccess}
-              onError={setGlobalErrorMessage}
-            />
+            <StakingDemos onTransactionSuccess={handleTransactionSuccess} />
           </div>
         )}
       </main>

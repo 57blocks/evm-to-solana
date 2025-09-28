@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useProgram } from "./useProgram";
 import { PublicKey } from "@solana/web3.js";
-import { convertToLamports } from "../utils/tokenUtils";
 
 export type StakeEventState = {
   user: string;

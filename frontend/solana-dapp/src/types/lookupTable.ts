@@ -20,7 +20,6 @@ export interface AltAccountInfo {
  * Address Lookup Table (ALT) Creation Parameters
  */
 export interface AltCreationParams {
-  connection: any; // Connection type from @solana/web3.js
   payer: PublicKey;
   accounts: AltAccountInfo;
 }

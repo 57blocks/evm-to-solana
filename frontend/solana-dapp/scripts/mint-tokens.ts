@@ -39,7 +39,7 @@ const TEST_WALLET_PRIVATE_KEY = [
  * Main function to execute the token minting process
  */
 async function main() {
-  console.log("🪙 Starting token minting process for target wallet...\n");
+  console.log("Starting token minting process for target wallet...\n");
 
   // Get private key from available sources
   const walletPrivateKey = TEST_WALLET_PRIVATE_KEY;
@@ -62,13 +62,13 @@ async function main() {
   anchor.setProvider(provider);
 
   // Display wallet information
-  console.log("🔑 Wallet address:", wallet.publicKey.toBase58());
-  console.log("🎯 Target wallet address:", TARGET_WALLET);
+  console.log("Wallet address:", wallet.publicKey.toBase58());
+  console.log("Target wallet address:", TARGET_WALLET);
 
   // Check wallet balance for transaction fees
   const balance = await connection.getBalance(wallet.publicKey);
   console.log(
-    "💰 Current balance:",
+    "Current balance:",
     balance / anchor.web3.LAMPORTS_PER_SOL,
     "SOL"
   );
@@ -85,13 +85,13 @@ async function main() {
   const targetWallet = new PublicKey(TARGET_WALLET);
 
   // Display token configuration
-  console.log("\n📊 Token Configuration:");
+  console.log("\nToken Configuration:");
   console.log("   Staking Mint:", stakingMint.toBase58());
   console.log("   Reward Mint:", rewardMint.toBase58());
 
   try {
     // Step 1: Mint staking tokens to target wallet
-    console.log("\n🪙 Creating staking token account and minting tokens...");
+    console.log("\nCreating staking token account and minting tokens...");
 
     // Create or get associated token account for staking tokens
     const stakingTokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -111,14 +111,14 @@ async function main() {
       BigInt(1000 * 10 ** 9) // 1000 staking tokens (with 9 decimals)
     );
 
-    console.log("✅ Successfully minted 1000 Staking tokens");
+    console.log("Successfully minted 1000 Staking tokens");
     console.log(
-      "📍 Staking token account:",
+      "Staking token account:",
       stakingTokenAccount.address.toBase58()
     );
 
     // Step 2: Mint reward tokens to target wallet
-    console.log("\n🏆 Creating reward token account and minting tokens...");
+    console.log("\nCreating reward token account and minting tokens...");
 
     // Create or get associated token account for reward tokens
     const rewardTokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -138,15 +138,12 @@ async function main() {
       BigInt(100 * 10 ** 9) // 100 reward tokens (with 9 decimals)
     );
 
-    console.log("✅ Successfully minted 100 Reward tokens");
-    console.log(
-      "📍 Reward token account:",
-      rewardTokenAccount.address.toBase58()
-    );
+    console.log("Successfully minted 100 Reward tokens");
+    console.log("Reward token account:", rewardTokenAccount.address.toBase58());
 
     // Display summary of all operations
-    console.log("\n🎉 Token minting completed successfully!");
-    console.log("\n📋 Token Account Summary:");
+    console.log("\nToken minting completed successfully!");
+    console.log("\nToken Account Summary:");
     console.log("═══════════════════════════════════════");
     console.log(`Target Wallet: ${TARGET_WALLET}`);
     console.log(
@@ -159,7 +156,7 @@ async function main() {
     console.log(`Reward Token Balance: 100 tokens`);
     console.log("═══════════════════════════════════════");
   } catch (error) {
-    console.error("❌ Token minting failed:", error);
+    console.error("Token minting failed:", error);
     throw error;
   }
 }
@@ -167,7 +164,7 @@ async function main() {
 // Execute the main function and handle results
 main()
   .then(() => {
-    console.log("\n🎉 Script execution completed successfully!");
+    console.log("\nScript execution completed successfully!");
     process.exit(0);
   })
   .catch((error) => {

@@ -1,19 +1,20 @@
 import { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
-import { createStakingAccount } from "../utils/account";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { BN } from "@coral-xyz/anchor";
-import * as anchor from "@coral-xyz/anchor";
-import { convertToLamports, ERROR_MESSAGES } from "@/utils/tokenUtils";
 import {
-  Connection,
+  createStakeAccountInfo,
+  createStakeInstruction,
+  sendAndConfirmTransaction,
+} from "../utils/stakingUtils";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import * as anchor from "@coral-xyz/anchor";
+import { ERROR_MESSAGES } from "@/utils/tokenUtils";
+import {
   PublicKey,
   AddressLookupTableAccount,
   TransactionMessage,
   VersionedTransaction,
   AddressLookupTableProgram,
-  Transaction,
 } from "@solana/web3.js";
 import {
   AltAccountInfo,
@@ -21,6 +22,7 @@ import {
   UseStakeByAltReturn,
   AltTransactionResult,
 } from "../types/lookupTable";
+import { useConnection } from "@solana/wallet-adapter-react";
 
 export const useStakeByAlt = (
   onTransactionSuccess?: () => void,
@@ -30,6 +32,7 @@ export const useStakeByAlt = (
   const { program } = useProgram();
   const [stakeAmount, setStakeAmount] = useState("");
   const [isStaking, setIsStaking] = useState(false);
+  const { connection } = useConnection();
   const [isButtonClicked, setIsButtonClicked] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactionSignature, setTransactionSignature] = useState<
@@ -38,7 +41,6 @@ export const useStakeByAlt = (
   const [lookupTableAddress, setLookupTableAddress] = useState<string | null>(
     null
   );
-  const stakeAmountRef = useRef("");
   const altCache = useRef<AddressLookupTableAccount | null>(null);
 
   /**
@@ -48,8 +50,8 @@ export const useStakeByAlt = (
   const createStakeAlt = async (
     params: AltCreationParams
   ): Promise<AltTransactionResult> => {
-    console.log("🔧 Creating Address Lookup Table (ALT) for stake accounts...");
-    const { connection, payer, accounts } = params;
+    console.log("Creating Address Lookup Table (ALT) for stake accounts...");
+    const { payer, accounts } = params;
 
     const recentSlot = await connection.getSlot();
 
@@ -94,17 +96,17 @@ export const useStakeByAlt = (
       throw new Error("Wallet does not support signing transactions");
     }
 
-    console.log(
-      "📝 Signing combined Address Lookup Table (ALT) transaction..."
-    );
+    console.log("Signing combined Address Lookup Table (ALT) transaction...");
     const signedTx = await signTransaction(combinedTx);
-    const signature = await connection.sendRawTransaction(signedTx.serialize());
 
-    console.log("⏳ Confirming transaction...");
-    await connection.confirmTransaction(signature);
+    console.log("Sending and confirming transaction...");
+    const signature = await sendAndConfirmTransaction(
+      connection,
+      signedTx.serialize()
+    );
 
     console.log(
-      "✅ Address Lookup Table (ALT) created and accounts added:",
+      "Address Lookup Table (ALT) created and accounts added:",
       altAddress.toString()
     );
     setLookupTableAddress(altAddress.toString());
@@ -131,17 +133,15 @@ export const useStakeByAlt = (
    * Get or create Address Lookup Table (ALT) with caching
    */
   const getOrCreateAlt = async (
-    connection: Connection,
     payer: PublicKey,
     accounts: AltAccountInfo
   ): Promise<AddressLookupTableAccount> => {
     if (altCache.current) {
-      console.log("♻️ Using cached Address Lookup Table (ALT)");
+      console.log("Using cached Address Lookup Table (ALT)");
       return altCache.current;
     }
 
     const result = await createStakeAlt({
-      connection,
       payer,
       accounts,
     });
@@ -154,35 +154,22 @@ export const useStakeByAlt = (
    * ALT optimizes transaction size by referencing accounts by index
    */
   const createVersionedStakeTransaction = async (
+    publicKey: PublicKey,
     program: any,
-    accounts: AltAccountInfo & { user: PublicKey },
-    amount: BN,
+    stakeAmount: string,
     alt: AddressLookupTableAccount
   ): Promise<VersionedTransaction> => {
-    // Create stake instruction with account information
-    // ALT will optimize the transaction size by referencing accounts by index
-    const stakeInstruction = await program.methods
-      .stake(amount)
-      .accounts({
-        user: accounts.user,
-        state: accounts.state,
-        userStakeInfo: accounts.userStakeInfo,
-        userTokenAccount: accounts.userTokenAccount,
-        stakingVault: accounts.stakingVault,
-        rewardVault: accounts.rewardVault,
-        userRewardAccount: accounts.userRewardAccount,
-        tokenProgram: accounts.tokenProgram,
-        blacklistEntry: accounts.blacklistEntry,
-        systemProgram: accounts.systemProgram,
-        clock: accounts.clock,
-      })
-      .instruction();
+    // Use common utility to create stake instruction
+    const { instruction: stakeInstruction } = await createStakeInstruction({
+      publicKey,
+      program,
+      stakeAmount,
+    });
 
-    const blockhash = (await program.provider.connection.getLatestBlockhash())
-      .blockhash;
+    const blockhash = (await connection.getLatestBlockhash()).blockhash;
 
     const messageV0 = new TransactionMessage({
-      payerKey: accounts.user,
+      payerKey: publicKey,
       recentBlockhash: blockhash,
       instructions: [stakeInstruction],
     }).compileToV0Message([alt]);
@@ -217,44 +204,32 @@ export const useStakeByAlt = (
     setError(null);
 
     try {
-      console.log("🚀 Starting Address Lookup Table (ALT) stake process...");
+      console.log("Starting Address Lookup Table (ALT) stake process...");
 
-      // Create staking accounts
-      const {
-        statePda,
-        userStakeInfoPda,
-        blacklistPda,
-        userTokenAccount,
-        userRewardAccount,
-      } = await createStakingAccount(publicKey);
-
-      const state = await program.account.globalState.fetch(statePda);
+      // Create staking accounts using common utility
+      const accountInfo = await createStakeAccountInfo(publicKey, program);
 
       const accounts: AltAccountInfo = {
-        state: statePda,
-        userStakeInfo: userStakeInfoPda,
-        userTokenAccount: userTokenAccount,
-        stakingVault: state.stakingVault,
-        rewardVault: state.rewardVault,
-        userRewardAccount: userRewardAccount,
+        state: accountInfo.statePda,
+        userStakeInfo: accountInfo.userStakeInfoPda,
+        userTokenAccount: accountInfo.userTokenAccount,
+        stakingVault: accountInfo.stakingVault,
+        rewardVault: accountInfo.rewardVault,
+        userRewardAccount: accountInfo.userRewardAccount,
         tokenProgram: TOKEN_PROGRAM_ID,
-        blacklistEntry: blacklistPda,
+        blacklistEntry: accountInfo.blacklistPda,
         systemProgram: anchor.web3.SystemProgram.programId,
         clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
       };
 
       // Get or create Address Lookup Table (ALT)
-      const alt = await getOrCreateAlt(
-        program.provider.connection,
-        publicKey,
-        accounts
-      );
+      const alt = await getOrCreateAlt(publicKey, accounts);
 
       // Create versioned stake transaction using ALT
       const versionedTx = await createVersionedStakeTransaction(
+        publicKey,
         program,
-        { ...accounts, user: publicKey },
-        new BN(convertToLamports(stakeAmount)),
+        stakeAmount,
         alt
       );
 
@@ -262,27 +237,20 @@ export const useStakeByAlt = (
         throw new Error("Wallet does not support signing transactions");
       }
 
-      console.log("📝 Signing stake transaction...");
       const signedVersionedTx = await signTransaction(versionedTx);
-
-      console.log("📤 Sending stake transaction...");
-      const signature = await program.provider.connection.sendRawTransaction(
+      const signature = await sendAndConfirmTransaction(
+        connection,
         signedVersionedTx.serialize()
       );
 
-      console.log("⏳ Confirming stake transaction...");
-      await program.provider.connection.confirmTransaction(
-        signature,
-        "confirmed"
-      );
-
       console.log(
-        "🎉 Address Lookup Table (ALT) stake successful! Signature:",
+        "Address Lookup Table (ALT) stake successful! Signature:",
         signature
       );
       setTransactionSignature(signature);
-      setStakeAmount("");
-      stakeAmountRef.current = "";
+      // Don't clear stakeAmount when used in shared context
+      // setStakeAmount("");
+      // stakeAmountRef.current = "";
 
       if (onTransactionSuccess) {
         onTransactionSuccess();
