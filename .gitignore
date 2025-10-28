@@ -17,3 +17,6 @@ frontend/*/.pnpm-debug.log*
 
 # env
 frontend/*/.env.local
+
+# IDL
+target
