@@ -6,7 +6,8 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { BN } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import { convertToLamports, ERROR_MESSAGES } from "@/utils/tokenUtils";
-
+//TODO:Need to consider gas not enough error
+//account paitially account 
 export const useUnstake = () => {
   const { publicKey } = useWallet();
   const { program } = useProgram();

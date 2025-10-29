@@ -1,5 +1,5 @@
 "use client";
-import React, { FC, ReactNode, useMemo, useEffect, useState } from "react";
+import React, { FC, ReactNode, useMemo } from "react";
 import {
   ConnectionProvider,
   WalletProvider as SolanaWalletProvider,
@@ -8,6 +8,8 @@ import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
+  TrezorWalletAdapter,
+  LedgerWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { SOLANA_CONFIG } from "../config/solana";
 
@@ -25,7 +27,12 @@ export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
   // Only the wallets you configure here will be compiled into your application, and only the dependencies
   // of wallets that your users connect to will be loaded
   const wallets = useMemo(
-    () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
+    () => [
+      new TrezorWalletAdapter(),
+      new LedgerWalletAdapter(),
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+    ],
     [network]
   );
 

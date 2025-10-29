@@ -196,6 +196,7 @@
   text-align: left !important;
   display: flex !important;
   align-items: center !important;
+  justify-content: space-between !important;
   gap: 12px !important;
 }
 
@@ -213,10 +214,50 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3) !important;
 }
 
+/* Wallet button start icon (wallet logo) */
+.wallet-adapter-button-start-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-right: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Wallet button end icon or badge (like "Detected") */
+.wallet-adapter-button-end-icon,
+.wallet-adapter-modal-list-item button span {
+  margin-left: auto !important;
+  opacity: 0.8 !important;
+  font-size: 0.875rem !important;
+  white-space: nowrap !important;
+}
+
+/* Ensure wallet name stays on the left */
+.wallet-adapter-button {
+  justify-content: flex-start !important;
+}
+
 /* Wallet adapter button text */
 .wallet-adapter-button-text {
   color: white !important;
   font-weight: 600 !important;
+}
+
+/* Hide "More options" button since we show all wallets by default */
+.wallet-adapter-modal-list-more {
+  display: none !important;
+}
+
+/* Ensure collapsed wallets section is always visible */
+.wallet-adapter-collapse {
+  height: auto !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+}
+
+#wallet-adapter-modal-collapse {
+  height: auto !important;
+  overflow: visible !important;
 }
 
 /* Responsive design */

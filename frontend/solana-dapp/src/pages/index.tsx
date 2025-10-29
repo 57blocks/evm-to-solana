@@ -11,6 +11,7 @@ import ErrorModal from "../components/ErrorModal";
 import DynamicWalletButton from "../components/DynamicWalletButton";
 import GlobalToast from "../components/GlobalToast";
 import { useStakeEvents } from "../hooks/useStakeEvents";
+import { useAutoSignOnConnect } from "../hooks/useAutoSignOnConnect";
 
 const Home: NextPage = () => {
   const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
@@ -25,6 +26,9 @@ const Home: NextPage = () => {
     userAddress: publicKey || undefined,
     isConnected: connected,
   });
+
+  // Auto sign message on wallet connect
+  useAutoSignOnConnect();
 
   const handleTransactionSuccess = useCallback(() => {
     // Refresh stake information immediately after successful transaction
