@@ -8,7 +8,7 @@ import { getAccount } from "@solana/spl-token";
 import type { SolanaStaking } from "../target/types/solana_staking";
 
 // Program ID
-const PROGRAM_ID = new PublicKey("1gGFthN24CB1p2LEvmhpnJVHAHm3koZDQnHgDoe6Ra2");
+const PROGRAM_ID = new PublicKey("8y11v8SN4VfbasLdPAHBrnVXRQsuCXgFUBWyyC2Hd9LD");
 
 async function main() {
   console.log("🔍 Listing all Solana Staking deployments...\n");

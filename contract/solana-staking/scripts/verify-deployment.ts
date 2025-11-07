@@ -17,7 +17,7 @@ import BN from "bn.js";
 import type { SolanaStaking } from "../target/types/solana_staking";
 
 // Program ID
-const PROGRAM_ID = new PublicKey("1gGFthN24CB1p2LEvmhpnJVHAHm3koZDQnHgDoe6Ra2");
+const PROGRAM_ID = new PublicKey("8y11v8SN4VfbasLdPAHBrnVXRQsuCXgFUBWyyC2Hd9LD");
 const SYSVAR_CLOCK_PUBKEY = new PublicKey(
   "SysvarC1ock11111111111111111111111111111111"
 );

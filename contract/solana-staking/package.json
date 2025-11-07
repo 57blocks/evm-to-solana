@@ -6,8 +6,8 @@
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "show-versions": "bash show-versions.sh",
     "regenerate-client": "anchor build && npx tsx create-codama-client.ts",
-    "verify": "npx tsx scripts/verify-deployment.ts",
-    "list": "npx tsx scripts/list-deployments.ts"
+    "verify": "ANCHOR_PROVIDER_URL=https://api.devnet.solana.com ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/verify-deployment.ts",
+    "list": "ANCHOR_PROVIDER_URL=https://api.devnet.solana.com ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/list-deployments.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
