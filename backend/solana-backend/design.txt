@@ -1,0 +1,10 @@
+我们为solana_staking协议构建一个后端服务，实现：
+实时捕获 stake / unstake / claimRewards 三个操作
+计算并展示四个关键指标：
+历史累计质押数量（totalStakedHistory）
+当前质押数量（currentStaked）
+历史累计已领取奖励（totalClaimedRewards）
+当前可领取奖励（claimableRewards）
+
+用户数据
+为了重启后可以从上次服务最后记录的指标数据开始同步最新数据，我们需要设计一个缓存文件，文件里记录{pubkey:xxx, totalStakedHistory:xxx, currentStaked:xxx, totalClaimedRewards:xxx, claimableRewards:xxx, slot:xxx}
