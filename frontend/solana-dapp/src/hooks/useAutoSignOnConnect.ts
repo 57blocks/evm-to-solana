@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useSignMessage } from "./useSignMessage";
+import { SignMessageResult, useSignMessage } from "./useSignMessage";
 
 /**
  * Hook to automatically sign message when wallet connects
@@ -10,7 +10,8 @@ import { useSignMessage } from "./useSignMessage";
  */
 export const useAutoSignOnConnect = () => {
   const { connected, publicKey, connecting, wallet } = useWallet();
-  const { signMessageForAuth, loading, verifySignature } = useSignMessage();
+  const { signMessageForAuth, signTransactionForAuth, verifySignature } =
+    useSignMessage();
   const [isSigning, setIsSigning] = useState(false);
   // Generate a sign-in message
   const generateSignInMessage = useCallback((walletAddress: string) => {
@@ -53,7 +54,15 @@ export const useAutoSignOnConnect = () => {
 
       try {
         const message = generateSignInMessage(publicKey.toBase58());
-        const result = await signMessageForAuth(message);
+        let result: SignMessageResult;
+        if (
+          wallet?.adapter.name === "Trezor" ||
+          wallet?.adapter.name === "Ledger"
+        ) {
+          result = await signTransactionForAuth(message);
+        } else {
+          result = await signMessageForAuth(message);
+        }
 
         if (result.success) {
           // Store signature in localStorage (persists across browser sessions)
@@ -66,7 +75,6 @@ export const useAutoSignOnConnect = () => {
             result.signature,
             result.publicKey
           );
-
           if (isValid) {
             console.log("Signature verified successfully!");
           } else {
@@ -82,8 +90,4 @@ export const useAutoSignOnConnect = () => {
     autoSign();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, connecting, publicKey, isSigning]);
-
-  return {
-    isSigning: isSigning || loading,
-  };
 };
