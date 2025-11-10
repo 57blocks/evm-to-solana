@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Test.sol";
-import "../src/Staking.sol";
-import "../src/MyToken.sol";
-import "../src/RewardToken.sol";
+import {Test} from "forge-std/Test.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Staking} from "../src/Staking.sol";
+import {MyToken} from "../src/MyToken.sol";
+import {RewardToken} from "../src/RewardToken.sol";
 
 contract StakingTest is Test {
+    using SafeERC20 for IERC20;
     Staking public staking;
     MyToken public myToken;
     RewardToken public rewardToken;
@@ -17,6 +20,7 @@ contract StakingTest is Test {
 
     uint256 constant INITIAL_BALANCE = 10000 * 10 ** 18;
     uint256 constant REWARD_SUPPLY = 1000000 * 10 ** 18;
+    uint256 constant REWARD_PER_SECOND = 1e18; // 1 token/sec
 
     function setUp() public {
         vm.startPrank(owner);
@@ -25,15 +29,15 @@ contract StakingTest is Test {
         myToken = new MyToken();
         rewardToken = new RewardToken();
 
-        // Deploy staking contract
-        staking = new Staking(address(myToken), address(rewardToken));
+        // Deploy staking contract (fixed emission rate)
+        staking = new Staking(address(myToken), address(rewardToken), REWARD_PER_SECOND);
 
         // Transfer reward tokens to staking contract
-        rewardToken.transfer(address(staking), REWARD_SUPPLY);
+        IERC20(address(rewardToken)).safeTransfer(address(staking), REWARD_SUPPLY);
 
         // Distribute tokens to users
-        myToken.transfer(user1, INITIAL_BALANCE);
-        myToken.transfer(user2, INITIAL_BALANCE);
+        IERC20(address(myToken)).safeTransfer(user1, INITIAL_BALANCE);
+        IERC20(address(myToken)).safeTransfer(user2, INITIAL_BALANCE);
 
         vm.stopPrank();
     }
@@ -46,7 +50,7 @@ contract StakingTest is Test {
         staking.stake(stakeAmount);
         vm.stopPrank();
 
-        (uint256 stakedAmount,,,) = staking.getStakeInfo(user1);
+        (uint256 stakedAmount,,) = staking.getStakeInfo(user1);
         assertEq(stakedAmount, stakeAmount);
         assertEq(staking.totalStaked(), stakeAmount);
     }
@@ -64,7 +68,7 @@ contract StakingTest is Test {
         staking.unstake(unstakeAmount);
         vm.stopPrank();
 
-        (uint256 stakedAmount,,,) = staking.getStakeInfo(user1);
+        (uint256 stakedAmount,,) = staking.getStakeInfo(user1);
         assertEq(stakedAmount, stakeAmount - unstakeAmount);
         assertEq(staking.totalStaked(), stakeAmount - unstakeAmount);
     }
@@ -80,10 +84,11 @@ contract StakingTest is Test {
         // Fast forward 1 day
         vm.warp(block.timestamp + 1 days);
 
-        uint256 expectedReward = (stakeAmount * 100 * 1) / 10000; // 1% for 1 day
-        uint256 actualReward = staking.calculateReward(user1);
+        // Single staker: pending equals time * rewardPerSecond
+        uint256 expectedReward = 1 days * REWARD_PER_SECOND;
+        uint256 actualPending = staking.pendingReward(user1);
 
-        assertEq(actualReward, expectedReward);
+        assertEq(actualPending, expectedReward);
     }
 
     function testClaimRewards() public {
@@ -97,7 +102,7 @@ contract StakingTest is Test {
         // Fast forward 5 days
         vm.warp(block.timestamp + 5 days);
 
-        uint256 expectedReward = (stakeAmount * 100 * 5) / 10000; // 1% for 5 days = 5%
+        uint256 expectedReward = 5 days * REWARD_PER_SECOND; // single staker
         uint256 balanceBefore = rewardToken.balanceOf(user1);
 
         vm.prank(user1);
@@ -124,7 +129,7 @@ contract StakingTest is Test {
         staking.stake(secondStake);
         vm.stopPrank();
 
-        (uint256 stakedAmount,,,) = staking.getStakeInfo(user1);
+        (uint256 stakedAmount,,) = staking.getStakeInfo(user1);
         assertEq(stakedAmount, firstStake + secondStake);
     }
 
@@ -146,19 +151,17 @@ contract StakingTest is Test {
         vm.stopPrank();
     }
 
-    function testSetRewardRate() public {
-        uint256 newRate = 200; // 2% per day
+    function testFundRewards() public {
+        // Owner mints extra rewards and funds the contract via fundRewards
+        vm.startPrank(owner);
+        uint256 beforeBal = rewardToken.balanceOf(address(staking));
+        rewardToken.mint(owner, 1000 ether);
+        rewardToken.approve(address(staking), 1000 ether);
+        staking.fundRewards(1000 ether);
+        uint256 afterBal = rewardToken.balanceOf(address(staking));
+        vm.stopPrank();
 
-        vm.prank(owner);
-        staking.setRewardRate(newRate);
-
-        assertEq(staking.rewardRate(), newRate);
-    }
-
-    function testOnlyOwnerCanSetRewardRate() public {
-        vm.prank(user1);
-        vm.expectRevert("Ownable: caller is not the owner");
-        staking.setRewardRate(200);
+        assertEq(afterBal - beforeBal, 1000 ether);
     }
 
     function testPreciseRewardCalculation() public {
@@ -172,27 +175,27 @@ contract StakingTest is Test {
         // Fast forward 12 hours (0.5 days)
         vm.warp(block.timestamp + 12 hours);
 
-        // Expected reward for 0.5 days at 1% daily rate
-        uint256 expectedReward = (stakeAmount * 100 * 12 hours) / (86400 * 10000);
-        uint256 actualReward = staking.calculateReward(user1);
+        // Expected reward for 12 hours at fixed rate (single staker)
+        uint256 expectedReward = 12 hours * REWARD_PER_SECOND;
+        uint256 actualPending = staking.pendingReward(user1);
 
-        assertEq(actualReward, expectedReward, "Reward calculation should be precise");
+        assertEq(actualPending, expectedReward, "Reward calculation should be precise");
 
-        // Claim rewards and verify lastRewardTime is updated
+        // Claim rewards and verify pending becomes 0
         vm.prank(user1);
         staking.claimRewards();
 
-        // Immediately check reward should be 0
-        assertEq(staking.calculateReward(user1), 0, "Reward should be 0 right after claiming");
+        // Immediately check pending should be 0
+        assertEq(staking.pendingReward(user1), 0, "Reward should be 0 right after claiming");
 
         // Fast forward another 6 hours
         vm.warp(block.timestamp + 6 hours);
 
         // Should only calculate reward for the last 6 hours
-        uint256 expectedReward2 = (stakeAmount * 100 * 6 hours) / (86400 * 10000);
-        uint256 actualReward2 = staking.calculateReward(user1);
+        uint256 expectedReward2 = 6 hours * REWARD_PER_SECOND;
+        uint256 actualPending2 = staking.pendingReward(user1);
 
-        assertEq(actualReward2, expectedReward2, "Should only calculate reward since last claim");
+        assertEq(actualPending2, expectedReward2, "Should only calculate reward since last claim");
     }
 
     // Test that rewards accumulate properly without precision loss
@@ -207,16 +210,16 @@ contract StakingTest is Test {
         // Fast forward 12 hours (0.5 days)
         vm.warp(block.timestamp + 12 hours);
 
-        // With the fix, we should get rewards for partial days
-        uint256 reward1 = staking.calculateReward(user1);
+        // We should get rewards for partial time windows
+        uint256 reward1 = staking.pendingReward(user1);
         assertTrue(reward1 > 0, "Should have rewards for 12 hours");
 
         // Fast forward another 12 hours (total 1 day)
         vm.warp(block.timestamp + 12 hours);
 
-        uint256 reward2 = staking.calculateReward(user1);
-        uint256 expectedRewardForOneDay = (stakeAmount * 100) / 10000; // 1%
-        assertEq(reward2, expectedRewardForOneDay, "Should have exactly 1% for 1 day");
+        uint256 reward2 = staking.pendingReward(user1);
+        uint256 expectedRewardForOneDay = 1 days * REWARD_PER_SECOND;
+        assertEq(reward2, expectedRewardForOneDay, "Should have exactly 1 day worth of rewards");
     }
 
     // Test that claiming rewards doesn't reset staking duration
@@ -244,9 +247,13 @@ contract StakingTest is Test {
         staking.claimRewards();
         uint256 balanceAfter = rewardToken.balanceOf(user1);
 
-        // Should only get rewards for the second 12 hours
-        uint256 rewardForHalfDay = (stakeAmount * 100 * 12 hours) / (86400 * 10000);
-        assertEq(balanceAfter - balanceBefore, rewardForHalfDay, "Should only get rewards for time since last claim");
+        // Should only get rewards for the second 12 hours (single staker)
+        uint256 rewardForHalfDay = 12 hours * REWARD_PER_SECOND;
+        assertEq(
+            balanceAfter - balanceBefore,
+            rewardForHalfDay,
+            "Should only get rewards for time since last claim"
+        );
     }
 
     // Test multiple claims in short intervals
@@ -270,8 +277,31 @@ contract StakingTest is Test {
 
         vm.stopPrank();
 
-        // Total rewards should be 2% (2 days * 1% per day)
-        uint256 expectedTotalReward = (stakeAmount * 100 * 2) / 10000;
+        // Total rewards should equal 2 days * rewardPerSecond
+        uint256 expectedTotalReward = 2 days * REWARD_PER_SECOND;
         assertEq(totalRewardsClaimed, expectedTotalReward, "Total rewards should equal 2 days worth");
+    }
+
+    function testEmergencyWithdraw() public {
+        uint256 stakeAmount = 1000 * 10 ** 18;
+
+        // Stake
+        vm.startPrank(user1);
+        myToken.approve(address(staking), stakeAmount);
+        staking.stake(stakeAmount);
+        vm.stopPrank();
+
+        // Generate rewards
+        vm.warp(block.timestamp + 1 days);
+
+        // Emergency withdraw should return principal and forfeit rewards
+        uint256 userBalBefore = myToken.balanceOf(user1);
+        vm.prank(user1);
+        staking.emergencyWithdraw();
+
+        assertEq(myToken.balanceOf(user1) - userBalBefore, stakeAmount);
+        (uint256 staked,,) = staking.getStakeInfo(user1);
+        assertEq(staked, 0);
+        assertEq(rewardToken.balanceOf(user1), 0);
     }
 }

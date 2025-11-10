@@ -9,6 +9,22 @@ A Token Staking contract implementation using Foundry framework. Users can stake
 - Claim rewards separately
 - Configurable reward rate
 
+## Prepare
+
+Install Foundry and pin the toolchain to 1.4.4-stable before running any commands.
+
+```bash
+# Install Foundry (if not installed)
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+
+# Pin Foundry to the stable 1.4.4 toolchain
+foundryup --version 1.4.4
+
+# Verify
+forge --version   # should show 1.4.4 (stable)
+```
+
 ## Setup
 
 1. Install dependencies:
@@ -51,6 +67,14 @@ Deploy to Sepolia testnet:
 ```bash
 forge script script/Deploy.s.sol --rpc-url sepolia --broadcast --verify
 ```
+
+## Deployed Addresses (Sepolia)
+
+The following contracts have been deployed to the Sepolia network:
+
+- RestrictedStakingToken: [`0xE1E697d67Cfdc3BD8D7B8ADcB81B30D3C30676A0`](https://sepolia.etherscan.io/address/0xe1e697d67cfdc3bd8d7b8adcb81b30d3c30676a0)
+- RewardToken: [`0xB31198aabBdb66365c211A26D7DA1AEEa8099fcA`](https://sepolia.etherscan.io/address/0xb31198aabbdba66365c211a26d7da1aeea8099fca)
+- Staking: [`0x67BebaCFb97f13e1b33510309b74A0503695d0f3`](https://sepolia.etherscan.io/address/0x67bebacfb97f13e1b33510309b74a0503695d0f3)
 
 ## Contract Architecture
 
@@ -138,7 +162,7 @@ Check that your stake was successful:
 To see your pending rewards:
 
 1. On the Staking contract "Read Contract"
-2. Find the `calculateRewards` function:
+2. Find the `pendingReward` function:
    - Enter your wallet address
 3. Query - it shows your accumulated rewards
 
@@ -162,18 +186,22 @@ To unstake your tokens:
 ### Common Issues and Solutions
 
 #### "ERC20: insufficient allowance"
+
 - **Cause**: You haven't approved the Staking contract or the amount is too low
 - **Solution**: Go back to step 2 and approve the correct amount
 
 #### "Address is blacklisted"
+
 - **Cause**: Your address has been added to the blacklist
 - **Solution**: Contact the contract owner to remove you from the blacklist
 
 #### "Cannot stake 0"
+
 - **Cause**: Trying to stake 0 tokens
 - **Solution**: Enter a valid amount greater than 0
 
 #### Wrong Wallet Address
+
 - **Cause**: You approved tokens on one address but trying to stake from another
 - **Solution**: Ensure you're using the same wallet address for all operations
 
@@ -187,6 +215,7 @@ To unstake your tokens:
 ### Contract Addresses
 
 After deployment, your contract addresses will be displayed. Example format:
+
 ```
 RestrictedStakingToken: 0x...
 RewardToken: 0x...

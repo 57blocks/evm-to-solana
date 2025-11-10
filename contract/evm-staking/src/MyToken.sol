@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./RestrictedStakingToken.sol";
+import {RestrictedStakingToken} from "./RestrictedStakingToken.sol";
 
 contract MyToken is RestrictedStakingToken {
     constructor() RestrictedStakingToken("MyToken", "MTK") {

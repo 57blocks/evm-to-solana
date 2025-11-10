@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
-import "../src/RestrictedStakingToken.sol";
-import "../src/RewardToken.sol";
-import "../src/Staking.sol";
+import {Script} from "forge-std/Script.sol";
+import {console2 as console} from "forge-std/console2.sol";
+import {RestrictedStakingToken} from "../src/RestrictedStakingToken.sol";
+import {RewardToken} from "../src/RewardToken.sol";
+import {Staking} from "../src/Staking.sol";
 
 contract DeployScript is Script {
     function run() external {
@@ -18,8 +19,11 @@ contract DeployScript is Script {
         RewardToken rewardToken = new RewardToken();
         console.log("RewardToken deployed at:", address(rewardToken));
 
-        // Deploy staking contract
-        Staking staking = new Staking(address(stakingToken), address(rewardToken));
+        // Configure fixed emission rate (tokens per second)
+        uint256 rewardPerSecond = 1e18; // 1 token/sec
+
+        // Deploy staking contract with fixed emission
+        Staking staking = new Staking(address(stakingToken), address(rewardToken), rewardPerSecond);
         console.log("Staking contract deployed at:", address(staking));
 
         // Mint initial staking tokens to deployer (optional - for testing)
@@ -27,14 +31,11 @@ contract DeployScript is Script {
         stakingToken.mint(msg.sender, stakingSupply);
         console.log("Minted", stakingSupply / 10 ** 18, "staking tokens to deployer");
 
-        // Transfer initial reward tokens to staking contract
+        // Fund initial reward tokens via staking.fundRewards (emits event)
         uint256 rewardSupply = 500000 * 10 ** 18; // 500k tokens for rewards
-        rewardToken.transfer(address(staking), rewardSupply);
-        console.log("Transferred", rewardSupply / 10 ** 18, "reward tokens to staking contract");
-
-        // Set reward rate (optional - default is 1% per day)
-        staking.setRewardRate(100); // 1% per day
-        console.log("Reward rate set to 1% per day");
+        rewardToken.approve(address(staking), rewardSupply);
+        staking.fundRewards(rewardSupply);
+        console.log("Funded", rewardSupply / 10 ** 18, "reward tokens to staking contract");
 
         vm.stopBroadcast();
 
