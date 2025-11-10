@@ -10,8 +10,12 @@ import { SignMessageResult, useSignMessage } from "./useSignMessage";
  */
 export const useAutoSignOnConnect = () => {
   const { connected, publicKey, connecting, wallet } = useWallet();
-  const { signMessageForAuth, signTransactionForAuth, verifySignature } =
-    useSignMessage();
+  const {
+    signMessageForAuth,
+    signTransactionForAuth,
+    verifySignature,
+    verifyTransactionSignature,
+  } = useSignMessage();
   const [isSigning, setIsSigning] = useState(false);
   // Generate a sign-in message
   const generateSignInMessage = useCallback((walletAddress: string) => {
@@ -55,26 +59,47 @@ export const useAutoSignOnConnect = () => {
       try {
         const message = generateSignInMessage(publicKey.toBase58());
         let result: SignMessageResult;
-        if (
+        const isHardwareWallet =
           wallet?.adapter.name === "Trezor" ||
-          wallet?.adapter.name === "Ledger"
-        ) {
+          wallet?.adapter.name === "Ledger";
+
+        if (isHardwareWallet) {
           result = await signTransactionForAuth(message);
         } else {
           result = await signMessageForAuth(message);
         }
 
         if (result.success) {
-          // Store signature in localStorage (persists across browser sessions)
+          // Store signature and related data in localStorage
           localStorage.setItem("userSignature", result.signature);
           localStorage.setItem("userPublicKey", result.publicKey);
 
-          // Simulate backend verification using TweetNaCl
-          const isValid = verifySignature(
-            message,
-            result.signature,
-            result.publicKey
-          );
+          // For transaction signatures, also store the serialized message
+          if (result.serializedMessage) {
+            localStorage.setItem(
+              "userSerializedMessage",
+              result.serializedMessage
+            );
+          }
+
+          // Verify the signature
+          let isValid = false;
+          if (isHardwareWallet && result.serializedMessage) {
+            // For hardware wallets, verify the transaction signature
+            isValid = verifyTransactionSignature(
+              result.serializedMessage,
+              result.signature,
+              result.publicKey
+            );
+          } else {
+            // For regular wallets, verify the message signature
+            isValid = verifySignature(
+              message,
+              result.signature,
+              result.publicKey
+            );
+          }
+
           if (isValid) {
             console.log("Signature verified successfully!");
           } else {
