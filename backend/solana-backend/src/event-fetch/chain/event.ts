@@ -15,33 +15,34 @@ export interface TransactionEventsParserFactory {
 }
 
 export class BaseEvent {
-  static eventNames(): string[] {
-    return [];
-  }
-
-  static eventType(): string {
-    return "none";
-  }
 
   chainId: number;
   blockNumber: number;
   transactionHash: string;
   timestamp: number;
   status: string;
-  monitorAddress: string;
+  monitorAddress?: string;
 
   constructor(chainId: number,
               blockNumber: number,
               transactionHash: string,
               timestamp: number,
               status: string,
-              monitorAddress: string) {
+              monitorAddress?: string) {
     this.chainId = chainId;
     this.blockNumber = blockNumber;
     this.transactionHash = transactionHash;
     this.timestamp = timestamp;
     this.status = status;
     this.monitorAddress = monitorAddress;
+  }
+
+  static eventName(): string {
+    return "";
+  }
+
+  static eventType(): string {
+    return "none";
   }
 
 
