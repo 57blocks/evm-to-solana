@@ -1,7 +1,7 @@
 import axios from "axios";
 import { BaseEvent } from "../event";
 import { SolanaService } from "./solana";
-import { SPLTransferEvent } from "../../permissionless/event";
+import { PermissionlessSPLTransferEvent } from "../../permissionless/event";
 import { mergeSortedArrays, sleep } from "../../common";
 
 const PAGE_SIZE = 100;
@@ -115,11 +115,7 @@ export class SolscanTransferEventFetcher {
           froms.set(fromAddress, from);
           tos.set(toAddress, to);
         }
-        const event = new SPLTransferEvent(baseEvent);
-        event.froms = Array.from(froms.values());
-        event.tos = Array.from(tos.values());
-        event.monitorAddress = tokenMintAddress;
-        events.push(event);
+        events.push(new PermissionlessSPLTransferEvent(baseEvent, Array.from(froms.values()), Array.from(tos.values())));
       }
       console.log(
         `Fetched ${
