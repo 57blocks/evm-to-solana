@@ -141,9 +141,10 @@ class AdminTransactionAnchorEventsParser
     let event = null;
     const eventData = data;
     if (InitializedEvent.eventName() === eventData.name) {
+      console.log("InitializedEvent", eventData);
       event = new InitializedEvent(baseEvent, eventData.data.authority.toString(),
-       eventData.data.stakingMint.toString(), eventData.data.rewardMint.toString(),
-        parseInt(eventData.data.rewardRate.toString()), parseInt(eventData.data.timestamp.toString()));
+       eventData.data.staking_mint.toString(), eventData.data.reward_mint.toString(),
+        parseInt(eventData.data.reward_rate.toString()), parseInt(eventData.data.timestamp.toString()));
     } 
 
     return event;
