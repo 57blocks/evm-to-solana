@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { AddressLookupTableAccount, PublicKey } from "@solana/web3.js";
 
 /**
  * Address Lookup Table (ALT) Account Information
@@ -17,26 +17,14 @@ export interface AltAccountInfo {
 }
 
 /**
- * Address Lookup Table (ALT) Creation Parameters
- */
-export interface AltCreationParams {
-  payer: PublicKey;
-  accounts: AltAccountInfo;
-}
-
-/**
  * Address Lookup Table (ALT) Hook Return Type
  */
 export interface UseStakeByAltReturn {
-  stakeAmount: string;
   isStaking: boolean;
   isButtonClicked: boolean;
-  error: string | null;
-  transactionSignature: string | null;
-  lookupTableAddress: string | null;
-  setStakeAmount: (amount: string) => void;
+  transactionSignature?: string;
+  lookupTableAddress?: PublicKey;
   handleStake: () => Promise<void>;
-  resetError: () => void;
   isDisabled: boolean;
 }
 
@@ -46,34 +34,4 @@ export interface UseStakeByAltReturn {
 export interface UseStakeByAltParams {
   onTransactionSuccess?: () => void;
   onError?: (message: string) => void;
-}
-
-/**
- * Address Lookup Table (ALT) Transaction Result
- */
-export interface AltTransactionResult {
-  signature: string;
-  lookupTableAddress: string;
-  lookupTableAccount: any; // AddressLookupTableAccount type
-}
-
-/**
- * Address Lookup Table (ALT) Error Types
- */
-export enum AltErrorType {
-  WALLET_NOT_CONNECTED = "WALLET_NOT_CONNECTED",
-  INVALID_STAKE_AMOUNT = "INVALID_STAKE_AMOUNT",
-  ALT_CREATION_FAILED = "ALT_CREATION_FAILED",
-  TRANSACTION_FAILED = "TRANSACTION_FAILED",
-  SIGNING_FAILED = "SIGNING_FAILED",
-}
-
-/**
- * Address Lookup Table (ALT) Process Steps
- */
-export enum AltProcessStep {
-  CREATING_TABLE = "CREATING_TABLE",
-  ADDING_ACCOUNTS = "ADDING_ACCOUNTS",
-  SENDING_TRANSACTION = "SENDING_TRANSACTION",
-  COMPLETED = "COMPLETED",
 }

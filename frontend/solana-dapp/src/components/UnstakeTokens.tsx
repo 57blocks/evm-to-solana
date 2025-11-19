@@ -1,16 +1,19 @@
 import React, { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakingActions.module.css";
-import { convertToLamports, validateTokenAmount } from "../utils/tokenUtils";
+import { validateTokenAmount } from "../utils/tokenUtils";
 import { useUnstake } from "@/hooks/useUnstake";
+import { formatErrorForDisplay } from "@/utils/programErrors";
+import { ErrorInfo } from "./ErrorModal";
+import { TokenAmountInput } from "./TokenAmountInput";
 
 interface UnstakeTokensProps {
-  onTransactionSuccess?: () => void;
-  onError: (message: string) => void;
+  onSuccess: () => void;
+  onError: (errorInfo: ErrorInfo) => void;
 }
 
 const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
-  onTransactionSuccess,
+  onSuccess,
   onError,
 }) => {
   const [unstakeAmount, setUnstakeAmount] = useState("");
@@ -22,7 +25,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
 
   const handleUnstake = async () => {
     if (!connected || !publicKey) {
-      onError("Please connect your wallet first");
+      onError({ message: "Please connect your wallet first" });
       return;
     }
 
@@ -33,7 +36,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
     // Validate input using utility function
     const validation = validateTokenAmount(unstakeAmount);
     if (!validation.isValid) {
-      onError(validation.error || "Invalid amount");
+      onError({ message: validation.error || "Invalid amount" });
       return;
     }
 
@@ -47,15 +50,12 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       setUnstakeAmount("");
       unstakeAmountRef.current = "";
 
-      if (onTransactionSuccess) {
-        onTransactionSuccess();
-      }
+      onSuccess && onSuccess();
     } catch (error) {
-      onError(
-        `Failed to unstake: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      onError({
+        message: formatErrorForDisplay(error).message,
+        title: formatErrorForDisplay(error).title,
+      });
     } finally {
       setIsUnstaking(false);
       setIsButtonClicked(false);
@@ -67,31 +67,20 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
   return (
     <div>
       <div className={styles.inputGroup}>
-        <input
-          type="number"
-          min="0"
-          step="1"
+        <TokenAmountInput
           value={unstakeAmount}
-          onChange={(e) => {
-            const value = e.target.value;
-            // Only allow positive integers or empty string
-            if (
-              value === "" ||
-              (parseInt(value) >= 0 &&
-                !value.includes(".") &&
-                !value.includes(","))
-            ) {
-              setUnstakeAmount(value);
-              unstakeAmountRef.current = value;
-            }
+          onChange={(value) => {
+            setUnstakeAmount(value);
+            unstakeAmountRef.current = value;
           }}
           placeholder={
             connected
               ? "Enter unstake amount (1 = 1 token)"
               : "Connect wallet first"
           }
-          className={styles.input}
           disabled={isDisabled}
+          min={0}
+          connected={connected}
         />
         <button
           onClick={handleUnstake}

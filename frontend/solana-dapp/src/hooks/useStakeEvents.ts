@@ -10,7 +10,7 @@ export type StakeEventState = {
 };
 
 interface UseStakeEventsProps {
-  userAddress?: PublicKey;
+  userAddress: PublicKey | null;
   isConnected: boolean;
 }
 

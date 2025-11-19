@@ -3,33 +3,32 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import { executeStakeTransaction } from "../utils/stakingUtils";
 import { ERROR_MESSAGES } from "@/utils/tokenUtils";
+import { formatErrorForDisplay } from "@/utils/programErrors";
+import { ErrorInfo } from "@/components/ErrorModal";
 
 export interface UseStakeReturn {
   // State
   stakeAmount: string;
   isStaking: boolean;
-  error: string | null;
   transactionSignature: string | null;
 
   // Actions
   setStakeAmount: (amount: string) => void;
   handleStake: () => Promise<void>;
-  resetError: () => void;
 
   // Computed states
   isDisabled: boolean;
 }
 
 export const useStake = (
-  onTransactionSuccess?: () => void,
-  onError?: (message: string) => void
+  onSuccess: () => void,
+  onError: (errorInfo: ErrorInfo) => void
 ): UseStakeReturn => {
   const { publicKey } = useWallet();
   const { program } = useProgram();
   const [stakeAmount, setStakeAmount] = useState("");
   const [isStaking, setIsStaking] = useState(false);
   const [isButtonClicked, setIsButtonClicked] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [transactionSignature, setTransactionSignature] = useState<
     string | null
   >(null);
@@ -38,15 +37,13 @@ export const useStake = (
   const handleStake = async () => {
     if (!publicKey || !program) {
       const errorMsg = ERROR_MESSAGES.WALLET_NOT_CONNECTED;
-      setError(errorMsg);
-      onError?.(errorMsg);
+      onError?.({ message: errorMsg });
       return;
     }
 
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
       const errorMsg = ERROR_MESSAGES.INVALID_STAKE_AMOUNT;
-      setError(errorMsg);
-      onError?.(errorMsg);
+      onError?.({ message: errorMsg });
       return;
     }
 
@@ -57,7 +54,6 @@ export const useStake = (
     // Immediately disable button to prevent multiple clicks
     setIsButtonClicked(true);
     setIsStaking(true);
-    setError(null);
 
     try {
       console.log("Executing stake transaction", stakeAmount);
@@ -76,26 +72,17 @@ export const useStake = (
       // Reset form and notify parent
       setStakeAmount("");
       stakeAmountRef.current = "";
-      if (onTransactionSuccess) {
-        onTransactionSuccess();
-      }
+      onSuccess && onSuccess();
 
       // Reset transaction signature after success
       setTransactionSignature(null);
     } catch (err) {
-      console.error("Staking failed:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : ERROR_MESSAGES.STAKING_FAILED;
-      setError(errorMessage);
-      onError?.(errorMessage);
+      const errorMessage = formatErrorForDisplay(err);
+      onError?.({ message: errorMessage.message, title: errorMessage.title });
     } finally {
       setIsStaking(false);
       setIsButtonClicked(false);
     }
-  };
-
-  const resetError = () => {
-    setError(null);
   };
 
   const isDisabled = !publicKey || isStaking || isButtonClicked;
@@ -104,13 +91,11 @@ export const useStake = (
     // State
     stakeAmount,
     isStaking,
-    error,
     transactionSignature,
 
     // Actions
     setStakeAmount,
     handleStake,
-    resetError,
 
     // Computed states
     isDisabled,

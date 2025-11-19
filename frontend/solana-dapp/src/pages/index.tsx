@@ -2,54 +2,52 @@ import type { NextPage } from "next";
 import Head from "next/head";
 import { useState, useRef, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useQueryClient } from "@tanstack/react-query";
 import styles from "../styles/Home.module.css";
 import StakingActions from "../components/StakingActions";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
-import { StakingDemos } from "../components/StakingDemos";
-import ErrorModal from "../components/ErrorModal";
+import { StakingOptimizations } from "../components/StakingOptimizations";
+import ErrorModal, { ErrorInfo } from "../components/ErrorModal";
 import DynamicWalletButton from "../components/DynamicWalletButton";
-import GlobalToast from "../components/GlobalToast";
+import SuccessToast from "../components/StakeSuccessToast";
 import { useStakeEvents } from "../hooks/useStakeEvents";
 import { useAutoSignOnConnect } from "../hooks/useAutoSignOnConnect";
 
 const Home: NextPage = () => {
-  const [globalErrorMessage, setGlobalErrorMessage] = useState<string | null>(
-    null
-  );
+  const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const { connected, publicKey } = useWallet();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
-  const queryClient = useQueryClient();
-
   // Monitor stake events
   const { latestStakeEvent, clearLatestStakeEvent } = useStakeEvents({
-    userAddress: publicKey || undefined,
+    userAddress: publicKey,
     isConnected: connected,
   });
 
   // Auto sign message on wallet connect
-  useAutoSignOnConnect();
+  useAutoSignOnConnect(setErrorInfo);
 
-  const handleTransactionSuccess = useCallback(() => {
+  const handleOnSuccess = () => {
     // Refresh stake information immediately after successful transaction
     stakeInfoRef.current?.refresh();
-  }, []);
+  };
 
-  const clearGlobalError = useCallback(() => {
-    setGlobalErrorMessage(null);
-  }, []);
+  const clearGlobalError = () => {
+    setErrorInfo(null);
+  };
 
-  const clearStakeEvent = useCallback(() => {
+  const clearStakeEvent = () => {
     clearLatestStakeEvent();
-  }, [clearLatestStakeEvent]);
+  };
 
   return (
     <div className={styles.container}>
       {/* Global Error Modal - displays in center of entire screen */}
-      <ErrorModal
-        errorMessage={globalErrorMessage}
-        onClose={clearGlobalError}
-      />
+      {errorInfo && (
+        <ErrorModal
+          message={errorInfo.message}
+          title={errorInfo.title || "Error"}
+          onClose={clearGlobalError}
+        />
+      )}
 
       <Head>
         <title>Solana Staking Platform - ALT & Priority Fee Demos</title>
@@ -98,21 +96,24 @@ const Home: NextPage = () => {
             {/* Right Column - Staking Actions */}
             <div className={styles.rightColumn}>
               <StakingActions
-                onTransactionSuccess={handleTransactionSuccess}
-                onError={setGlobalErrorMessage}
+                onSuccess={handleOnSuccess}
+                onError={setErrorInfo}
               />
             </div>
           </div>
         )}
 
-        {/* Optimization Demos - Only show if wallet is connected */}
+        {/* Staking Optimizations - Only show if wallet is connected */}
         {connected && (
           <div className={styles.historySection}>
-            <StakingDemos onTransactionSuccess={handleTransactionSuccess} />
+            <StakingOptimizations
+              onSuccess={handleOnSuccess}
+              onError={setErrorInfo}
+            />
           </div>
         )}
       </main>
-      <GlobalToast stakeEvent={latestStakeEvent} onClose={clearStakeEvent} />
+      <SuccessToast stakeEvent={latestStakeEvent} onClose={clearStakeEvent} />
     </div>
   );
 };

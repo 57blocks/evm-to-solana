@@ -15,48 +15,42 @@ import {
   TransactionMessage,
   VersionedTransaction,
   AddressLookupTableProgram,
+  Transaction,
 } from "@solana/web3.js";
-import {
-  AltAccountInfo,
-  AltCreationParams,
-  UseStakeByAltReturn,
-  AltTransactionResult,
-} from "../types/lookupTable";
+import { AltAccountInfo, UseStakeByAltReturn } from "../types/lookupTable";
 import { useConnection } from "@solana/wallet-adapter-react";
+import { ErrorInfo } from "@/components/ErrorModal";
+import { formatErrorForDisplay } from "@/utils/programErrors";
+import { Program } from "@coral-xyz/anchor";
+import { SolanaStaking } from "@/idl/type";
 
-export const useStakeByAlt = (
-  onTransactionSuccess?: () => void,
-  onError?: (message: string) => void
+export const useStakeByLookupTable = (
+  stakeAmount: number,
+  onSuccess: () => void,
+  onError: (error: ErrorInfo) => void
 ): UseStakeByAltReturn => {
   const { publicKey, signTransaction } = useWallet();
   const { program } = useProgram();
-  const [stakeAmount, setStakeAmount] = useState("");
   const [isStaking, setIsStaking] = useState(false);
   const { connection } = useConnection();
   const [isButtonClicked, setIsButtonClicked] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [transactionSignature, setTransactionSignature] = useState<
-    string | null
-  >(null);
-  const [lookupTableAddress, setLookupTableAddress] = useState<string | null>(
-    null
-  );
-  const altCache = useRef<AddressLookupTableAccount | null>(null);
+  const [transactionSignature, setTransactionSignature] = useState<string>();
+  const altCache = useRef<AddressLookupTableAccount>();
 
   /**
    * Create an Address Lookup Table (ALT) for stake accounts with optimized single transaction
    * Combines both create and extend instructions into one transaction
    */
-  const createStakeAlt = async (
-    params: AltCreationParams
-  ): Promise<AltTransactionResult> => {
+  const createLookupTable = async (
+    payer: PublicKey,
+    accounts: AltAccountInfo
+  ): Promise<AddressLookupTableAccount | undefined> => {
     console.log("Creating Address Lookup Table (ALT) for stake accounts...");
-    const { payer, accounts } = params;
 
     const recentSlot = await connection.getSlot();
 
     // Create lookup table instruction
-    const [lookupTableInst, altAddress] =
+    const [lookupTableInst, lookupTable] =
       AddressLookupTableProgram.createLookupTable({
         authority: payer,
         payer,
@@ -67,7 +61,7 @@ export const useStakeByAlt = (
     const addAccountsInst = AddressLookupTableProgram.extendLookupTable({
       payer: payer,
       authority: payer,
-      lookupTable: altAddress,
+      lookupTable,
       addresses: [
         accounts.state,
         accounts.userStakeInfo,
@@ -83,7 +77,7 @@ export const useStakeByAlt = (
     });
 
     // Combine both instructions in a single transaction
-    const combinedTx = new anchor.web3.Transaction()
+    const combinedTx = new Transaction()
       .add(lookupTableInst)
       .add(addAccountsInst);
 
@@ -93,60 +87,52 @@ export const useStakeByAlt = (
     combinedTx.feePayer = payer;
 
     if (!signTransaction) {
-      throw new Error("Wallet does not support signing transactions");
+      onError?.({ message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED });
+      return;
     }
 
     console.log("Signing combined Address Lookup Table (ALT) transaction...");
     const signedTx = await signTransaction(combinedTx);
 
     console.log("Sending and confirming transaction...");
-    const signature = await sendAndConfirmTransaction(
-      connection,
-      signedTx.serialize()
-    );
+    await sendAndConfirmTransaction(connection, signedTx.serialize());
 
     console.log(
       "Address Lookup Table (ALT) created and accounts added:",
-      altAddress.toString()
+      lookupTable.toString()
     );
-    setLookupTableAddress(altAddress.toString());
 
     // Fetch the created lookup table
     const lookupTableResponse = await connection.getAddressLookupTable(
-      altAddress
+      lookupTable
     );
     if (!lookupTableResponse.value) {
-      throw new Error("Failed to fetch lookup table");
+      onError?.({ message: ERROR_MESSAGES.FAILED_TO_LOAD_STAKE_INFO });
+      return;
     }
     const lookupTableAccount = lookupTableResponse.value;
+    console.log("Lookup table account:", lookupTableAccount);
 
     altCache.current = lookupTableAccount;
 
-    return {
-      signature,
-      lookupTableAddress: altAddress.toString(),
-      lookupTableAccount,
-    };
+    return lookupTableAccount;
   };
 
   /**
    * Get or create Address Lookup Table (ALT) with caching
    */
-  const getOrCreateAlt = async (
+  const getOrCreateLookupTable = async (
     payer: PublicKey,
     accounts: AltAccountInfo
-  ): Promise<AddressLookupTableAccount> => {
+  ): Promise<AddressLookupTableAccount | undefined> => {
     if (altCache.current) {
       console.log("Using cached Address Lookup Table (ALT)");
       return altCache.current;
     }
 
-    const result = await createStakeAlt({
-      payer,
-      accounts,
-    });
+    const result = await createLookupTable(payer, accounts);
 
-    return result.lookupTableAccount;
+    return result;
   };
 
   /**
@@ -155,9 +141,9 @@ export const useStakeByAlt = (
    */
   const createVersionedStakeTransaction = async (
     publicKey: PublicKey,
-    program: any,
-    stakeAmount: string,
-    alt: AddressLookupTableAccount
+    program: Program<SolanaStaking>,
+    stakeAmount: number,
+    lookupTable: AddressLookupTableAccount
   ): Promise<VersionedTransaction> => {
     // Use common utility to create stake instruction
     const { instruction: stakeInstruction } = await createStakeInstruction({
@@ -172,7 +158,7 @@ export const useStakeByAlt = (
       payerKey: publicKey,
       recentBlockhash: blockhash,
       instructions: [stakeInstruction],
-    }).compileToV0Message([alt]);
+    }).compileToV0Message([lookupTable]);
 
     return new VersionedTransaction(messageV0);
   };
@@ -181,27 +167,25 @@ export const useStakeByAlt = (
    * Handle stake transaction using Address Lookup Table (ALT)
    */
   const handleStake = async () => {
+    console.log("🔵 handleStake called");
+
     if (!publicKey || !program) {
-      const errorMsg = ERROR_MESSAGES.WALLET_NOT_CONNECTED;
-      setError(errorMsg);
-      onError?.(errorMsg);
+      onError?.({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
       return;
     }
 
-    if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
-      const errorMsg = ERROR_MESSAGES.INVALID_STAKE_AMOUNT;
-      setError(errorMsg);
-      onError?.(errorMsg);
+    if (!stakeAmount || stakeAmount <= 0) {
+      onError?.({ message: ERROR_MESSAGES.INVALID_STAKE_AMOUNT });
       return;
     }
 
     if (isStaking || isButtonClicked) {
+      onError?.({ message: "Already staking or button clicked, skipping..." });
       return;
     }
 
     setIsButtonClicked(true);
     setIsStaking(true);
-    setError(null);
 
     try {
       console.log("Starting Address Lookup Table (ALT) stake process...");
@@ -223,21 +207,26 @@ export const useStakeByAlt = (
       };
 
       // Get or create Address Lookup Table (ALT)
-      const alt = await getOrCreateAlt(publicKey, accounts);
-
+      const lookupTable = await getOrCreateLookupTable(publicKey, accounts);
+      if (!lookupTable) {
+        onError?.({ message: ERROR_MESSAGES.FAILED_TO_LOAD_LOOKUP_TABLE });
+        return;
+      }
       // Create versioned stake transaction using ALT
       const versionedTx = await createVersionedStakeTransaction(
         publicKey,
         program,
         stakeAmount,
-        alt
+        lookupTable
       );
 
       if (!signTransaction) {
-        throw new Error("Wallet does not support signing transactions");
+        onError?.({ message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED });
+        return;
       }
 
       const signedVersionedTx = await signTransaction(versionedTx);
+
       const signature = await sendAndConfirmTransaction(
         connection,
         signedVersionedTx.serialize()
@@ -248,43 +237,25 @@ export const useStakeByAlt = (
         signature
       );
       setTransactionSignature(signature);
-      // Don't clear stakeAmount when used in shared context
-      // setStakeAmount("");
-      // stakeAmountRef.current = "";
+      onSuccess();
 
-      if (onTransactionSuccess) {
-        onTransactionSuccess();
-      }
-
-      setTransactionSignature(null);
+      setTransactionSignature(undefined);
     } catch (err) {
-      console.error("Address Lookup Table (ALT) staking failed:", err);
-      const errorMessage =
-        err instanceof Error ? err.message : ERROR_MESSAGES.STAKING_FAILED;
-      setError(errorMessage);
-      onError?.(errorMessage);
+      const errorInfo = formatErrorForDisplay(err);
+      onError({ message: errorInfo.message, title: errorInfo.title });
     } finally {
       setIsStaking(false);
       setIsButtonClicked(false);
     }
   };
 
-  const resetError = () => {
-    setError(null);
-  };
-
   const isDisabled = !publicKey || isStaking || isButtonClicked;
 
   return {
-    stakeAmount,
     isStaking,
     isButtonClicked,
-    error,
     transactionSignature,
-    lookupTableAddress,
-    setStakeAmount,
     handleStake,
-    resetError,
     isDisabled,
   };
 };

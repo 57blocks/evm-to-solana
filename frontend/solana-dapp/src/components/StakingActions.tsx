@@ -2,14 +2,15 @@ import React from "react";
 import styles from "../styles/StakingActions.module.css";
 import StakeTokens from "./StakeTokens";
 import UnstakeTokens from "./UnstakeTokens";
+import { ErrorInfo } from "./ErrorModal";
 
 interface StakingActionsProps {
-  onTransactionSuccess?: () => void;
-  onError: (message: string) => void;
+  onSuccess: () => void;
+  onError: (errorInfo: ErrorInfo) => void;
 }
 
 const StakingActions: React.FC<StakingActionsProps> = ({
-  onTransactionSuccess,
+  onSuccess,
   onError,
 }) => {
   return (
@@ -19,19 +20,13 @@ const StakingActions: React.FC<StakingActionsProps> = ({
       {/* Staking Section */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>Stake Tokens</h3>
-        <StakeTokens
-          onTransactionSuccess={onTransactionSuccess}
-          onError={onError}
-        />
+        <StakeTokens onSuccess={onSuccess} onError={onError} />
       </div>
 
       {/* Unstaking Section */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>Unstake Tokens</h3>
-        <UnstakeTokens
-          onTransactionSuccess={onTransactionSuccess}
-          onError={onError}
-        />
+        <UnstakeTokens onSuccess={onSuccess} onError={onError} />
       </div>
     </div>
   );

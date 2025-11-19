@@ -3,12 +3,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { SignMessageResult, useSignMessage } from "./useSignMessage";
+import { PublicKey } from "@solana/web3.js";
+import { ErrorInfo } from "@/components/ErrorModal";
 
 /**
  * Hook to automatically sign message when wallet connects
  * Uses "use client" directive to ensure client-side only execution
  */
-export const useAutoSignOnConnect = () => {
+export const useAutoSignOnConnect = (
+  setErrorInfo: (errorInfo: ErrorInfo) => void
+) => {
   const { connected, publicKey, connecting, wallet } = useWallet();
   const {
     signMessageForAuth,
@@ -18,14 +22,14 @@ export const useAutoSignOnConnect = () => {
   } = useSignMessage();
   const [isSigning, setIsSigning] = useState(false);
   // Generate a sign-in message
-  const generateSignInMessage = useCallback((walletAddress: string) => {
+  const generateSignInMessage = useCallback((walletAddress: PublicKey) => {
     const appName = process.env.NEXT_PUBLIC_APP_NAME;
     const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
     const timestamp = new Date().toISOString();
     const nonce = Math.random().toString(36).substring(7);
 
     return `${appName} wants you to sign in with your Solana account:
-    ${walletAddress}
+    ${walletAddress.toBase58()}
 
     Please sign in to verify your ownership of this wallet
 
@@ -57,7 +61,7 @@ export const useAutoSignOnConnect = () => {
       setIsSigning(true);
 
       try {
-        const message = generateSignInMessage(publicKey.toBase58());
+        const message = generateSignInMessage(publicKey);
         let result: SignMessageResult;
         const isHardwareWallet =
           wallet?.adapter.name === "Trezor" ||
@@ -103,16 +107,21 @@ export const useAutoSignOnConnect = () => {
           if (isValid) {
             console.log("Signature verified successfully!");
           } else {
-            console.error("Signature verification failed!");
+            setErrorInfo({
+              title: "Signature Verification Failed",
+              message: "Please try again.",
+            });
           }
         }
       } catch (error) {
-        console.error("Auto sign failed:", error);
+        setErrorInfo({
+          title: "Auto Sign Failed",
+          message: "Please try again.",
+        });
       } finally {
         setIsSigning(false);
       }
     };
     autoSign();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, connecting, publicKey, isSigning]);
 };

@@ -9,7 +9,7 @@ import styles from "../styles/WalletButton.module.css";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const WalletButton = () => {
-  const { connected, publicKey, wallet, disconnect, wallets } = useWallet();
+  const { connected, publicKey, wallet, disconnect } = useWallet();
   const { connection } = useConnection();
   const [balance, setBalance] = useState<number | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);

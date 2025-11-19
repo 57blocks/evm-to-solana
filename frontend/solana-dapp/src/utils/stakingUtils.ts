@@ -10,7 +10,7 @@ import { SolanaStaking } from "../idl/type";
 export interface StakeTransactionParams {
   publicKey: PublicKey;
   program: Program<SolanaStaking>;
-  stakeAmount: string;
+  stakeAmount: number;
 }
 
 export interface StakeAccountInfo {

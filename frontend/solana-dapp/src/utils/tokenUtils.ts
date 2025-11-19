@@ -7,8 +7,10 @@ export const ERROR_MESSAGES = {
   UNSTAKING_FAILED: "Unstaking failed",
   PROGRAM_NOT_READY: "Program is not ready yet",
   FAILED_TO_LOAD_STAKE_INFO: "Failed to load stake info",
+  FAILED_TO_LOAD_LOOKUP_TABLE: "Failed to load lookup table",
   FAILED_TO_REFRESH: "Failed to refresh",
   UNKNOWN_ERROR: "Unknown error",
+  WALLET_NOT_SUPPORTED: "Wallet does not support signing transactions",
 } as const;
 
 // Constants for Solana token handling

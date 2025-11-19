@@ -1,330 +1,225 @@
-import { useState, useCallback } from "react";
-import { PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
-import * as anchor from "@coral-xyz/anchor";
+import { useState } from "react";
+import {
+  TransactionInstruction,
+  TransactionMessage,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import { ComputeBudgetProgram } from "@solana/web3.js";
 import { useProgram } from "./useProgram";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   createStakeInstruction,
   sendAndConfirmTransaction,
+  StakeAccountInfo,
 } from "../utils/stakingUtils";
 import { ERROR_MESSAGES } from "../utils/tokenUtils";
+import {
+  DEFAULT_PRIORITY_FEE,
+  DEFAULT_COMPUTE_UNITS,
+  filterValidFees,
+  calculateRecommendedFee,
+  areAllFeesZero,
+  addSafetyMargin,
+} from "../utils/priorityFeeUtils";
+import { formatErrorForDisplay } from "@/utils/programErrors";
+import { ErrorInfo } from "@/components/ErrorModal";
 
-// Constants
-const DEFAULT_PRIORITY_FEE = 10; // μSOL/CU for Devnet visibility
-const DEFAULT_COMPUTE_UNITS = 200000;
-const SAFETY_MARGIN_PERCENTAGE = 0.1; // 10%
-const MAX_REASONABLE_PRIORITY_FEE = 1000; // μSOL/CU - cap for filtering unreasonable fees
-
-export interface UsePriorityFeeReturn {
-  // State
-  computeUnits: number;
-  computeUnitPrice: number;
-  enablePriorityFee: boolean;
-  estimatedComputeUnits: number | null;
-  recommendedPriorityFee: number | null;
-  priorityFeeHistory: number[];
-
-  // Actions
-  setEnablePriorityFee: (enabled: boolean) => void;
-  estimateComputeUnits: (stakeAmount: string) => Promise<number>;
-  getRecentPriorityFees: (accounts: PublicKey[]) => Promise<number>;
-  handleStake: (stakeAmount: string) => Promise<string>;
-
-  // Computed values
-  totalFee: number; // in SOL
-  priorityFeeAmount: number; // in SOL
+export interface PriorityFeeReturn {
+  handlePriorityStake: () => Promise<string | undefined>;
 }
 
-export const usePriorityFee = (): UsePriorityFeeReturn => {
+export type PriorityFeeOptions = {
+  onSuccess: () => void;
+  onError: (error: ErrorInfo) => void;
+  stakeAmount: number;
+};
+
+export const usePriorityFee = ({
+  onSuccess,
+  onError,
+  stakeAmount,
+}: PriorityFeeOptions): PriorityFeeReturn => {
   const { publicKey, signTransaction } = useWallet();
   const { program } = useProgram();
 
   // Priority Fee configuration
   const [computeUnits, setComputeUnits] = useState(DEFAULT_COMPUTE_UNITS);
   const [computeUnitPrice, setComputeUnitPrice] = useState(1);
-  const [enablePriorityFee, setEnablePriorityFee] = useState(true);
-  const [estimatedComputeUnits, setEstimatedComputeUnits] = useState<
-    number | null
-  >(null);
-  const [recommendedPriorityFee, setRecommendedPriorityFee] = useState<
-    number | null
-  >(null);
-  const [priorityFeeHistory, setPriorityFeeHistory] = useState<number[]>([]);
 
-  // Get recent priority fees for the accounts used in the transaction
-  const getRecentPriorityFees = useCallback(
-    async (accounts: PublicKey[]): Promise<number> => {
-      if (!program) return 1;
+  /**
+   * Set default priority fee when actual data is unavailable or invalid
+   */
+  const setDefaultPriorityFee = (): number => {
+    setComputeUnitPrice(DEFAULT_PRIORITY_FEE);
+    return DEFAULT_PRIORITY_FEE;
+  };
 
-      try {
-        console.log("Fetching recent priority fees for accounts...");
+  /**
+   * Fetch and analyze recent priority fees for given accounts
+   */
+  const getRecentPriorityFees = async (
+    accountInfo: StakeAccountInfo
+  ): Promise<number> => {
+    if (!program || !publicKey) {
+      onError({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
+      return DEFAULT_PRIORITY_FEE;
+    }
 
-        // Call getRecentPrioritizationFees with the accounts
-        const response =
-          await program.provider.connection.getRecentPrioritizationFees({
-            lockedWritableAccounts: accounts,
-          });
+    try {
+      const response =
+        await program.provider.connection.getRecentPrioritizationFees({
+          lockedWritableAccounts: [
+            publicKey,
+            accountInfo.statePda,
+            accountInfo.userStakeInfoPda,
+            accountInfo.userTokenAccount,
+            accountInfo.stakingVault,
+            accountInfo.rewardVault,
+            accountInfo.userRewardAccount,
+            accountInfo.blacklistPda,
+          ],
+        });
 
-        if (response && response.length > 0) {
-          // Extract priority fees and sort them
-          const allFees = response.map((item) => item.prioritizationFee);
-          console.log("Raw Priority Fees:", allFees.slice(0, 10)); // Log first 10 for debugging
-
-          // Filter out unreasonable fees (likely errors) - cap at reasonable limit
-          const fees = allFees
-            .filter((fee) => fee >= 0 && fee <= MAX_REASONABLE_PRIORITY_FEE)
-            .sort((a, b) => a - b);
-          console.log("Filtered Priority Fees:", fees.slice(0, 10)); // Log first 10 for debugging
-
-          // If all fees are 0, use a reasonable default fee for Devnet
-          if (fees.length === 0 || fees.every((fee) => fee === 0)) {
-            console.log(
-              "All fees are 0 (typical for Devnet), using recommended default"
-            );
-            const recommended = DEFAULT_PRIORITY_FEE; // μSOL/CU for more visible effect in Devnet
-            setPriorityFeeHistory([0, 1, 5, 10, 20]); // Show a range for context
-            setRecommendedPriorityFee(recommended);
-            setComputeUnitPrice(recommended);
-            return recommended;
-          }
-
-          // Calculate recommended fee (75th percentile for safety)
-          const percentile75 = Math.ceil(fees.length * 0.75);
-          const recommended = fees[percentile75] || fees[fees.length - 1] || 1;
-
-          console.log("Recommended Priority Fee:", recommended);
-
-          setPriorityFeeHistory(fees);
-          setRecommendedPriorityFee(recommended);
-          setComputeUnitPrice(recommended);
-
-          return recommended;
-        }
-
-        console.log("No priority fee data found, using default");
-        setRecommendedPriorityFee(DEFAULT_PRIORITY_FEE);
-        setComputeUnitPrice(DEFAULT_PRIORITY_FEE);
-        return DEFAULT_PRIORITY_FEE;
-      } catch (err) {
-        console.error("Failed to get recent priority fees:", err);
-        setRecommendedPriorityFee(DEFAULT_PRIORITY_FEE);
-        setComputeUnitPrice(DEFAULT_PRIORITY_FEE);
-        return DEFAULT_PRIORITY_FEE;
+      if (!response || response.length === 0) {
+        return setDefaultPriorityFee();
       }
-    },
-    [program]
-  );
 
-  // Create stake instruction wrapper for priority fee usage
-  const createStakeInstructionWithAccounts = useCallback(
-    async (stakeAmount: string) => {
-      if (!publicKey || !program)
-        throw new Error("Wallet or program not available");
+      const allFees = response.map((item) => item.prioritizationFee);
+      console.log("Raw Priority Fees:", allFees.slice(0, 10));
 
-      const { instruction, accountInfo } = await createStakeInstruction({
+      const validFees = filterValidFees(allFees);
+
+      if (areAllFeesZero(validFees)) {
+        return setDefaultPriorityFee();
+      }
+
+      const recommended = calculateRecommendedFee(validFees);
+      setComputeUnitPrice(recommended);
+      return recommended;
+    } catch (err) {
+      const errorInfo = formatErrorForDisplay(err);
+      onError(errorInfo);
+      return setDefaultPriorityFee();
+    }
+  };
+
+  const createVersionedTransaction = async (
+    instructions: TransactionInstruction[]
+  ) => {
+    if (!publicKey || !program) {
+      onError({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
+      return;
+    }
+
+    const { blockhash } =
+      await program.provider.connection.getLatestBlockhash();
+
+    const messageV0 = new TransactionMessage({
+      payerKey: publicKey,
+      recentBlockhash: blockhash,
+      instructions,
+    }).compileToV0Message();
+
+    return new VersionedTransaction(messageV0);
+  };
+
+  // Estimate Compute Units for the stake transaction
+  const estimateComputeUnits = async (): Promise<number> => {
+    if (!publicKey || !program) {
+      onError({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
+      return DEFAULT_COMPUTE_UNITS;
+    }
+
+    try {
+      console.log("Estimating Compute Units for stake transaction...");
+
+      const result = await createStakeInstruction({
         publicKey,
         program,
         stakeAmount,
       });
+      // Get recent priority fees for these accounts
+      await getRecentPriorityFees(result.accountInfo);
 
-      return {
-        instruction,
-        accounts: [
-          publicKey,
-          accountInfo.statePda,
-          accountInfo.userStakeInfoPda,
-          accountInfo.userTokenAccount,
-          accountInfo.stakingVault,
-          accountInfo.rewardVault,
-          accountInfo.userRewardAccount,
-          accountInfo.blacklistPda,
-        ],
-      };
-    },
-    [publicKey, program]
-  );
-
-  // Create VersionedTransaction (shared function)
-  const createVersionedTransaction = useCallback(
-    async (instructions: anchor.web3.TransactionInstruction[]) => {
-      if (!publicKey || !program)
-        throw new Error("Wallet or program not available");
-
-      const { blockhash } =
-        await program.provider.connection.getLatestBlockhash();
-
-      const messageV0 = new anchor.web3.TransactionMessage({
-        payerKey: publicKey,
-        recentBlockhash: blockhash,
-        instructions,
-      }).compileToV0Message();
-
-      return new VersionedTransaction(messageV0);
-    },
-    [publicKey, program]
-  );
-
-  // Estimate Compute Units for the stake transaction
-  const estimateComputeUnits = useCallback(
-    async (stakeAmount: string): Promise<number> => {
-      if (!publicKey || !program) return DEFAULT_COMPUTE_UNITS;
-
-      try {
-        console.log("Estimating Compute Units for stake transaction...");
-
-        const { instruction, accounts } =
-          await createStakeInstructionWithAccounts(stakeAmount);
-
-        // Get recent priority fees for these accounts
-        await getRecentPriorityFees(accounts);
-
-        // Create VersionedTransaction for simulation
-        const versionedTx = await createVersionedTransaction([instruction]);
-
-        // Simulate the VersionedTransaction to get compute units estimate
-        const simulation =
-          await program.provider.connection.simulateTransaction(versionedTx);
-
-        if (simulation.value.err) {
-          console.warn("Transaction simulation failed:", simulation.value.err);
-          return DEFAULT_COMPUTE_UNITS;
-        }
-
-        const estimatedCU = simulation.value.unitsConsumed || 0;
-        console.log("Estimated Compute Units:", estimatedCU);
-
-        // Add 10% safety margin
-        const safetyMargin = Math.ceil(estimatedCU * SAFETY_MARGIN_PERCENTAGE);
-        const finalCU = estimatedCU + safetyMargin;
-
-        console.log("Added 10% safety margin:", safetyMargin);
-        console.log("Final Compute Units:", finalCU);
-
-        setEstimatedComputeUnits(estimatedCU);
-        setComputeUnits(finalCU);
-
-        return finalCU;
-      } catch (err) {
-        console.error("Failed to estimate compute units:", err);
-        // Fallback to default value
-        setComputeUnits(DEFAULT_COMPUTE_UNITS);
-        setEstimatedComputeUnits(null);
+      // Create VersionedTransaction for simulation
+      const versionedTx = await createVersionedTransaction([
+        result.instruction,
+      ]);
+      if (!versionedTx) {
+        onError({ message: "Failed to create VersionedTransaction" });
         return DEFAULT_COMPUTE_UNITS;
       }
-    },
-    [
-      publicKey,
-      program,
-      createStakeInstructionWithAccounts,
-      createVersionedTransaction,
-      getRecentPriorityFees,
-    ]
-  );
+      // Simulate the VersionedTransaction to get compute units estimate
+      const estimatedCU = versionedTx.message.compiledInstructions.length || 0;
+      return addSafetyMargin(estimatedCU);
+    } catch (err) {
+      const errorInfo = formatErrorForDisplay(err);
+      onError?.(errorInfo);
+      // Fallback to default value
+      setComputeUnits(DEFAULT_COMPUTE_UNITS);
+      return DEFAULT_COMPUTE_UNITS;
+    }
+  };
 
   // Handle stake transaction with Priority Fee
-  const handleStake = useCallback(
-    async (stakeAmount: string): Promise<string> => {
-      if (!publicKey || !program) {
-        throw new Error(ERROR_MESSAGES.WALLET_NOT_CONNECTED);
-      }
+  const handlePriorityStake = async (): Promise<string | undefined> => {
+    if (!publicKey || !program) {
+      onError?.({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
+      return;
+    }
 
-      if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
-        throw new Error(ERROR_MESSAGES.INVALID_STAKE_AMOUNT);
-      }
+    if (!stakeAmount) {
+      onError?.({ message: ERROR_MESSAGES.INVALID_STAKE_AMOUNT });
+      return;
+    }
 
-      console.log("Starting Priority Fee stake process...");
+    // First, estimate compute units
+    const finalComputeUnits = await estimateComputeUnits();
+    console.log("Compute Units estimated and set:", finalComputeUnits);
 
-      // First, estimate compute units
-      const finalComputeUnits = await estimateComputeUnits(stakeAmount);
-      console.log("Compute Units estimated and set:", finalComputeUnits);
-
-      // Create stake instruction
-      const { instruction } = await createStakeInstructionWithAccounts(
-        stakeAmount
-      );
-
-      // Build instructions array
-      const instructions = [instruction];
-
-      // Add Compute Budget instructions if Priority Fee is enabled
-      if (enablePriorityFee) {
-        console.log("Adding Priority Fee instructions:");
-        console.log("   - Compute Units Limit:", computeUnits);
-        console.log("   - Compute Unit Price:", computeUnitPrice, "μSOL/CU");
-        console.log("   - MicroLamports per CU:", computeUnitPrice * 1000000);
-
-        instructions.unshift(
-          ComputeBudgetProgram.setComputeUnitLimit({
-            units: computeUnits,
-          })
-        );
-        instructions.unshift(
-          ComputeBudgetProgram.setComputeUnitPrice({
-            microLamports: computeUnitPrice * 1000000, // Convert μSOL to microLamports
-          })
-        );
-
-        console.log("Priority Fee instructions added to transaction");
-      } else {
-        console.log("Priority Fee is disabled");
-      }
-
-      // Create VersionedTransaction
-      const versionedTx = await createVersionedTransaction(instructions);
-
-      if (!signTransaction) {
-        throw new Error("Wallet does not support signing transactions");
-      }
-
-      console.log("Signing Priority Fee VersionedTransaction...");
-      const signedTx = await signTransaction(versionedTx);
-
-      console.log("Sending and confirming Priority Fee transaction...");
-      const signature = await sendAndConfirmTransaction(
-        program.provider.connection,
-        signedTx.serialize()
-      );
-
-      console.log("Priority Fee stake transaction completed successfully!");
-      return signature;
-    },
-    [
+    // Create stake instruction
+    const { instruction } = await createStakeInstruction({
       publicKey,
       program,
-      signTransaction,
-      enablePriorityFee,
-      computeUnits,
-      computeUnitPrice,
-      estimateComputeUnits,
-      createStakeInstructionWithAccounts,
-      createVersionedTransaction,
-    ]
-  );
+      stakeAmount,
+    });
+    // Build instructions array
+    const instructions = [instruction];
 
-  // Computed values
-  const priorityFeeAmount = enablePriorityFee
-    ? (computeUnitPrice * computeUnits) / 1000000
-    : 0;
-  const totalFee = 5000 / 1000000000 + priorityFeeAmount; // Base fee + priority fee
+    instructions.unshift(
+      ComputeBudgetProgram.setComputeUnitLimit({
+        units: computeUnits,
+      })
+    );
+    instructions.unshift(
+      ComputeBudgetProgram.setComputeUnitPrice({
+        microLamports: computeUnitPrice * 1000000, // Convert μSOL to microLamports
+      })
+    );
+
+    // Create VersionedTransaction
+    const versionedTx = await createVersionedTransaction(instructions);
+
+    if (!signTransaction) {
+      onError({ message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED });
+      return;
+    }
+
+    if (!versionedTx) {
+      onError({ message: "Failed to create VersionedTransaction" });
+      return;
+    }
+    const signedTx = await signTransaction(versionedTx);
+    console.log("Sending and confirming Priority Fee transaction...");
+    const signature = await sendAndConfirmTransaction(
+      program?.provider.connection!,
+      signedTx.serialize()
+    );
+    onSuccess();
+    return signature;
+  };
 
   return {
-    // State
-    computeUnits,
-    computeUnitPrice,
-    enablePriorityFee,
-    estimatedComputeUnits,
-    recommendedPriorityFee,
-    priorityFeeHistory,
-
-    // Actions
-    setEnablePriorityFee,
-    estimateComputeUnits,
-    getRecentPriorityFees,
-    handleStake,
-
-    // Computed values
-    totalFee,
-    priorityFeeAmount,
+    handlePriorityStake,
   };
 };

@@ -2,49 +2,35 @@ import React from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import styles from "../styles/StakingActions.module.css";
 import { useStake } from "../hooks/useStake";
+import { ErrorInfo } from "./ErrorModal";
+import { TokenAmountInput } from "./TokenAmountInput";
 
 interface StakeTokensProps {
-  onTransactionSuccess?: () => void;
-  onError: (message: string) => void;
+  onSuccess: () => void;
+  onError: (errorInfo: ErrorInfo) => void;
 }
 
-const StakeTokens: React.FC<StakeTokensProps> = ({
-  onTransactionSuccess,
-  onError,
-}) => {
+const StakeTokens: React.FC<StakeTokensProps> = ({ onSuccess, onError }) => {
   const { connected } = useWallet();
 
   // Use custom hook
   const { stakeAmount, isStaking, setStakeAmount, handleStake, isDisabled } =
-    useStake(onTransactionSuccess, onError);
+    useStake(onSuccess, onError);
 
   return (
     <div>
       <div className={styles.inputGroup}>
-        <input
-          type="number"
-          min="0"
-          step="1"
+        <TokenAmountInput
           value={stakeAmount}
-          onChange={(e) => {
-            const value = e.target.value;
-            // Only allow positive integers or empty string
-            if (
-              value === "" ||
-              (parseInt(value) >= 0 &&
-                !value.includes(".") &&
-                !value.includes(","))
-            ) {
-              setStakeAmount(value);
-            }
-          }}
+          onChange={setStakeAmount}
           placeholder={
             connected
               ? "Enter stake amount (1 = 1 token)"
               : "Connect wallet first"
           }
-          className={styles.input}
           disabled={isDisabled}
+          min={0}
+          connected={connected}
         />
         <button
           onClick={handleStake}

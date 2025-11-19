@@ -10,6 +10,7 @@ import styles from "../styles/StakeInfo.module.css";
 import useUserStakeInfo from "@/hooks/useUserStakeInfo";
 import { UserStakeInfo } from "@/hooks/useUserStakeInfo";
 import { useProgram } from "@/hooks/useProgram";
+import { formatErrorForDisplay } from "@/utils/programErrors";
 
 export interface StakeInfoRef {
   refresh: () => void;
@@ -33,8 +34,7 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
       const userStakeInfo = await fetchUserStakeInfo(publicKey);
       setStakeInfo(userStakeInfo ?? null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Unknown error";
-      setError(`Failed to load stake info: ${errorMessage}`);
+      setError(formatErrorForDisplay(err).message);
     } finally {
       setIsLoading(false);
     }
