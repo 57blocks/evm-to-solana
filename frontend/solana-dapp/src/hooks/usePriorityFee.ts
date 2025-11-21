@@ -211,12 +211,25 @@ export const usePriorityFee = ({
     }
     const signedTx = await signTransaction(versionedTx);
     console.log("Sending and confirming Priority Fee transaction...");
-    const signature = await sendAndConfirmTransaction(
-      program?.provider.connection!,
-      signedTx.serialize()
-    );
-    onSuccess();
-    return signature;
+    try {
+      const signature = await sendAndConfirmTransaction(
+        program?.provider.connection!,
+        signedTx.serialize()
+      );
+      onSuccess();
+      return signature;
+    } catch (error) {
+      // Handle errors from sendAndConfirmTransaction
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Transaction confirmation failed";
+      onError({
+        message: errorMessage,
+        title: "Transaction Failed",
+      });
+      return;
+    }
   };
 
   return {

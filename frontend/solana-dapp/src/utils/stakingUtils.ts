@@ -134,41 +134,13 @@ export const sendAndConfirmTransaction = async (
   // Use a conservative buffer to avoid expiration
   const lastValidBlockHeight =
     blockhashResponse.lastValidBlockHeight + blockhashBuffer;
-
-  try {
-    await connection.confirmTransaction(
-      {
-        signature,
-        blockhash: blockhashResponse.blockhash,
-        lastValidBlockHeight: lastValidBlockHeight,
-      },
-      "confirmed"
-    );
-  } catch (error) {
-    // If transaction expired, try with a simple confirmation as fallback
-    if (error instanceof Error && error.message.includes("expired")) {
-      console.log("Transaction expired, trying simple confirmation...");
-      try {
-        await connection.confirmTransaction(signature, "confirmed");
-      } catch (fallbackError) {
-        console.log(
-          "Fallback confirmation also failed, checking transaction status..."
-        );
-        // Check if transaction actually succeeded despite confirmation timeout
-        const status = await connection.getSignatureStatus(signature);
-        if (
-          status.value?.confirmationStatus === "confirmed" ||
-          status.value?.confirmationStatus === "finalized"
-        ) {
-          console.log("Transaction was actually confirmed successfully");
-          return signature;
-        }
-        throw fallbackError;
-      }
-    } else {
-      throw error;
-    }
-  }
-
+  await connection.confirmTransaction(
+    {
+      signature,
+      blockhash: blockhashResponse.blockhash,
+      lastValidBlockHeight: lastValidBlockHeight,
+    },
+    "confirmed"
+  );
   return signature;
 };

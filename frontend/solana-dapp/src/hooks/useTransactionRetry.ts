@@ -1,10 +1,7 @@
 import { Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
-import {
-  createStakeInstruction,
-  sendAndConfirmTransaction,
-} from "../utils/stakingUtils";
+import { createStakeInstruction } from "../utils/stakingUtils";
 import { ERROR_MESSAGES } from "../utils/tokenUtils";
 import { ErrorInfo } from "@/components/ErrorModal";
 type UseTransactionRetryOptions = {
@@ -20,38 +17,28 @@ export const useTransactionRetry = ({
   const { publicKey, signTransaction } = useWallet();
   const { program } = useProgram();
   const { connection } = useConnection();
+
+  const sleep = (ms: number): Promise<void> => {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  };
+
   /**
    * Executes the stake transaction with blockhash retry logic.
    * Returns the transaction signature if successful, or undefined on error.
    */
   const executeStakeTransaction = async (): Promise<string | undefined> => {
-    if (!publicKey || !program) {
-      onError({
-        message: ERROR_MESSAGES.WALLET_NOT_CONNECTED,
-        title: "Wallet Not Connected",
-      });
-      return;
-    }
-
-    if (!stakeAmount || stakeAmount <= 0) {
-      onError({
-        message: ERROR_MESSAGES.INVALID_STAKE_AMOUNT,
-        title: "Invalid Stake Amount",
-      });
-      return;
-    }
-
-    // Execute real stake transaction with blockhash retry logic
-    console.log("Executing stake transaction with blockhash retry logic...");
-
     // Get latest blockhash and set lastValidBlockHeight
     const blockhashResponse = await connection.getLatestBlockhash();
-    const lastValidBlockHeight = blockhashResponse.lastValidBlockHeight - 150;
+    // Subtract a small safety buffer to ensure we stop retrying
+    // before the transaction actually expires, avoiding failures near expiration
+    const SAFETY_BUFFER = 100; // blocks
+    const lastValidBlockHeight =
+      blockhashResponse.lastValidBlockHeight - SAFETY_BUFFER;
 
     // Create stake instruction using the common utility
     const { instruction } = await createStakeInstruction({
-      publicKey,
-      program,
+      publicKey: publicKey!,
+      program: program!,
       stakeAmount,
     });
 
@@ -77,11 +64,10 @@ export const useTransactionRetry = ({
     // Get current block height
     let blockHeight = await connection.getBlockHeight();
     let lastSuccessfulSend = false;
-
     // Keep sending transaction until block height exceeds lastValidBlockHeight
     while (blockHeight < lastValidBlockHeight) {
       try {
-        await connection.sendRawTransaction(rawTransaction, {
+        const signature = await connection.sendRawTransaction(rawTransaction, {
           // skipPreflight: true is REQUIRED for retry logic
           // Reasons:
           // 1. We intentionally send the same transaction multiple times
@@ -91,15 +77,28 @@ export const useTransactionRetry = ({
           // 5. Final confirmation is handled separately with proper validation
           skipPreflight: true,
         });
-        lastSuccessfulSend = true;
-        console.log("Transaction sent successfully, continuing retry loop...");
-      } catch (sendError) {
+        const confirmation = await connection.confirmTransaction(
+          {
+            signature,
+            blockhash: blockhashResponse.blockhash,
+            lastValidBlockHeight: lastValidBlockHeight,
+          },
+          "confirmed"
+        );
+        if (!confirmation.value.err) {
+          lastSuccessfulSend = true;
+          onSuccess();
+          break;
+        }
+        await sleep(500);
+        blockHeight = await connection.getBlockHeight();
+      } catch (error) {
         // Ignore send errors, continue retrying
+        console.log("error", error);
+        await sleep(500);
+        blockHeight = await connection.getBlockHeight();
       }
-
-      blockHeight = await connection.getBlockHeight();
     }
-
     // Check if we had at least one successful send during the retry period
     if (!lastSuccessfulSend) {
       onError({
@@ -109,18 +108,7 @@ export const useTransactionRetry = ({
       });
       return;
     }
-
-    // Send and confirm final transaction
-    const txSignature = await sendAndConfirmTransaction(
-      connection,
-      rawTransaction
-    );
-
-    onSuccess();
-    return txSignature;
   };
 
-  return {
-    executeStakeTransaction,
-  };
+  return { executeStakeTransaction };
 };

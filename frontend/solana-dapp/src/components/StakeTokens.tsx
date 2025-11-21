@@ -4,6 +4,7 @@ import styles from "../styles/StakingActions.module.css";
 import { useStake } from "../hooks/useStake";
 import { ErrorInfo } from "./ErrorModal";
 import { TokenAmountInput } from "./TokenAmountInput";
+import { ActionButton } from "./ActionButton";
 
 interface StakeTokensProps {
   onSuccess: () => void;
@@ -32,22 +33,17 @@ const StakeTokens: React.FC<StakeTokensProps> = ({ onSuccess, onError }) => {
           min={0}
           connected={connected}
         />
-        <button
+        <ActionButton
           onClick={handleStake}
           disabled={!stakeAmount || isDisabled || parseInt(stakeAmount) <= 0}
-          className={`${styles.button} ${styles.stakeButton} ${
-            isDisabled ? styles.disabledButton : ""
-          } ${isStaking ? styles.loadingButton : ""}`}
+          isLoading={isStaking}
+          loadingText="Staking..."
+          spinnerType="char"
+          variant="default"
+          className={styles.stakeButton}
         >
-          {isStaking ? (
-            <>
-              <span className={styles.buttonSpinner}>⟳</span>
-              Staking...
-            </>
-          ) : (
-            "Stake"
-          )}
-        </button>
+          Stake
+        </ActionButton>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { useUnstake } from "@/hooks/useUnstake";
 import { formatErrorForDisplay } from "@/utils/programErrors";
 import { ErrorInfo } from "./ErrorModal";
 import { TokenAmountInput } from "./TokenAmountInput";
+import { ActionButton } from "./ActionButton";
 
 interface UnstakeTokensProps {
   onSuccess: () => void;
@@ -82,24 +83,19 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
           min={0}
           connected={connected}
         />
-        <button
+        <ActionButton
           onClick={handleUnstake}
           disabled={
             !unstakeAmount || isDisabled || parseInt(unstakeAmount) <= 0
           }
-          className={`${styles.button} ${styles.unstakeButton} ${
-            isDisabled ? styles.disabledButton : ""
-          } ${isUnstaking ? styles.loadingButton : ""}`}
+          isLoading={isUnstaking}
+          loadingText="Unstaking..."
+          spinnerType="char"
+          variant="default"
+          className={styles.unstakeButton}
         >
-          {isUnstaking ? (
-            <>
-              <span className={styles.buttonSpinner}>⟳</span>
-              Unstaking...
-            </>
-          ) : (
-            "Unstake"
-          )}
-        </button>
+          Unstake
+        </ActionButton>
       </div>
     </div>
   );

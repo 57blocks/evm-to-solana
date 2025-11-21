@@ -21,6 +21,7 @@ const Home: NextPage = () => {
     userAddress: publicKey,
     isConnected: connected,
   });
+  const [isShowSuccessToast, setIsShowSuccessToast] = useState(false);
 
   // Auto sign message on wallet connect
   useAutoSignOnConnect(setErrorInfo);
@@ -28,6 +29,7 @@ const Home: NextPage = () => {
   const handleOnSuccess = () => {
     // Refresh stake information immediately after successful transaction
     stakeInfoRef.current?.refresh();
+    setIsShowSuccessToast(true);
   };
 
   const clearGlobalError = () => {
@@ -36,6 +38,7 @@ const Home: NextPage = () => {
 
   const clearStakeEvent = () => {
     clearLatestStakeEvent();
+    setIsShowSuccessToast(false);
   };
 
   return (
@@ -113,7 +116,9 @@ const Home: NextPage = () => {
           </div>
         )}
       </main>
-      <SuccessToast stakeEvent={latestStakeEvent} onClose={clearStakeEvent} />
+      {isShowSuccessToast && (
+        <SuccessToast stakeEvent={latestStakeEvent} onClose={clearStakeEvent} />
+      )}
     </div>
   );
 };
