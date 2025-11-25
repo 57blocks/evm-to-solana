@@ -5,6 +5,6 @@ export const SOLANA_NETWORK = WalletAdapterNetwork.Devnet;
 export const SOLANA_RPC_ENDPOINT = clusterApiUrl(SOLANA_NETWORK);
 export const SOLANA_CONFIG = {
   network: SOLANA_NETWORK,
-  endpoint: process.env.NEXT_PUBLIC_CUSTOM_RPC_URL || SOLANA_RPC_ENDPOINT,
+  endpoint: import.meta.env.VITE_CUSTOM_RPC_URL || SOLANA_RPC_ENDPOINT,
   commitment: "confirmed" as const,
 };

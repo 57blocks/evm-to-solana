@@ -1,27 +1,32 @@
-"use client";
-import React, { FC, ReactNode, useMemo } from "react";
+import { FC, ReactNode, useMemo } from "react";
 import {
   ConnectionProvider,
   WalletProvider as SolanaWalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import { CustomWalletModalProvider } from "@/components/CustomWalletModalProvider";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
   TrezorWalletAdapter,
   LedgerWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
+
 import { SOLANA_CONFIG } from "../config/solana";
 
 // Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
+import {
+  BackpackWalletAdapter,
+  OKXWalletAdapter,
+  BinanceWalletAdapter,
+} from "@/components/CustomWallets/CustomWallet";
 
 interface WalletProviderProps {
   children: ReactNode;
 }
 
 export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
-  const { network, endpoint } = SOLANA_CONFIG;
+  const { endpoint } = SOLANA_CONFIG;
 
   // @solana/wallet-adapter-wallets includes all the adapters but supports tree shaking and lazy loading
   // Only the wallets you configure here will be compiled into your application, and only the dependencies
@@ -32,14 +37,17 @@ export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
       new LedgerWalletAdapter(),
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
+      BinanceWalletAdapter(),
+      OKXWalletAdapter(),
+      BackpackWalletAdapter(),
     ],
-    [network]
+    []
   );
 
   return (
     <ConnectionProvider endpoint={endpoint}>
       <SolanaWalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
+        <CustomWalletModalProvider>{children}</CustomWalletModalProvider>
       </SolanaWalletProvider>
     </ConnectionProvider>
   );

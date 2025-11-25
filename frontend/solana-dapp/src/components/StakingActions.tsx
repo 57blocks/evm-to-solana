@@ -1,5 +1,3 @@
-import React from "react";
-import styles from "../styles/StakingActions.module.css";
 import StakeTokens from "./StakeTokens";
 import UnstakeTokens from "./UnstakeTokens";
 import { ErrorInfo } from "./ErrorModal";
@@ -14,18 +12,18 @@ const StakingActions: React.FC<StakingActionsProps> = ({
   onError,
 }) => {
   return (
-    <div className={styles.container}>
-      <h2 className={styles.title}>Staking Operations</h2>
+    <div className="bg-white/95 rounded-2xl shadow-xl backdrop-blur-sm p-6 h-full flex flex-col">
+      <h2 className="text-xl font-bold text-gray-900 mb-6">Staking Operations</h2>
 
       {/* Staking Section */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Stake Tokens</h3>
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Stake Tokens</h3>
         <StakeTokens onSuccess={onSuccess} onError={onError} />
       </div>
 
       {/* Unstaking Section */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Unstake Tokens</h3>
+      <div className="flex-1">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">Unstake Tokens</h3>
         <UnstakeTokens onSuccess={onSuccess} onError={onError} />
       </div>
     </div>

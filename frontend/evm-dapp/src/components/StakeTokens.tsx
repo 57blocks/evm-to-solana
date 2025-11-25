@@ -1,5 +1,4 @@
 import React from "react";
-import styles from "../styles/StakingActions.module.css";
 import { useAccount } from "wagmi";
 import { formatTokenAmount } from "../utils/tokenUtils";
 import { useStake } from "../hooks/useStake";
@@ -15,7 +14,7 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
   onError,
   onStakeTransactionStart,
 }) => {
-  const { address, isConnected } = useAccount();
+  const { isConnected } = useAccount();
 
   // Use custom hooks
   const {
@@ -38,32 +37,35 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
     <div>
       {/* Show current allowance if connected */}
       {isConnected && (
-        <div className={styles.allowanceInfo}>
+        <div className="bg-blue-50 border border-blue-300 rounded-lg p-3 mb-4 text-center">
           {isAllowanceLoading ? (
-            <p>Loading allowance... ⏳</p>
+            <p className="m-0 text-blue-700 font-medium text-sm">Loading allowance... ⏳</p>
           ) : currentAllowance && typeof currentAllowance === "bigint" ? (
-            <p>
+            <p className="m-0 text-blue-700 font-medium text-sm">
               Current Allowance: {formatTokenAmount(currentAllowance)} tokens
             </p>
           ) : (
-            <p>Allowance not available</p>
+            <p className="m-0 text-blue-700 font-medium text-sm">Allowance not available</p>
           )}
         </div>
       )}
 
       {/* Show approval success message */}
       {isApprovalSuccess && !isApproving && (
-        <div className={styles.successMessage}>
-          <p>
-            ✅ Approval successful! Automatically proceeding with staking...
-          </p>
+        <div className="bg-green-50 border border-green-300 rounded-lg p-4 mb-4 animate-in slide-in-from-top duration-300 relative">
+          <div className="flex items-start gap-3 relative pr-8">
+            <span className="text-lg flex-shrink-0 mt-0.5">✅</span>
+            <p className="m-0 text-green-700 font-medium flex-1 break-words leading-relaxed">
+              Approval successful! Automatically proceeding with staking...
+            </p>
+          </div>
         </div>
       )}
 
       {/* Show waiting for wallet confirmation message */}
       {isWaitingForWallet && approvalHash && !stakeTransactionHash && (
-        <div className={styles.walletConfirmationMessage}>
-          <p>
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-4 text-center animate-in slide-in-from-top duration-300">
+          <p className="m-0 text-yellow-700 font-medium text-sm flex items-center justify-center gap-2">
             ⏳ Waiting for wallet confirmation... Please check your wallet and
             confirm the approval transaction.
           </p>
@@ -72,8 +74,8 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
 
       {/* Show waiting for staking confirmation message */}
       {isWaitingForWallet && stakeTransactionHash && (
-        <div className={styles.walletConfirmationMessage}>
-          <p>
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-4 text-center animate-in slide-in-from-top duration-300">
+          <p className="m-0 text-yellow-700 font-medium text-sm flex items-center justify-center gap-2">
             ⏳ Waiting for wallet confirmation... Please check your wallet and
             confirm the staking transaction.
           </p>
@@ -85,15 +87,15 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
         !isApproving &&
         !isStakingLoading &&
         approvalHash && (
-          <div className={styles.allowanceUpdateMessage}>
-            <p>
+          <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 mb-4 text-center animate-in slide-in-from-top duration-300">
+            <p className="m-0 text-blue-700 font-medium text-sm flex items-center justify-center gap-2">
               ⏳ Approval successful! Waiting for allowance to update on
               blockchain...
             </p>
           </div>
         )}
 
-      <div className={styles.inputGroup}>
+      <div className="flex flex-col gap-4">
         <input
           type="number"
           min="0"
@@ -116,26 +118,28 @@ const StakeTokens: React.FC<StakeTokensProps> = ({
               ? "Enter stake amount (1 = 1 token)"
               : "Connect wallet first"
           }
-          className={styles.input}
+          className="px-4 py-3 border-2 border-gray-200 rounded-lg text-base transition-colors duration-200 bg-gray-50 focus:outline-none focus:border-blue-500 focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-gray-300"
           disabled={isDisabled}
         />
         <button
           onClick={handleStake}
           disabled={!stakeAmount || isDisabled || parseInt(stakeAmount) <= 0}
-          className={`${styles.button} ${styles.stakeButton} ${
-            isDisabled ? styles.disabledButton : ""
-          } ${
-            isApprovalLoading || isStakingLoading ? styles.loadingButton : ""
+          className={`px-6 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 uppercase tracking-wider relative overflow-hidden ${
+            isDisabled
+              ? "bg-gray-400 text-gray-600 cursor-not-allowed transform-none shadow-none hover:bg-gray-400 hover:transform-none hover:shadow-none"
+              : isApprovalLoading || isStakingLoading
+              ? "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md cursor-wait hover:transform-none hover:shadow-md"
+              : "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-md hover:from-green-600 hover:to-green-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
           }`}
         >
           {isApprovalLoading ? (
             <>
-              <span className={styles.buttonSpinner}>⟳</span>
+              <span className="inline-block animate-spin mr-2">⟳</span>
               Approving...
             </>
           ) : isStakingLoading ? (
             <>
-              <span className={styles.buttonSpinner}>⟳</span>
+              <span className="inline-block animate-spin mr-2">⟳</span>
               Staking...
             </>
           ) : (

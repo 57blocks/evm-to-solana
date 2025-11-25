@@ -1,5 +1,4 @@
 import React from "react";
-import styles from "../styles/GlobalToast.module.css";
 import { formatTokenAmount } from "../utils/tokenUtils";
 
 export interface StakeEventData {
@@ -18,31 +17,37 @@ const GlobalToast: React.FC<GlobalToastProps> = ({ stakeEvent, onClose }) => {
   if (!stakeEvent) return null;
 
   return (
-    <div className={styles.toastOverlay} onClick={onClose}>
-      <div className={styles.toast} onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} className={styles.closeButton} title="Close">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="relative bg-white border-2 border-green-500 rounded-xl shadow-2xl p-6 w-[90%] max-w-[450px] min-w-[300px] text-center m-5 md:w-[95%] md:max-w-[350px] md:min-w-[280px] md:p-5 md:m-4" onClick={(e) => e.stopPropagation()}>
+        <button 
+          onClick={onClose} 
+          className="absolute top-2.5 right-2.5 bg-transparent border-none text-xl text-gray-400 cursor-pointer w-6 h-6 flex items-center justify-center rounded-full hover:text-gray-600 hover:bg-gray-100 transition-colors" 
+          title="Close"
+        >
           ✕
         </button>
 
-        <div className={styles.content}>
-          <div className={styles.title}>
-            <span className={styles.icon}>✅</span>
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-center gap-2 font-semibold text-lg text-green-500 md:text-base">
+            <span className="text-xl md:text-lg">✅</span>
             <span>Stake Successful!</span>
           </div>
 
-          <div className={styles.amount}>
-            <div className={styles.amountLabel}>Amount Staked</div>
-            <div className={styles.amountValue}>
+          <div className="p-4 bg-gradient-to-br from-green-50 to-gray-50 rounded-lg border border-green-200">
+            <div className="block text-xs text-gray-600 font-medium uppercase tracking-wider mb-1">
+              Amount Staked
+            </div>
+            <div className="block text-2xl font-bold text-green-500 leading-tight md:text-xl">
               {formatTokenAmount(stakeEvent.amount)} tokens
             </div>
           </div>
 
-          <div className={styles.actions}>
+          <div className="flex justify-center">
             <a
               href={`https://sepolia.etherscan.io/tx/${stakeEvent.transactionHash}`}
               target="_blank"
               rel="noopener noreferrer"
-              className={styles.link}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white no-underline rounded-md text-sm font-medium shadow-lg hover:bg-blue-700 transition-colors md:text-xs md:px-4 md:py-2"
             >
               View on Etherscan
             </a>

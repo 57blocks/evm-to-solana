@@ -213,7 +213,7 @@ export const usePriorityFee = ({
     console.log("Sending and confirming Priority Fee transaction...");
     try {
       const signature = await sendAndConfirmTransaction(
-        program?.provider.connection!,
+        program?.provider.connection,
         signedTx.serialize()
       );
       onSuccess();

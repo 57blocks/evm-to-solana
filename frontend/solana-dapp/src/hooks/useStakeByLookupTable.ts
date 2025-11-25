@@ -91,17 +91,8 @@ export const useStakeByLookupTable = (
       return;
     }
 
-    console.log("Signing combined Address Lookup Table (ALT) transaction...");
     const signedTx = await signTransaction(combinedTx);
-
-    console.log("Sending and confirming transaction...");
     await sendAndConfirmTransaction(connection, signedTx.serialize());
-
-    console.log(
-      "Address Lookup Table (ALT) created and accounts added:",
-      lookupTable.toString()
-    );
-
     // Fetch the created lookup table
     const lookupTableResponse = await connection.getAddressLookupTable(
       lookupTable
@@ -111,7 +102,6 @@ export const useStakeByLookupTable = (
       return;
     }
     const lookupTableAccount = lookupTableResponse.value;
-    console.log("Lookup table account:", lookupTableAccount);
 
     altCache.current = lookupTableAccount;
 
@@ -126,7 +116,6 @@ export const useStakeByLookupTable = (
     accounts: AltAccountInfo
   ): Promise<AddressLookupTableAccount | undefined> => {
     if (altCache.current) {
-      console.log("Using cached Address Lookup Table (ALT)");
       return altCache.current;
     }
 
@@ -167,8 +156,6 @@ export const useStakeByLookupTable = (
    * Handle stake transaction using Address Lookup Table (ALT)
    */
   const handleStake = async () => {
-    console.log("🔵 handleStake called");
-
     if (!publicKey || !program) {
       onError?.({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
       return;
@@ -188,8 +175,6 @@ export const useStakeByLookupTable = (
     setIsStaking(true);
 
     try {
-      console.log("Starting Address Lookup Table (ALT) stake process...");
-
       // Create staking accounts using common utility
       const accountInfo = await createStakeAccountInfo(publicKey, program);
 

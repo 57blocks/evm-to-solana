@@ -94,7 +94,6 @@ export const useTransactionRetry = ({
         blockHeight = await connection.getBlockHeight();
       } catch (error) {
         // Ignore send errors, continue retrying
-        console.log("error", error);
         await sleep(500);
         blockHeight = await connection.getBlockHeight();
       }

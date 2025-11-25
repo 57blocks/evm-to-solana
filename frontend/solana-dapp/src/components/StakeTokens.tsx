@@ -1,6 +1,4 @@
-import React from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import styles from "../styles/StakingActions.module.css";
 import { useStake } from "../hooks/useStake";
 import { ErrorInfo } from "./ErrorModal";
 import { TokenAmountInput } from "./TokenAmountInput";
@@ -19,32 +17,33 @@ const StakeTokens: React.FC<StakeTokensProps> = ({ onSuccess, onError }) => {
     useStake(onSuccess, onError);
 
   return (
-    <div>
-      <div className={styles.inputGroup}>
-        <TokenAmountInput
-          value={stakeAmount}
-          onChange={setStakeAmount}
-          placeholder={
-            connected
-              ? "Enter stake amount (1 = 1 token)"
-              : "Connect wallet first"
-          }
-          disabled={isDisabled}
-          min={0}
-          connected={connected}
-        />
-        <ActionButton
-          onClick={handleStake}
-          disabled={!stakeAmount || isDisabled || parseInt(stakeAmount) <= 0}
-          isLoading={isStaking}
-          loadingText="Staking..."
-          spinnerType="char"
-          variant="default"
-          className={styles.stakeButton}
-        >
-          Stake
-        </ActionButton>
-      </div>
+    <div className="flex gap-3">
+      <TokenAmountInput
+        value={stakeAmount?.toString() || ""}
+        onChange={(value) => {
+          const num = value === "" ? undefined : parseInt(value);
+          setStakeAmount(num);
+        }}
+        placeholder={
+          connected
+            ? "Enter stake amount (1 = 1 token)"
+            : "Connect wallet first"
+        }
+        disabled={isDisabled}
+        min={0}
+        connected={connected}
+      />
+      <ActionButton
+        onClick={handleStake}
+        disabled={!stakeAmount || isDisabled || stakeAmount <= 0}
+        isLoading={isStaking}
+        loadingText="Staking..."
+        spinnerType="char"
+        variant="default"
+        className="min-w-[120px]"
+      >
+        Stake
+      </ActionButton>
     </div>
   );
 };

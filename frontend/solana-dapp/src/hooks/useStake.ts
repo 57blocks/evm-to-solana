@@ -8,16 +8,16 @@ import { ErrorInfo } from "@/components/ErrorModal";
 
 export interface UseStakeReturn {
   // State
-  stakeAmount: string;
   isStaking: boolean;
   transactionSignature: string | null;
 
   // Actions
-  setStakeAmount: (amount: string) => void;
+  setStakeAmount: (value: number | undefined) => void;
   handleStake: () => Promise<void>;
 
   // Computed states
   isDisabled: boolean;
+  stakeAmount: number | undefined;
 }
 
 export const useStake = (
@@ -26,7 +26,7 @@ export const useStake = (
 ): UseStakeReturn => {
   const { publicKey } = useWallet();
   const { program } = useProgram();
-  const [stakeAmount, setStakeAmount] = useState("");
+  const [stakeAmount, setStakeAmount] = useState<number | undefined>(undefined);
   const [isStaking, setIsStaking] = useState(false);
   const [isButtonClicked, setIsButtonClicked] = useState(false);
   const [transactionSignature, setTransactionSignature] = useState<
@@ -41,7 +41,7 @@ export const useStake = (
       return;
     }
 
-    if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
+    if (!stakeAmount || stakeAmount <= 0) {
       const errorMsg = ERROR_MESSAGES.INVALID_STAKE_AMOUNT;
       onError?.({ message: errorMsg });
       return;
@@ -56,21 +56,15 @@ export const useStake = (
     setIsStaking(true);
 
     try {
-      console.log("Executing stake transaction", stakeAmount);
-
       const txSignature = await executeStakeTransaction({
         publicKey,
         program,
         stakeAmount,
       });
-
-      console.log("Staking transaction sent! Signature:", txSignature);
-
       // Set transaction signature AFTER confirmation
       setTransactionSignature(txSignature);
-
       // Reset form and notify parent
-      setStakeAmount("");
+      setStakeAmount(undefined);
       stakeAmountRef.current = "";
       onSuccess && onSuccess();
 

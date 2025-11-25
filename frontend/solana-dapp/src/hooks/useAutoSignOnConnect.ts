@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { SignMessageResult, useSignMessage } from "./useSignMessage";
@@ -8,7 +6,6 @@ import { ErrorInfo } from "@/components/ErrorModal";
 
 /**
  * Hook to automatically sign message when wallet connects
- * Uses "use client" directive to ensure client-side only execution
  */
 export const useAutoSignOnConnect = (
   setErrorInfo: (errorInfo: ErrorInfo) => void
@@ -23,8 +20,8 @@ export const useAutoSignOnConnect = (
   const [isSigning, setIsSigning] = useState(false);
   // Generate a sign-in message
   const generateSignInMessage = useCallback((walletAddress: PublicKey) => {
-    const appName = process.env.NEXT_PUBLIC_APP_NAME;
-    const domain = process.env.NEXT_PUBLIC_APP_DOMAIN;
+    const appName = import.meta.env.VITE_APP_NAME || "Solana Staking Platform";
+    const domain = import.meta.env.VITE_APP_DOMAIN || window.location.hostname;
     const timestamp = new Date().toISOString();
     const nonce = Math.random().toString(36).substring(7);
 
@@ -123,5 +120,18 @@ export const useAutoSignOnConnect = (
       }
     };
     autoSign();
-  }, [connected, connecting, publicKey, isSigning]);
+  }, [
+    connected,
+    connecting,
+    publicKey,
+    isSigning,
+    hasSignedInSession,
+    generateSignInMessage,
+    signMessageForAuth,
+    signTransactionForAuth,
+    verifySignature,
+    verifyTransactionSignature,
+    setErrorInfo,
+    wallet,
+  ]);
 };

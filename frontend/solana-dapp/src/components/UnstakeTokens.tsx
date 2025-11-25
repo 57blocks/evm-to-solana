@@ -1,6 +1,5 @@
-import React, { useState, useRef } from "react";
+import { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import styles from "../styles/StakingActions.module.css";
 import { validateTokenAmount } from "../utils/tokenUtils";
 import { useUnstake } from "@/hooks/useUnstake";
 import { formatErrorForDisplay } from "@/utils/programErrors";
@@ -50,8 +49,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
 
       setUnstakeAmount("");
       unstakeAmountRef.current = "";
-
-      onSuccess && onSuccess();
+      onSuccess();
     } catch (error) {
       onError({
         message: formatErrorForDisplay(error).message,
@@ -66,37 +64,32 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
   const isDisabled = !connected || isUnstaking || isButtonClicked;
 
   return (
-    <div>
-      <div className={styles.inputGroup}>
-        <TokenAmountInput
-          value={unstakeAmount}
-          onChange={(value) => {
-            setUnstakeAmount(value);
-            unstakeAmountRef.current = value;
-          }}
-          placeholder={
-            connected
-              ? "Enter unstake amount (1 = 1 token)"
-              : "Connect wallet first"
-          }
-          disabled={isDisabled}
-          min={0}
-          connected={connected}
-        />
-        <ActionButton
-          onClick={handleUnstake}
-          disabled={
-            !unstakeAmount || isDisabled || parseInt(unstakeAmount) <= 0
-          }
-          isLoading={isUnstaking}
-          loadingText="Unstaking..."
-          spinnerType="char"
-          variant="default"
-          className={styles.unstakeButton}
-        >
-          Unstake
-        </ActionButton>
-      </div>
+    <div className="flex gap-3">
+      <TokenAmountInput
+        value={unstakeAmount}
+        onChange={(value) => {
+          setUnstakeAmount(value);
+          unstakeAmountRef.current = value;
+        }}
+        placeholder={
+          connected
+            ? "Enter unstake amount (1 = 1 token)"
+            : "Connect wallet first"
+        }
+        disabled={isDisabled}
+        connected={connected}
+      />
+      <ActionButton
+        onClick={handleUnstake}
+        disabled={!unstakeAmount || isDisabled || parseInt(unstakeAmount) <= 0}
+        isLoading={isUnstaking}
+        loadingText="Unstaking..."
+        spinnerType="char"
+        variant="default"
+        className="min-w-[120px]"
+      >
+        Unstake
+      </ActionButton>
     </div>
   );
 };

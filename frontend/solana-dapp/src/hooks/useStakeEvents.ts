@@ -34,8 +34,6 @@ export const useStakeEvents = ({
       return;
     }
 
-    console.log("Setting up program event listener for staked events");
-
     // Clean up previous listener
     if (listenerRef.current !== null) {
       program.removeEventListener(listenerRef.current);
@@ -46,12 +44,8 @@ export const useStakeEvents = ({
     const listenerId = program.addEventListener(
       "staked",
       (event, slot, signature) => {
-        console.log("Staked event received:", { event, slot, signature });
-
         // Only show events for the current user
         if (userAddress && event.user.equals(userAddress)) {
-          console.log("Creating stake event for user:", userAddress.toBase58());
-
           setLatestStakeEvent({
             user: event.user.toBase58(),
             amount: BigInt(event.amount.toString()),
@@ -63,12 +57,10 @@ export const useStakeEvents = ({
     );
 
     listenerRef.current = listenerId;
-    console.log("Event listener set up with ID:", listenerId);
 
     // Cleanup
     return () => {
       if (listenerRef.current !== null) {
-        console.log("Cleaning up event listener:", listenerRef.current);
         program.removeEventListener(listenerRef.current);
         listenerRef.current = null;
       }

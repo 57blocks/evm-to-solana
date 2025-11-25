@@ -186,7 +186,6 @@ export const useStake = (
   // Handle staking success
   useEffect(() => {
     if (isStakingSuccess) {
-      console.log("Staking transaction successful!");
       setIsApproving(false);
       setCurrentTransactionType(null);
       setIsButtonClicked(false);

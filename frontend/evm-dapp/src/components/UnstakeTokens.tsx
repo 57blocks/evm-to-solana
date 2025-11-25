@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import styles from "../styles/StakingActions.module.css";
 import {
   useAccount,
   useWaitForTransactionReceipt,
@@ -125,15 +124,15 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
     <div>
       {/* Show waiting for wallet confirmation message */}
       {isWaitingForWallet && (
-        <div className={styles.walletConfirmationMessage}>
-          <p>
+        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-4 mb-4 text-center animate-in slide-in-from-top duration-300">
+          <p className="m-0 text-yellow-700 font-medium text-sm flex items-center justify-center gap-2">
             ⏳ Waiting for wallet confirmation... Please check your wallet and
             confirm the unstaking transaction.
           </p>
         </div>
       )}
 
-      <div className={styles.inputGroup}>
+      <div className="flex flex-col gap-4">
         <input
           type="number"
           min="0"
@@ -157,7 +156,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
               ? "Enter unstake amount (1 = 1 token)"
               : "Connect wallet first"
           }
-          className={styles.input}
+          className="px-4 py-3 border-2 border-gray-200 rounded-lg text-base transition-colors duration-200 bg-gray-50 focus:outline-none focus:border-blue-500 focus:bg-white disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed disabled:border-gray-300"
           disabled={isDisabled}
         />
         <button
@@ -165,13 +164,17 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
           disabled={
             !unstakeAmount || isDisabled || parseInt(unstakeAmount) <= 0
           }
-          className={`${styles.button} ${styles.unstakeButton} ${
-            isDisabled ? styles.disabledButton : ""
-          } ${isUnstakingLoading ? styles.loadingButton : ""}`}
+          className={`px-6 py-3 border-none rounded-lg text-base font-semibold cursor-pointer transition-all duration-300 uppercase tracking-wider relative overflow-hidden ${
+            isDisabled
+              ? "bg-gray-400 text-gray-600 cursor-not-allowed transform-none shadow-none hover:bg-gray-400 hover:transform-none hover:shadow-none"
+              : isUnstakingLoading
+              ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md cursor-wait hover:transform-none hover:shadow-md"
+              : "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:from-red-600 hover:to-red-700 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
+          }`}
         >
           {isUnstakingLoading ? (
             <>
-              <span className={styles.buttonSpinner}>⟳</span>
+              <span className="inline-block animate-spin mr-2">⟳</span>
               Processing...
             </>
           ) : (
