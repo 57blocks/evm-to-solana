@@ -2,10 +2,10 @@ import { BaseEvent } from '../chain/event';
 
 // TODO: Need to evaluate the existing data throughput.
 export function sleep(delay: number) {
-    return new Promise((resolve) => setTimeout(resolve, delay));
-  }
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
   
-  export function mergeSortedArrays(a: BaseEvent[], b: BaseEvent[]): BaseEvent[] {
+export function mergeSortedArrays(a: BaseEvent[], b: BaseEvent[]): BaseEvent[] {
     if (a.length === 0) return b;
     if (b.length === 0) return a;
   
@@ -36,4 +36,4 @@ export function sleep(delay: number) {
       }
     }
     return merged;
-  }
+}

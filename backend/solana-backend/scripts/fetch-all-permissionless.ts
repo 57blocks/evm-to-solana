@@ -4,10 +4,8 @@ import {
   PermissionlessStakedEvent,
   PermissionlessUnstakedEvent,
   PermissionlessRewardsClaimedEvent,
-  PermissionlessEvent
 } from "../src/event-fetch/permissionless/event";
 import { CHAIN_ID, RPC_BY_CHAINS } from "../src/event-fetch/chain/chain";
-import { BaseEvent } from "../src/event-fetch/chain/event";
 import StakingIDL from "../src/event-fetch/solana_staking.json";
 
 // Configuration
