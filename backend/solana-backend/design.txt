@@ -1,10 +1,238 @@
 我们为solana_staking协议构建一个后端服务，实现：
-实时捕获 stake / unstake / claimRewards 三个操作
-计算并展示四个关键指标：
-历史累计质押数量（totalStakedHistory）
-当前质押数量（currentStaked）
-历史累计已领取奖励（totalClaimedRewards）
-当前可领取奖励（claimableRewards）
+查询program的global states
+根据传入的用户地址，查询用户当前stake相关状态
+查询用户的操作历史
 
-用户数据
-为了重启后可以从上次服务最后记录的指标数据开始同步最新数据，我们需要设计一个缓存文件，文件里记录{pubkey:xxx, totalStakedHistory:xxx, currentStaked:xxx, totalClaimedRewards:xxx, claimableRewards:xxx, slot:xxx}
+数据库表结构
+UserActivity
+Field
+Type
+user_address
+string
+program_id
+string
+event_type
+string
+raw_data 
+string
+position
+number
+rewards
+number
+block_number
+number
+tx_hash
+string
+timestamp
+timestamp
+
+
+
+SyncStatus
+Field
+type
+program_id 
+string
+last_sync_block
+number
+Initialize_block  
+number
+
+// task1
+请为我们的系统定义统一的DDD语言，我们将基于定义的DDD语言讨论问题
+
+================================================================================
+DDD Ubiquitous Language (统一领域语言)
+================================================================================
+
+## 1. Bounded Contexts (限界上下文)
+
+### 1.1 Query Domain (查询领域)
+负责提供查询接口，实现以下三个核心功能：
+- 查询program的global states
+- 根据用户地址查询用户当前stake相关状态
+- 查询用户的操作历史
+
+### 1.2 Event Synchronization Domain (事件同步领域)
+负责从Solana链上同步和索引链上事件到数据库，为查询功能提供数据支持。
+
+## 2. Core Domain Entities (核心领域实体)
+
+### 2.1 GlobalState (全局状态)
+- **定义**: 质押程序的全局配置和统计信息
+- **属性**:
+  - admin: 管理员地址
+  - stakingMint: 质押代币类型
+  - rewardMint: 奖励代币类型
+  - stakingVault: 质押代币金库地址
+  - rewardVault: 奖励代币金库地址
+  - rewardRate: 奖励率 (基点，100 = 1%)
+  - totalStaked: 总质押量
+- **查询来源**: 从Solana链上实时查询GlobalState账户
+
+### 2.2 UserStakeStatus (用户质押状态)
+- **定义**: 用户在质押程序中的当前质押状态
+- **属性**:
+  - userAddress: 用户地址
+  - amount: 当前质押数量
+  - stakeTimestamp: 首次质押时间
+  - lastClaimTime: 上次领取奖励时间
+  - rewardDebt: 已领取的奖励债务
+  - pendingRewards: 待领取奖励数量 (计算得出)
+- **查询来源**: 从Solana链上实时查询UserStakeInfo账户
+
+### 2.3 UserActivity (用户活动记录)
+- **定义**: 用户在质押协议中的所有操作历史记录
+- **属性**:
+  - userAddress: 用户地址
+  - programId: 程序ID
+  - eventType: 事件类型 (Staked/Unstaked/RewardsClaimed等)
+  - rawData: 原始事件数据
+  - position: 操作后的仓位数量
+  - rewards: 操作相关的奖励数量
+  - blockNumber: 区块号 (Solana中的slot)
+  - txHash: 交易哈希
+  - timestamp: 时间戳
+- **查询来源**: 从数据库UserActivity表查询
+
+### 2.4 SyncStatus (同步状态)
+- **定义**: 事件同步服务维护的同步进度状态
+- **属性**:
+  - programId: 程序ID
+  - lastSyncBlock: 最后同步的区块号
+  - initializeBlock: 程序初始化的区块号
+- **职责**: 跟踪事件同步进度，确保数据完整性
+
+## 3. Value Objects (值对象)
+
+### 3.1 Slot (区块槽位)
+- **定义**: Solana区块链中的区块标识符
+- **属性**: number
+
+### 3.2 TransactionHash (交易哈希)
+- **定义**: Solana交易的唯一标识符
+- **属性**: string (Base58编码)
+
+### 3.3 Address (地址)
+- **定义**: Solana账户地址 (Pubkey)
+- **属性**: string (Base58编码的Pubkey)
+
+### 3.4 TokenAmount (代币数量)
+- **定义**: 代币数量，以最小单位表示
+- **属性**: number (u64)
+
+## 4. Domain Events (领域事件)
+用于事件同步，从链上捕获并存储到UserActivity表
+
+### 4.1 StakedEvent (质押事件)
+- **属性**: user, amount, timestamp
+
+### 4.2 UnstakedEvent (解质押事件)
+- **属性**: user, amount, rewards, timestamp
+
+### 4.3 RewardsClaimedEvent (奖励领取事件)
+- **属性**: user, amount, timestamp
+
+### 4.4 InitializedEvent (初始化事件)
+- **属性**: authority, stakingMint, rewardMint, rewardRate, timestamp
+
+## 5. Domain Services (领域服务)
+
+### 5.1 RewardCalculationService (奖励计算服务)
+- **职责**: 计算用户待领取的奖励数量
+- **输入**: UserStakeStatus, GlobalState, currentTimestamp
+- **输出**: 待领取奖励数量
+- **公式**: (当前时间 - lastClaimTime) * amount * rewardRate / (10000 * 86400)
+
+### 5.2 EventSynchronizationService (事件同步服务)
+- **职责**: 从Solana链上同步事件到数据库
+- **输入**: programId, startSlot, endSlot
+- **输出**: 同步的事件列表
+- **规则**: 按slot顺序同步，维护SyncStatus状态
+
+## 6. Repositories (仓储)
+
+### 6.1 UserActivityRepository
+- **职责**: 查询用户活动记录
+- **方法**:
+  - findByUser(userAddress: string, programId: string): Promise<UserActivity[]>
+  - findByUserAndEventType(userAddress: string, programId: string, eventType: string): Promise<UserActivity[]>
+
+### 6.2 SyncStatusRepository
+- **职责**: 查询和维护同步状态
+- **方法**:
+  - findByProgram(programId: string): Promise<SyncStatus | null>
+  - updateLastSyncBlock(programId: string, lastSyncBlock: number): Promise<void>
+
+### 6.3 GlobalStateRepository (链上查询)
+- **职责**: 从Solana链上查询全局状态
+- **方法**:
+  - getGlobalState(programId: string): Promise<GlobalState>
+
+### 6.4 UserStakePositionRepository (链上查询)
+- **职责**: 从Solana链上查询用户质押状态
+- **方法**:
+  - getUserStakePosition(userAddress: string, programId: string): Promise<UserStakeStatus | null>
+
+## 7. Application Services (应用服务)
+
+### 7.1 StakingQueryService (质押查询服务)
+- **职责**: 提供三个核心查询接口，协调Repository和Domain Service
+- **依赖**: GlobalStateRepository, UserStakePositionRepository, UserActivityRepository, RewardCalculationService
+- **方法**:
+  - getGlobalState(programId: string): Promise<GlobalState>
+    - 内部调用: GlobalStateRepository.getGlobalState()
+  - getUserStakeStatus(userAddress: string, programId: string): Promise<UserStakeStatus>
+    - 内部调用: UserStakePositionRepository.getUserStakePosition() + RewardCalculationService计算待领取奖励
+  - getUserActivityHistory(userAddress: string, programId: string, options?: QueryOptions): Promise<UserActivity[]>
+    - 内部调用: UserActivityRepository.findByUser()
+
+### 7.2 EventSyncService (事件同步服务)
+- **职责**: 协调事件同步流程
+- **方法**:
+  - syncEvents(programId: string, startSlot?: number, endSlot?: number): Promise<SyncResult>
+  - getSyncStatus(programId: string): Promise<SyncStatus>
+
+## 8. Glossary (术语表)
+
+| 术语 | 英文 | 定义 |
+|------|------|------|
+| 全局状态 | Global State | 质押程序的全局配置和统计信息 |
+| 用户状态 | User Stake Status | 单个用户在质押程序中的当前质押状态 |
+| 用户活动 | User Activity | 用户在质押协议中的历史操作记录 |
+| 仓位 | Position | 用户在质押程序中的质押数量 |
+| 奖励 | Reward | 用户因质押而获得的代币奖励 |
+| 区块槽位 | Slot | Solana区块链中的区块标识符 |
+| 程序 | Program | Solana上的智能合约 |
+| 交易哈希 | Transaction Hash | Solana交易的唯一标识符 |
+| 事件 | Event | 链上操作产生的日志记录 |
+| 同步 | Sync | 将链上事件同步到数据库的过程 |
+| 奖励率 | Reward Rate | 奖励发放的速率，以基点表示 (100 = 1%) |
+| 基点 | Basis Point | 利率单位，1基点 = 0.01%，100基点 = 1% |
+
+## 9. Business Rules (业务规则)
+
+### 9.1 查询规则
+- 全局状态查询：直接从链上实时查询GlobalState账户
+- 用户状态查询：从链上实时查询UserStakeInfo账户，并计算待领取奖励
+- 历史记录查询：从数据库UserActivity表查询，按时间倒序
+
+### 9.2 同步规则
+- 事件必须按slot顺序同步
+- 同步进度必须持久化，支持断点续传
+- 同步失败需要支持重试机制
+
+## 10. Invariants (不变性约束)
+
+### 10.1 事件同步不变性
+- SyncStatus.lastSyncBlock >= SyncStatus.initializeBlock
+- UserActivity中的事件必须按blockNumber递增
+- 每个交易哈希在UserActivity中唯一
+
+================================================================================
+End of DDD Ubiquitous Language
+================================================================================
+
+// task2 Query GlobalState, UserStakeStatus
+
+
