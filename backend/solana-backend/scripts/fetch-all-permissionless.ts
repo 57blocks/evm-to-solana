@@ -1,4 +1,5 @@
-import { SolanaEventFetcher, SolanaService, SolanaEventFetcherConfig } from "../src/event-fetch/chain/solana/solana";
+import { SolanaEventFetcher, SolanaEventsService, SolanaEventFetcherConfig } from "../src/event-fetch/chain/solana/solana";
+import { SolanaConnections } from "../src/infrastructure";
 import { 
   PermissionlessTransactionEventsParser, 
   PermissionlessStakedEvent,
@@ -148,12 +149,13 @@ async function fetchAllPermissionlessEvents() {
   try {
     // Initialize Solana Service
     const rpcUrl = RPC_BY_CHAINS[CHAIN_ID_TO_USE];
-    const solanaService = new SolanaService(rpcUrl);
+    const solanaConnections = new SolanaConnections(rpcUrl);
+    const solanaEventsService = new SolanaEventsService(solanaConnections);
     
     // Get current slot if END_SLOT is 0
     let endSlot = END_SLOT;
     if (END_SLOT === 0) {
-      const connection = solanaService.getConnection(CHAIN_ID_TO_USE);
+      const connection = solanaConnections.getConnection(CHAIN_ID_TO_USE);
       endSlot = await connection.getSlot();
       console.log(`📍 Current slot: ${endSlot}\n`);
     }
@@ -167,7 +169,7 @@ async function fetchAllPermissionlessEvents() {
     // Initialize Event Fetcher
     const fetcher = new SolanaEventFetcher(
       CHAIN_ID_TO_USE,
-      solanaService,
+      solanaEventsService,
       START_SLOT,     // defaultStartBlock
       10000,          // maxCount - maximum events to return
       config,
