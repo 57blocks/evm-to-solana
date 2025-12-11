@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { GlobalState } from "../../domain-models";
 import { IGlobalStateRepository } from "../interfaces/IGlobalStateRepository";
-import { SolanaService } from "../../infrastructure";
+import { SolanaConnections } from "../../infrastructure";
 
 /**
  * GlobalStateRepository 实现
@@ -9,7 +9,7 @@ import { SolanaService } from "../../infrastructure";
  */
 export class GlobalStateRepository implements IGlobalStateRepository {
   constructor(
-    private solanaService: SolanaService,
+    private solanaConnections: SolanaConnections,
     private chainId: number
   ) {}
 
@@ -31,7 +31,7 @@ export class GlobalStateRepository implements IGlobalStateRepository {
     );
 
     // 查询账户数据
-    const connection = this.solanaService.getConnection(this.chainId);
+    const connection = this.solanaConnections.getConnection(this.chainId);
     const accountInfo = await connection.getAccountInfo(statePda);
     if (!accountInfo) {
       throw new Error(

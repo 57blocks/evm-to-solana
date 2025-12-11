@@ -2,11 +2,11 @@ import { Connection } from "@solana/web3.js";
 import { RPC_BY_CHAINS } from "../event-fetch/chain/chain";
 
 /**
- * SolanaService
+ * SolanaConnections
  * 所有模块的公共依赖，负责所有与 Solana RPC 的交互
  * 提供统一的 Connection 管理，避免重复创建连接
  */
-export class SolanaService {
+export class SolanaConnections {
   private rpc: string;
   private connectionMap: Map<number, Connection> = new Map();
 

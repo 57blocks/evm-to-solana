@@ -17,7 +17,7 @@ export type SolanaEventFetcherConfig = {
 
 export class SolanaEventFetcher implements EventFetcher {
   private chainId: number;
-  private solanaService: SolanaService;
+  private solanaEventsService: SolanaEventsService;
   private defaultStartBlock: number;
   private maxCount: number;
   private transferEventFetcher: SolscanTransferEventFetcher;
@@ -25,14 +25,14 @@ export class SolanaEventFetcher implements EventFetcher {
 
   constructor(
     chainId: number,
-    solanaService: SolanaService,
+    solanaEventsService: SolanaEventsService,
     defaultStartBlock: number,
     maxCount: number,
     config: SolanaEventFetcherConfig,
     transferEventFetcher: SolscanTransferEventFetcher
   ) {
     this.chainId = chainId;
-    this.solanaService = solanaService;
+    this.solanaEventsService = solanaEventsService;
     this.defaultStartBlock = defaultStartBlock;
     this.maxCount = maxCount;
     this.config = config;
@@ -50,7 +50,7 @@ export class SolanaEventFetcher implements EventFetcher {
     }
 
     let parsedEvents: BaseEvent[] = [];
-    const connection = this.solanaService.getConnection(this.chainId);
+    const connection = this.solanaEventsService.getConnection(this.chainId);
 
     const currentSlot = await connection.getSlot();
     let endSlot = currentSlot - this.config.slotToExclusion;
@@ -136,7 +136,7 @@ export class SolanaEventFetcher implements EventFetcher {
           );
           for (const sig of sigListForBatch) {
             promises.push(
-              this.solanaService.parseTransactionEvents(
+              this.solanaEventsService.parseTransactionEvents(
                 this.chainId,
                 sig,
                 eventsParser
@@ -297,7 +297,7 @@ export class SolanaEventFetcher implements EventFetcher {
   }
 }
 
-import { SolanaService as InfrastructureSolanaService } from "../../../infrastructure";
+import { SolanaConnections } from "../../../infrastructure";
 
 /**
  * SolanaService (event-fetch 模块专用)
@@ -305,7 +305,17 @@ import { SolanaService as InfrastructureSolanaService } from "../../../infrastru
  * 所有模块应使用 infrastructure/SolanaService 作为基础服务
  * 此类的 parseTransactionEvents 方法用于 event-fetch 模块内部
  */
-export class SolanaService extends InfrastructureSolanaService {
+export class SolanaEventsService {
+  private solanaConnections: SolanaConnections;
+
+  constructor(solanaConnections: SolanaConnections) {
+    this.solanaConnections = solanaConnections;
+  }
+
+  getConnection(chainId: number): Connection {
+    return this.solanaConnections.getConnection(chainId);
+  }
+
   // We have to do this because graphql mutation can't accept pool/juniorTranche/seniorTranche currently
   async parseTransactionEvents(
     chainId: number,
@@ -313,7 +323,7 @@ export class SolanaService extends InfrastructureSolanaService {
     eventsParser: TransactionEventsParser
   ): Promise<BaseEvent[]> {
     const events = new Array<BaseEvent>();
-    const connection = this.getConnection(chainId);
+    const connection = this.solanaConnections.getConnection(chainId);
 
     // TODO maxSupportedTransactionVersion: 0 is correct?
     const ptx = await connection.getParsedTransaction(sig, {
