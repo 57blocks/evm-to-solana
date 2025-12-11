@@ -1,4 +1,4 @@
-import { EventFetcher, FetchingResult, RPC_BY_CHAINS } from "../chain";
+import { EventFetcher, FetchingResult } from "../chain";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { sleep, mergeSortedArrays } from "../../common";
 import { BaseEvent, TransactionEventsParser } from "../event";
@@ -115,7 +115,7 @@ export class SolanaEventFetcher implements EventFetcher {
               `Fetched ${sigsCount} signatures, address ${monitorAddress}`
             );
             beforeSignagure = sigs[sigsCount - 1].signature;
-            sigList.unshift(...sigs.reverse().map((sig) => sig.signature));
+            sigList.unshift(...sigs.reverse().map((sig: any) => sig.signature));
             await sleep(this.config.sleepTime);
           }
         }
@@ -297,14 +297,15 @@ export class SolanaEventFetcher implements EventFetcher {
   }
 }
 
-export class SolanaService {
-  private rpc: string;
-  private connectionMap: Map<number, Connection> = new Map();
+import { SolanaService as InfrastructureSolanaService } from "../../../infrastructure";
 
-  constructor(rpc: string) {
-    this.rpc = rpc;
-  }
-
+/**
+ * SolanaService (event-fetch 模块专用)
+ * 扩展基础设施层的 SolanaService，添加事件解析功能
+ * 所有模块应使用 infrastructure/SolanaService 作为基础服务
+ * 此类的 parseTransactionEvents 方法用于 event-fetch 模块内部
+ */
+export class SolanaService extends InfrastructureSolanaService {
   // We have to do this because graphql mutation can't accept pool/juniorTranche/seniorTranche currently
   async parseTransactionEvents(
     chainId: number,
@@ -332,27 +333,5 @@ export class SolanaService {
     }
 
     return eventsParser.parseEvents({ tx: ptx, sig: sig });
-  }
-
-  getConnection(chainId: number): Connection {
-    let connection: Connection | undefined = this.connectionMap.get(chainId);
-    if (!connection) {
-      connection = this.createRpcConnection(this.rpc, chainId);
-      this.connectionMap.set(chainId, connection);
-    }
-    return connection;
-  }
-
-  private createRpcConnection(rpc: string, chainId: number) {
-    console.log(`rpc env - ${rpc} default - ${RPC_BY_CHAINS[chainId]}`);
-    if (rpc) {
-      return new Connection(rpc, "confirmed");
-    }
-    if (chainId in RPC_BY_CHAINS) {
-      return new Connection(RPC_BY_CHAINS[chainId], "confirmed");
-    } else {
-      console.error(`Chain ID ${chainId} is not solana chain`);
-      throw new Error(`Chain ID ${chainId} is not solana chain`);
-    }
   }
 }
