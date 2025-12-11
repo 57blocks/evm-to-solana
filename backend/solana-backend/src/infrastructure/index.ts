@@ -1,2 +1,2 @@
-export * from "./SolanaService";
+export * from "./SolanaConnections";
 

@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { UserStakeStatus } from "../../domain-models";
 import { IUserStakePositionRepository } from "../interfaces/IUserStakePositionRepository";
-import { SolanaService } from "../../infrastructure";
+import { SolanaConnections } from "../../infrastructure";
 
 /**
  * UserStakePositionRepository 实现
@@ -11,7 +11,7 @@ export class UserStakePositionRepository
   implements IUserStakePositionRepository
 {
   constructor(
-    private solanaService: SolanaService,
+    private solanaConnections: SolanaConnections,
     private chainId: number
   ) {}
 
@@ -42,7 +42,7 @@ export class UserStakePositionRepository
     );
 
     // 查询账户数据
-    const connection = this.solanaService.getConnection(this.chainId);
+    const connection = this.solanaConnections.getConnection(this.chainId);
     const accountInfo = await connection.getAccountInfo(stakePda);
     if (!accountInfo) {
       // 账户不存在，返回 null
