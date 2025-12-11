@@ -1,45 +1,26 @@
 我们为solana_staking协议构建一个后端服务，实现：
-查询program的global states
-根据传入的用户地址，查询用户当前stake相关状态
-查询用户的操作历史
+1. 查询program的global states
+2. 根据传入的用户地址，查询用户当前stake相关状态
+3. 查询用户的操作历史
 
 数据库表结构
 UserActivity
-Field
-Type
-user_address
-string
-program_id
-string
-event_type
-string
-raw_data 
-string
-position
-number
-rewards
-number
-block_number
-number
-tx_hash
-string
-timestamp
-timestamp
-
-
+Field          Type
+user_address   string
+program_id    string
+event_type    string
+raw_data      string
+position      number
+rewards       number
+block_number  number
+tx_hash       string
+timestamp     timestamp
 
 SyncStatus
-Field
-type
-program_id 
-string
-last_sync_block
-number
-Initialize_block  
-number
-
-// task1
-请为我们的系统定义统一的DDD语言，我们将基于定义的DDD语言讨论问题
+Field            Type
+program_id       string
+last_sync_block  number
+initialize_block number
 
 ================================================================================
 DDD Ubiquitous Language (统一领域语言)
@@ -48,7 +29,7 @@ DDD Ubiquitous Language (统一领域语言)
 ## 1. Bounded Contexts (限界上下文)
 
 ### 1.1 Query Domain (查询领域)
-负责提供查询接口，实现以下三个核心功能：
+负责提供查询接口，实现三个核心功能：
 - 查询program的global states
 - 根据用户地址查询用户当前stake相关状态
 - 查询用户的操作历史
@@ -86,14 +67,15 @@ DDD Ubiquitous Language (统一领域语言)
 - **属性**:
   - userAddress: 用户地址
   - programId: 程序ID
-  - eventType: 事件类型 (Staked/Unstaked/RewardsClaimed等)
+  - eventType: 事件类型 (Staked/Unstaked/RewardsClaimed)
   - rawData: 原始事件数据
-  - position: 操作后的仓位数量
+  - positionDelta: 质押数量的变化量（正数表示增加，负数表示减少）
   - rewards: 操作相关的奖励数量
   - blockNumber: 区块号 (Solana中的slot)
   - txHash: 交易哈希
   - timestamp: 时间戳
 - **查询来源**: 从数据库UserActivity表查询
+- **说明**: positionDelta用于显示操作前后质押数量的变化，Staked事件为正数，Unstaked事件为负数
 
 ### 2.4 SyncStatus (同步状态)
 - **定义**: 事件同步服务维护的同步进度状态
@@ -146,33 +128,57 @@ DDD Ubiquitous Language (统一领域语言)
 
 ### 5.2 EventSynchronizationService (事件同步服务)
 - **职责**: 从Solana链上同步事件到数据库
-- **输入**: programId, startSlot, endSlot
-- **输出**: 同步的事件列表
+- **依赖**: 
+  - SolanaEventFetcher (event-fetch模块): 负责从链上获取事件
+  - TransactionEventsParser (event-fetch模块): 负责解析交易中的事件
+  - UserActivityRepository: 持久化用户活动记录
+  - SyncStatusRepository: 维护同步状态
+- **输入**: programId, startSlot, endSlot, eventParserType ("permissionless" | "admin")
+- **输出**: 同步的事件列表 (BaseEvent[])
+- **实现流程**:
+  1. 创建或获取SolanaEventFetcher实例
+  2. 根据eventParserType创建对应的TransactionEventsParser
+  3. 调用SolanaEventFetcher.fetchEvents()获取链上事件
+  4. 返回FetchingResult.events
 - **规则**: 按slot顺序同步，维护SyncStatus状态
 
 ## 6. Repositories (仓储)
 
 ### 6.1 UserActivityRepository
-- **职责**: 查询用户活动记录
+- **职责**: 查询和保存用户活动记录
 - **方法**:
-  - findByUser(userAddress: string, programId: string): Promise<UserActivity[]>
-  - findByUserAndEventType(userAddress: string, programId: string, eventType: string): Promise<UserActivity[]>
+  - `save(activity: UserActivity): Promise<void>`: 保存用户活动记录
+  - `findByUser(userAddress: string, programId: string): Promise<UserActivity[]>`: 查询指定用户的所有活动
+  - `findByUserAndEventType(userAddress: string, programId: string, eventType: string): Promise<UserActivity[]>`: 按事件类型过滤查询
 
 ### 6.2 SyncStatusRepository
 - **职责**: 查询和维护同步状态
 - **方法**:
-  - findByProgram(programId: string): Promise<SyncStatus | null>
-  - updateLastSyncBlock(programId: string, lastSyncBlock: number): Promise<void>
+  - `findByProgram(programId: string): Promise<SyncStatus | null>`: 获取当前同步状态
+  - `save(syncStatus: SyncStatus): Promise<void>`: 保存同步状态
+  - `updateLastSyncBlock(programId: string, lastSyncBlock: number): Promise<void>`: 更新同步进度
 
 ### 6.3 GlobalStateRepository (链上查询)
 - **职责**: 从Solana链上查询全局状态
 - **方法**:
-  - getGlobalState(programId: string): Promise<GlobalState>
+  - `getGlobalState(programId: string, stakingMint: string, stateSeed: string): Promise<GlobalState>`
+    - **PDA推导**: 使用stateSeed（默认: "state"）和stakingMint推导GlobalState的PDA地址
+    - **Seeds**: `[stateSeed, stakingMint]` 
+    - **推导公式**: `PublicKey.findProgramAddress([stateSeed, stakingMint], programId)`
+    - 使用推导出的PDA地址查询GlobalState账户
 
 ### 6.4 UserStakePositionRepository (链上查询)
 - **职责**: 从Solana链上查询用户质押状态
 - **方法**:
-  - getUserStakePosition(userAddress: string, programId: string): Promise<UserStakeStatus | null>
+  - `getUserStakePosition(userAddress: string, programId: string, stakingMint: string, stateSeed: string, stakeSeed: string): Promise<UserStakeStatus | null>`
+    - **PDA推导步骤**:
+      1. 先推导GlobalState的PDA: `stateAddress = findProgramAddress([stateSeed, stakingMint], programId)`
+      2. 再推导UserStakeInfo的PDA: `findProgramAddress([stakeSeed, stateAddress, userAddress], programId)`
+    - **Seeds**: `[stakeSeed, stateAddress, userAddress]` 
+      - stakeSeed: 默认 "stake"
+      - stateAddress: 从步骤1获得
+      - userAddress: 用户地址
+    - 使用推导出的PDA地址查询UserStakeInfo账户
 
 ## 7. Application Services (应用服务)
 
@@ -180,18 +186,34 @@ DDD Ubiquitous Language (统一领域语言)
 - **职责**: 提供三个核心查询接口，协调Repository和Domain Service
 - **依赖**: GlobalStateRepository, UserStakePositionRepository, UserActivityRepository, RewardCalculationService
 - **方法**:
-  - getGlobalState(programId: string): Promise<GlobalState>
-    - 内部调用: GlobalStateRepository.getGlobalState()
-  - getUserStakeStatus(userAddress: string, programId: string): Promise<UserStakeStatus>
+  - `getGlobalState(programId: string, stakingMint: string, stateSeed: string): Promise<GlobalState>`
+    - 内部调用: GlobalStateRepository.getGlobalState(programId, stakingMint, stateSeed)
+    - stateSeed默认值为"state"
+  
+  - `getUserStakeStatus(userAddress: string, programId: string, stakingMint: string, stateSeed: string, stakeSeed: string): Promise<UserStakeStatus>`
     - 内部调用: UserStakePositionRepository.getUserStakePosition() + RewardCalculationService计算待领取奖励
-  - getUserActivityHistory(userAddress: string, programId: string, options?: QueryOptions): Promise<UserActivity[]>
-    - 内部调用: UserActivityRepository.findByUser()
+    - stateSeed默认值为"state"，stakeSeed默认值为"stake"
+  
+  - `getUserActivityHistory(userAddress: string, programId: string): Promise<UserActivity[]>`
+    - 内部调用: UserActivityRepository.findByUser(userAddress, programId)
+    - 返回结果按timestamp倒序排序
 
 ### 7.2 EventSyncService (事件同步服务)
 - **职责**: 协调事件同步流程
+- **依赖**: EventSynchronizationService, UserActivityRepository, SyncStatusRepository
 - **方法**:
-  - syncEvents(programId: string, startSlot?: number, endSlot?: number): Promise<SyncResult>
-  - getSyncStatus(programId: string): Promise<SyncStatus>
+  - `syncEvents(programId: string, startSlot?: number, endSlot?: number): Promise<SyncResult>`
+    - 调用EventSynchronizationService获取链上事件
+    - 将BaseEvent转换为UserActivity实体
+    - 通过UserActivityRepository保存到数据库
+    - 更新SyncStatus
+  
+  - `getSyncStatus(programId: string): Promise<SyncStatus>`
+    - 通过SyncStatusRepository查询同步状态
+
+  - `syncEventsPeriodically(programId: string, syncInterval: number): Promise<void>`
+    - 使用setInterval定期调用syncEvents()
+    - syncInterval: 同步间隔（毫秒），通过环境变量配置
 
 ## 8. Glossary (术语表)
 
@@ -200,27 +222,31 @@ DDD Ubiquitous Language (统一领域语言)
 | 全局状态 | Global State | 质押程序的全局配置和统计信息 |
 | 用户状态 | User Stake Status | 单个用户在质押程序中的当前质押状态 |
 | 用户活动 | User Activity | 用户在质押协议中的历史操作记录 |
-| 仓位 | Position | 用户在质押程序中的质押数量 |
-| 奖励 | Reward | 用户因质押而获得的代币奖励 |
 | 区块槽位 | Slot | Solana区块链中的区块标识符 |
 | 程序 | Program | Solana上的智能合约 |
 | 交易哈希 | Transaction Hash | Solana交易的唯一标识符 |
 | 事件 | Event | 链上操作产生的日志记录 |
 | 同步 | Sync | 将链上事件同步到数据库的过程 |
-| 奖励率 | Reward Rate | 奖励发放的速率，以基点表示 (100 = 1%) |
-| 基点 | Basis Point | 利率单位，1基点 = 0.01%，100基点 = 1% |
+| PDA | Program Derived Address | 程序派生地址，通过程序ID和seeds确定性推导出的账户地址 |
+| Seeds | Seeds | PDA推导时使用的种子数据，用于确定性生成账户地址 |
+| 质押代币 | Staking Mint | 用于质押的代币类型（Mint地址），用于推导GlobalState的PDA |
 
 ## 9. Business Rules (业务规则)
 
 ### 9.1 查询规则
-- 全局状态查询：直接从链上实时查询GlobalState账户
-- 用户状态查询：从链上实时查询UserStakeInfo账户，并计算待领取奖励
+- 全局状态查询：使用stakingMint和stateSeed（默认"state"）推导GlobalState的PDA，然后从链上实时查询账户
+- 用户状态查询：先推导GlobalState的PDA，再使用stateAddress、userAddress和stakeSeed（默认"stake"）推导UserStakeInfo的PDA，然后从链上实时查询账户，并计算待领取奖励
 - 历史记录查询：从数据库UserActivity表查询，按时间倒序
 
-### 9.2 同步规则
+### 9.2 PDA Seeds配置规则
+- stateSeed默认值为"state"
+- stakeSeed默认值为"stake"
+- 默认值来自合约常量定义，确保与链上合约一致
+
+### 9.3 同步规则
 - 事件必须按slot顺序同步
 - 同步进度必须持久化，支持断点续传
-- 同步失败需要支持重试机制
+- 同步失败需要记录日志，但不中断后续同步
 
 ## 10. Invariants (不变性约束)
 
@@ -230,9 +256,716 @@ DDD Ubiquitous Language (统一领域语言)
 - 每个交易哈希在UserActivity中唯一
 
 ================================================================================
-End of DDD Ubiquitous Language
+Implementation Plan (实现计划)
 ================================================================================
 
-// task2 Query GlobalState, UserStakeStatus
+## 1. 查询功能实现 (Task 2)
 
+### 1.1 查询GlobalState
+**流程**:
+1. 接收参数: programId, stakingMint, stateSeed (默认"state")
+2. GlobalStateRepository.getGlobalState()
+   - 推导PDA: `findProgramAddress([stateSeed, stakingMint], programId)`
+   - 从Solana链查询GlobalState账户
+3. 返回GlobalState实体
 
+### 1.2 查询UserStakeStatus
+**流程**:
+1. 接收参数: userAddress, programId, stakingMint, stateSeed (默认"state"), stakeSeed (默认"stake")
+2. UserStakePositionRepository.getUserStakePosition()
+   - 先推导GlobalState的PDA
+   - 再推导UserStakeInfo的PDA
+   - 从Solana链查询UserStakeInfo账户
+3. RewardCalculationService计算待领取奖励
+4. 返回UserStakeStatus实体（包含pendingRewards）
+
+## 2. 事件同步实现 (Task 3)
+
+### 2.1 同步流程
+**EventSyncService.syncEvents()**:
+1. 获取SyncStatus，确定起始Slot
+   - 如果SyncStatus不存在，从initializeBlock开始
+   - 如果存在，从lastSyncBlock + 1开始
+
+2. 调用EventSynchronizationService
+   - 创建SolanaEventFetcher实例
+   - 创建PermissionlessTransactionEventsParser实例
+   - 调用SolanaEventFetcher.fetchEvents()获取链上事件
+
+3. 将BaseEvent转换为UserActivity
+   - PermissionlessStakedEvent → UserActivity (eventType: "Staked", positionDelta: amount)
+   - PermissionlessUnstakedEvent → UserActivity (eventType: "Unstaked", positionDelta: -amount)
+   - PermissionlessRewardsClaimedEvent → UserActivity (eventType: "RewardsClaimed", positionDelta: 0)
+
+4. 保存UserActivity
+   - 通过UserActivityRepository.save()批量保存
+   - 检查txHash唯一性，避免重复
+
+5. 更新SyncStatus
+   - 更新lastSyncBlock为已同步的最大Slot
+
+### 2.2 历史查询实现
+**StakingQueryService.getUserActivityHistory()**:
+1. 接收参数: userAddress, programId
+2. UserActivityRepository.findByUser(userAddress, programId)
+3. 按timestamp倒序排序
+4. 返回UserActivity[]数组
+
+## 3. 定时同步实现 (Task 4)
+
+### 3.1 定时同步流程
+**EventSyncService.syncEventsPeriodically()**:
+1. 从环境变量读取SYNC_INTERVAL（默认60000毫秒，即60秒）
+2. 使用setInterval定期调用syncEvents()
+3. 错误处理：记录日志，不中断定时任务
+
+### 3.2 启动流程
+1. 应用启动时，为每个配置的programId创建定时任务
+2. 定时任务按SYNC_INTERVAL间隔执行
+3. 每次执行调用syncEvents()同步事件
+
+## 4. 架构图
+
+```
+┌─────────────────────────────────────┐
+│   Application Layer                 │
+│   - StakingQueryService             │
+│   - EventSyncService                │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   Domain Layer                       │
+│   - RewardCalculationService        │
+│   - EventSynchronizationService     │
+│   - UserActivity (Entity)           │
+│   - SyncStatus (Entity)             │
+└──────────────┬──────────────────────┘
+               │
+┌──────────────▼──────────────────────┐
+│   Infrastructure Layer               │
+│   - SolanaEventFetcher              │
+│   - TransactionEventsParser        │
+│   - UserActivityRepository          │
+│   - SyncStatusRepository            │
+│   - GlobalStateRepository           │
+│   - UserStakePositionRepository     │
+└─────────────────────────────────────┘
+```
+
+## 5. 数据流
+
+### 5.1 查询数据流
+```
+用户请求
+    ↓
+StakingQueryService
+    ↓
+Repository (链上查询或数据库查询)
+    ↓
+返回结果
+```
+
+### 5.2 同步数据流
+```
+Solana链上交易
+    ↓
+SolanaEventFetcher.fetchEvents()
+    ↓
+TransactionEventsParser.parseEvents()
+    ↓
+BaseEvent[]
+    ↓
+EventSynchronizationService (转换为UserActivity)
+    ↓
+UserActivityRepository.save()
+    ↓
+数据库 UserActivity表
+```
+
+## 6. 配置
+
+### 6.1 环境变量
+```bash
+SYNC_INTERVAL=60000              # 同步间隔（毫秒），默认60秒
+SOLANA_RPC_URL=<rpc_url>        # Solana RPC节点地址
+PROGRAM_ID=<program_id>         # 质押程序ID
+STAKING_MINT=<staking_mint>     # 质押代币Mint地址
+```
+
+### 6.2 PDA Seeds (固定值)
+- stateSeed: "state"
+- stakeSeed: "stake"
+
+================================================================================
+End of Design Document
+================================================================================
+
+================================================================================
+Deployment Workflow (部署流程)
+================================================================================
+
+## 1. 数据库初始化
+
+### 1.1 创建数据库表
+```sql
+-- UserActivity表
+CREATE TABLE user_activity (
+    user_address VARCHAR(44) NOT NULL,
+    program_id VARCHAR(44) NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    raw_data TEXT,
+    position_delta BIGINT,
+    rewards BIGINT,
+    block_number BIGINT NOT NULL,
+    tx_hash VARCHAR(88) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    PRIMARY KEY (tx_hash),
+    INDEX idx_user_program (user_address, program_id),
+    INDEX idx_block_number (block_number),
+    INDEX idx_timestamp (timestamp)
+);
+
+-- SyncStatus表
+CREATE TABLE sync_status (
+    program_id VARCHAR(44) NOT NULL PRIMARY KEY,
+    last_sync_block BIGINT NOT NULL,
+    initialize_block BIGINT NOT NULL
+);
+```
+
+### 1.2 初始化SyncStatus记录
+在SyncStatus表中插入监控的program记录：
+```sql
+INSERT INTO sync_status (program_id, last_sync_block, initialize_block)
+VALUES ('<program_id>', 0, <initialize_block>);
+```
+
+**要求**:
+- `program_id`: 要监控的Solana程序ID
+- `initialize_block`: 程序初始化的区块号（必须不为空，可通过查询InitializedEvent获得）
+- `last_sync_block`: 初始化为0，代表第一次同步将从initialize_block开始
+
+## 2. 环境变量配置
+
+### 2.1 必需环境变量
+```bash
+# Solana RPC配置
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+
+# 程序配置
+PROGRAM_ID=8y11v8SN4VfbasLdPAHBrnVXRQsuCXgFUBWyyC2Hd9LD
+STAKING_MINT=<staking_mint_address>
+
+# 同步配置
+SYNC_INTERVAL=60000  # 同步间隔（毫秒），默认60秒
+```
+
+### 2.2 可选环境变量
+```bash
+# 数据库配置（如果使用环境变量）
+DATABASE_URL=<database_connection_string>
+
+# 日志级别
+LOG_LEVEL=info
+```
+
+## 3. 服务启动流程
+
+### 3.1 启动步骤
+```
+1. 加载环境变量
+   - 读取SOLANA_RPC_URL, PROGRAM_ID, STAKING_MINT, SYNC_INTERVAL等配置
+
+2. 初始化数据库连接
+   - 连接数据库
+   - 验证表结构是否存在
+   - 验证SyncStatus表中是否有对应program_id的记录
+
+3. 验证SyncStatus配置
+   - 查询SyncStatus表，确认program_id存在
+   - 验证initialize_block不为空且大于0
+   - 如果不存在或配置错误，记录错误并退出
+
+4. 初始化服务依赖
+   - 创建SolanaService实例（连接Solana RPC）
+   - 创建SolanaEventFetcher实例
+   - 创建TransactionEventsParser实例
+   - 初始化所有Repository实例
+
+5. 启动定时同步任务
+   - 从环境变量读取PROGRAM_ID
+   - 从SyncStatus表查询对应的program_id记录
+   - 如果记录不存在，启动失败并退出
+   - 为查询到的program_id创建定时同步任务
+   - 使用setInterval，间隔为SYNC_INTERVAL（默认60秒）
+   - 首次启动时立即执行一次同步（不等待间隔）
+
+6. 启动API服务（如果提供查询接口）
+   - 启动HTTP服务器
+   - 注册查询接口路由
+
+7. 服务运行
+   - 定时任务按配置间隔执行同步
+   - API服务处理查询请求
+   - 记录运行日志
+```
+
+### 3.2 启动验证
+启动后验证以下内容：
+- [ ] 数据库连接成功
+- [ ] SyncStatus记录存在且配置正确
+- [ ] Solana RPC连接成功
+- [ ] 定时同步任务已创建
+- [ ] 首次同步执行成功（检查日志）
+- [ ] SyncStatus.last_sync_block已更新
+
+## 4. 首次同步流程
+
+### 4.1 首次同步步骤
+```
+1. 读取SyncStatus
+   - 从环境变量读取PROGRAM_ID
+   - 从SyncStatus表查询对应的program_id记录
+   - 如果记录不存在，启动失败并退出
+   - 读取last_sync_block和initialize_block
+
+2. 确定同步范围
+   - 如果last_sync_block为0，startSlot = initialize_block
+   - 如果last_sync_block > 0，startSlot = last_sync_block + 1
+   - endSlot: 当前Slot - slotToExclusion（由SolanaEventFetcher计算）
+
+3. 执行同步
+   - 调用EventSyncService.syncEvents(programId, startSlot, endSlot)
+   - 从链上获取事件
+   - 转换为UserActivity并保存
+   - 更新SyncStatus.last_sync_block
+
+4. 验证同步结果
+   - 检查是否有事件被保存到UserActivity表
+   - 验证SyncStatus.last_sync_block已更新
+   - 记录同步统计信息（事件数量、耗时等）
+```
+
+## 5. 定时同步流程
+
+### 5.1 定时同步执行
+```
+每次定时任务执行（间隔SYNC_INTERVAL）:
+
+1. 读取SyncStatus
+   - 获取当前program_id的last_sync_block
+
+2. 确定同步范围
+   - startSlot: last_sync_block + 1
+   - endSlot: 当前Slot - slotToExclusion
+
+3. 执行同步
+   - 调用EventSyncService.syncEvents()
+   - 如果startSlot > endSlot，跳过本次同步（已是最新）
+
+4. 更新SyncStatus
+   - 更新last_sync_block为已同步的最大Slot
+
+5. 错误处理
+   - 如果同步失败，记录错误日志
+   - 不中断定时任务，下次继续执行
+   - 如果连续失败，记录告警
+```
+## 6. 部署检查清单
+
+### 6.1 部署前检查
+- [ ] 数据库已创建并配置正确
+- [ ] SyncStatus表已初始化，包含program_id记录
+- [ ] initialize_block已正确设置（可通过查询InitializedEvent获得）
+- [ ] 环境变量已配置（SOLANA_RPC_URL, PROGRAM_ID, STAKING_MINT等）
+
+### 6.2 部署验证
+- [ ] 服务启动成功，无致命错误
+- [ ] 如果启动过程中没有致命报错，则认为部署成功
+
+## 7. 故障处理
+
+### 7.1 常见问题
+1. **SyncStatus记录不存在**
+   - 行为：启动失败，直接退出
+   - 解决：执行数据库初始化步骤，插入SyncStatus记录后重新启动
+
+2. **initialize_block为空或为0**
+   - 行为：启动失败，直接退出
+   - 解决：查询链上的InitializedEvent，获取正确的initialize_block值，更新SyncStatus记录后重新启动
+
+3. **Solana RPC连接失败**
+   - 行为：启动失败，直接退出
+   - 解决：检查SOLANA_RPC_URL配置，确认RPC节点可访问
+
+4. **同步无新事件**
+   - 正常情况：如果链上确实没有新事件，同步会正常完成但无数据写入
+
+5. **同步失败但定时任务继续**
+   - 正常行为：错误已记录日志，下次定时任务会继续尝试
+
+### 7.2 恢复流程
+如果服务中断后需要恢复：
+1. 检查SyncStatus.last_sync_block，确认同步进度
+2. 重启服务，服务会自动从last_sync_block + 1继续同步
+3. 验证同步是否正常恢复
+
+================================================================================
+End of Deployment Workflow
+================================================================================
+
+================================================================================
+Service Stop Workflow (服务停止流程)
+================================================================================
+
+## 停止步骤
+```
+1. 接收停止信号（SIGTERM或SIGINT）
+   - 注册信号处理器
+
+2. 停止定时同步任务
+   - 清除所有setInterval定时器
+
+3. 关闭数据库连接
+   - 关闭数据库连接
+
+4. 退出进程
+   - process.exit(0)
+```
+
+================================================================================
+Service Restart Workflow (服务重启流程)
+================================================================================
+
+## 重启步骤
+```
+1. 执行停止流程
+   - 按照服务停止流程执行
+
+2. 执行启动流程
+   - 按照服务启动流程执行
+   - 服务会从SyncStatus.last_sync_block + 1继续同步
+```
+
+## 重启说明
+- 重启不会影响已同步的数据
+- 服务会自动从last_sync_block + 1继续同步
+- 不会重复同步已处理的事件（通过txHash唯一性保证）
+
+================================================================================
+End of Service Stop and Restart Workflow
+================================================================================
+
+================================================================================
+Module Architecture (模块架构)
+================================================================================
+
+## 模块划分原则
+基于DDD限界上下文和职责分离原则，将系统划分为以下模块目录（每个模块是项目内的独立目录）：
+
+## 项目目录结构
+
+```
+solana-backend/
+├── src/
+│   ├── event-fetch/              # Module 1: 事件获取模块（已存在）
+│   │   ├── chain/
+│   │   ├── permissionless/
+│   │   ├── admin/
+│   │   ├── common/
+│   │   └── index.ts
+│   │
+│   ├── domain-models/            # Module 2: 领域模型模块
+│   │   ├── entities/
+│   │   │   ├── GlobalState.ts
+│   │   │   ├── UserStakeStatus.ts
+│   │   │   ├── UserActivity.ts
+│   │   │   └── SyncStatus.ts
+│   │   ├── value-objects/
+│   │   │   ├── Slot.ts
+│   │   │   ├── TransactionHash.ts
+│   │   │   ├── Address.ts
+│   │   │   └── TokenAmount.ts
+│   │   └── index.ts
+│   │
+│   ├── repositories/             # Module 3: 仓储模块
+│   │   ├── interfaces/
+│   │   │   ├── IUserActivityRepository.ts
+│   │   │   ├── ISyncStatusRepository.ts
+│   │   │   ├── IGlobalStateRepository.ts
+│   │   │   └── IUserStakePositionRepository.ts
+│   │   ├── implementations/
+│   │   │   ├── UserActivityRepository.ts
+│   │   │   ├── SyncStatusRepository.ts
+│   │   │   ├── GlobalStateRepository.ts
+│   │   │   └── UserStakePositionRepository.ts
+│   │   └── index.ts
+│   │
+│   ├── domain-services/          # Module 4: 领域服务模块
+│   │   ├── RewardCalculationService.ts
+│   │   ├── EventSynchronizationService.ts
+│   │   └── index.ts
+│   │
+│   ├── query-service/            # Module 5: 查询服务模块
+│   │   ├── StakingQueryService.ts
+│   │   ├── api/                  # API接口（可选）
+│   │   │   └── routes.ts
+│   │   └── index.ts
+│   │
+│   ├── sync-service/             # Module 6: 同步服务模块
+│   │   ├── EventSyncService.ts
+│   │   ├── scheduler.ts          # 定时任务调度
+│   │   ├── lifecycle.ts          # 启动、停止、重启逻辑
+│   │   └── index.ts
+│   │
+│   └── index.ts                  # 应用入口
+│
+├── package.json
+└── tsconfig.json
+```
+
+## 模块详细说明
+
+### 1. Module: event-fetch (已存在)
+**目录**: `src/event-fetch/`  
+**职责**: 基础设施层 - 从Solana链上获取和解析事件  
+**限界上下文**: Infrastructure Layer  
+**包含内容**:
+- `chain/`: SolanaEventFetcher, SolanaService
+- `permissionless/`: PermissionlessTransactionEventsParser, 用户操作事件
+- `admin/`: AdminTransactionEventsParser, 管理员事件
+- `common/`: 通用工具函数
+- `index.ts`: 模块导出
+
+**依赖**: 
+- @solana/web3.js
+- @coral-xyz/anchor
+
+**对外导出**:
+- EventFetcher接口
+- TransactionEventsParser接口
+- BaseEvent基类
+- SolanaEventFetcher
+- PermissionlessTransactionEventsParser
+- AdminTransactionEventsParser
+
+### 2. Module: domain-models
+**目录**: `src/domain-models/`  
+**职责**: 领域模型 - 定义核心领域实体和值对象  
+**限界上下文**: Domain Layer (Shared)  
+**目录结构**:
+- `entities/`: 领域实体
+  - GlobalState.ts
+  - UserStakeStatus.ts
+  - UserActivity.ts
+  - SyncStatus.ts
+- `value-objects/`: 值对象
+  - Slot.ts
+  - TransactionHash.ts
+  - Address.ts
+  - TokenAmount.ts
+- `index.ts`: 模块导出
+
+**依赖**: 无（纯领域模型）
+
+**对外导出**:
+- 所有领域实体类
+- 所有值对象类
+
+### 3. Module: repositories
+**目录**: `src/repositories/`  
+**职责**: 仓储层 - 数据访问抽象  
+**限界上下文**: Infrastructure Layer  
+**目录结构**:
+- `interfaces/`: 仓储接口
+  - IUserActivityRepository.ts
+  - ISyncStatusRepository.ts
+  - IGlobalStateRepository.ts
+  - IUserStakePositionRepository.ts
+- `implementations/`: 仓储实现
+  - UserActivityRepository.ts (数据库实现)
+  - SyncStatusRepository.ts (数据库实现)
+  - GlobalStateRepository.ts (链上查询实现)
+  - UserStakePositionRepository.ts (链上查询实现)
+- `index.ts`: 模块导出
+
+**依赖**: 
+- domain-models
+- @solana/web3.js (用于链上查询)
+- 数据库驱动
+
+**对外导出**:
+- 所有Repository接口
+- 所有Repository实现类
+
+### 4. Module: domain-services
+**目录**: `src/domain-services/`  
+**职责**: 领域服务 - 核心业务逻辑  
+**限界上下文**: Domain Layer  
+**目录结构**:
+- RewardCalculationService.ts
+- EventSynchronizationService.ts
+- index.ts
+
+**依赖**: 
+- domain-models
+- repositories
+- event-fetch
+
+**对外导出**:
+- RewardCalculationService
+- EventSynchronizationService
+
+### 5. Module: query-service
+**目录**: `src/query-service/`  
+**职责**: 查询应用服务 - 提供查询接口  
+**限界上下文**: Query Domain  
+**目录结构**:
+- StakingQueryService.ts
+- api/ (可选)
+  - routes.ts (HTTP路由定义)
+- index.ts
+
+**依赖**: 
+- domain-models
+- repositories
+- domain-services
+
+**对外导出**:
+- StakingQueryService
+- API路由（如果提供）
+
+### 6. Module: sync-service
+**目录**: `src/sync-service/`  
+**职责**: 同步应用服务 - 协调事件同步流程  
+**限界上下文**: Event Synchronization Domain  
+**目录结构**:
+- EventSyncService.ts
+- scheduler.ts (定时任务调度)
+- lifecycle.ts (启动、停止、重启逻辑)
+- index.ts
+
+**依赖**: 
+- domain-models
+- repositories
+- domain-services
+- event-fetch
+
+**对外导出**:
+- EventSyncService
+- 定时任务调度函数
+- 生命周期管理函数
+
+## 模块依赖关系图
+
+```
+┌─────────────────────────────────────────────────────────┐
+│   Application Layer                                     │
+│   ┌──────────────────┐    ┌──────────────────┐        │
+│   │ query-service    │    │ sync-service     │        │
+│   └────────┬─────────┘    └────────┬─────────┘        │
+└────────────┼──────────────────────┼──────────────────┘
+             │                      │
+┌────────────▼──────────────────────▼──────────────────┐
+│   Domain Layer                                        │
+│   ┌──────────────────────────────────────────────┐  │
+│   │ domain-services                               │  │
+│   └────────┬─────────────────────────────────────┘  │
+│            │                                         │
+│   ┌────────▼─────────┐                              │
+│   │ domain-models    │                              │
+│   └──────────────────┘                              │
+└────────────┬─────────────────────────────────────────┘
+             │
+┌────────────▼─────────────────────────────────────────┐
+│   Infrastructure Layer                                │
+│   ┌──────────────────┐    ┌──────────────────┐      │
+│   │ repositories     │    │ event-fetch      │      │
+│   └──────────────────┘    └──────────────────┘      │
+└──────────────────────────────────────────────────────┘
+```
+
+## 模块详细说明
+
+### 1. event-fetch (已存在)
+- **类型**: Infrastructure Module
+- **职责**: 链上事件获取和解析
+- **独立性**: 高，不依赖其他业务模块
+- **可复用性**: 高，可用于其他Solana项目
+
+### 2. domain-models
+- **类型**: Domain Module
+- **职责**: 定义领域实体和值对象
+- **独立性**: 高，纯领域模型，无外部依赖
+- **可复用性**: 中，特定于staking业务
+
+### 3. repositories
+- **类型**: Infrastructure Module
+- **职责**: 数据访问抽象
+- **独立性**: 中，依赖domain-models
+- **可复用性**: 中，特定于staking业务
+
+### 4. domain-services
+- **类型**: Domain Module
+- **职责**: 核心业务逻辑
+- **独立性**: 中，依赖domain-models和repositories
+- **可复用性**: 中，特定于staking业务
+
+### 5. query-service
+- **类型**: Application Module
+- **职责**: 查询功能的应用层
+- **独立性**: 低，依赖多个模块
+- **可复用性**: 低，特定应用
+
+### 6. sync-service
+- **类型**: Application Module
+- **职责**: 同步功能的应用层
+- **独立性**: 低，依赖多个模块
+- **可复用性**: 低，特定应用
+
+## 模块导入示例
+
+### 模块间依赖关系
+```typescript
+// domain-models 不依赖其他模块
+import { GlobalState, UserStakeStatus } from '../domain-models';
+
+// repositories 依赖 domain-models
+import { UserActivity, SyncStatus } from '../domain-models';
+import { IUserActivityRepository } from './interfaces';
+
+// domain-services 依赖 domain-models, repositories, event-fetch
+import { UserStakeStatus, GlobalState } from '../domain-models';
+import { IGlobalStateRepository } from '../repositories';
+import { SolanaEventFetcher } from '../event-fetch';
+
+// query-service 依赖 domain-models, repositories, domain-services
+import { UserActivity } from '../domain-models';
+import { IUserActivityRepository } from '../repositories';
+import { RewardCalculationService } from '../domain-services';
+
+// sync-service 依赖所有其他模块
+import { SyncStatus } from '../domain-models';
+import { ISyncStatusRepository } from '../repositories';
+import { EventSynchronizationService } from '../domain-services';
+import { SolanaEventFetcher } from '../event-fetch';
+```
+
+## 模块开发顺序
+
+1. **domain-models** - 首先定义领域模型（无依赖）
+2. **event-fetch** - 已有，可直接使用
+3. **repositories** - 实现数据访问层（依赖domain-models）
+// mvp demo简化为使用内存数据库
+4. **domain-services** - 实现领域服务（依赖domain-models, repositories, event-fetch）
+5. **sync-service** - 实现同步服务（依赖所有模块）
+6. **query-service** - 实现查询服务（依赖domain-models, repositories, domain-services）
+
+================================================================================
+End of Module Architecture
+================================================================================
+// ✅ Completed: SolanaService is now a common dependency in infrastructure module
+// - Created src/infrastructure/SolanaService.ts as the base service
+// - All repositories (GlobalStateRepository, UserStakePositionRepository) use SolanaService
+// - event-fetch module's SolanaService extends infrastructure SolanaService for event parsing
+// - All RPC interactions go through SolanaService, providing unified connection management
