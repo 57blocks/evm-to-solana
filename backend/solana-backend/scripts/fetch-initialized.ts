@@ -1,7 +1,8 @@
-import { SolanaEventFetcher, SolanaService, SolanaEventFetcherConfig } from "../src/event-fetch/chain/solana/solana";
+import { SolanaEventFetcher, SolanaEventsService, SolanaEventFetcherConfig } from "../src/event-fetch/chain/solana/solana";
 import { AdminTransactionEventsParser, InitializedEvent } from "../src/event-fetch/admin/event";
 import { CHAIN_ID, RPC_BY_CHAINS } from "../src/event-fetch/chain/chain";
 import StakingIDL from "../src/event-fetch/solana_staking.json";
+import { SolanaConnections } from "../src/infrastructure";
 
 // Configuration
 const START_SLOT = 416743273;
@@ -31,7 +32,8 @@ async function fetchInitializedEvents() {
     // Initialize Solana Service
     // Use environment variable or default RPC
     const rpcUrl = RPC_BY_CHAINS[CHAIN_ID_TO_USE];
-    const solanaService = new SolanaService(rpcUrl);
+    const solanaConnections = new SolanaConnections(rpcUrl);
+    const solanaEventsService = new SolanaEventsService(solanaConnections);
     
     // Initialize Event Parser for Admin Events
     const eventsParser = new AdminTransactionEventsParser(CHAIN_ID_TO_USE);
@@ -39,7 +41,7 @@ async function fetchInitializedEvents() {
     // Initialize Event Fetcher
     const fetcher = new SolanaEventFetcher(
       CHAIN_ID_TO_USE,
-      solanaService,
+      solanaEventsService,
       START_SLOT,     // defaultStartBlock
       10000,          // maxCount - maximum events to return
       config,
