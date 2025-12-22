@@ -71,6 +71,7 @@ export function createMint(
   freezeAuthority: PublicKey | null,
   decimals: number
 ): PublicKey {
+  provider.client.expireBlockhash();
   const mint = Keypair.generate();
   const mintLen = getMintLen([]);
 
@@ -106,6 +107,7 @@ export function createAssociatedTokenAccount(
   mint: PublicKey,
   owner: PublicKey
 ): PublicKey {
+  provider.client.expireBlockhash();
   const ata = getAssociatedTokenAddressSync(mint, owner);
 
   const createAtaIx = createAssociatedTokenAccountIdempotentInstruction(
@@ -132,6 +134,7 @@ export function mintTo(
   authority: Keypair,
   amount: bigint
 ): void {
+  provider.client.expireBlockhash();
   const mintToIx = createMintToCheckedInstruction(
     mint,
     destination,
@@ -157,6 +160,7 @@ export function transfer(
   owner: Keypair,
   amount: bigint
 ): void {
+  provider.client.expireBlockhash();
   const transferIx = createTransferCheckedInstruction(
     source,
     mint,

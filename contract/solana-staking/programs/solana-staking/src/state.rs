@@ -8,7 +8,9 @@ pub struct GlobalState {
     pub reward_mint: Pubkey,
     pub staking_vault: Pubkey,
     pub reward_vault: Pubkey,
-    pub reward_rate: u64, // Basis points (100 = 1%)
+    pub reward_per_second: u64,
+    pub acc_reward_per_share: u128,
+    pub last_reward_time: i64,
     pub total_staked: u64,
     pub bump: u8,
 }
@@ -18,9 +20,8 @@ pub struct GlobalState {
 pub struct UserStakeInfo {
     pub owner: Pubkey,
     pub amount: u64,
-    pub stake_timestamp: i64,
-    pub last_claim_time: i64,
-    pub reward_debt: u64,
+    pub reward_debt: i128,
+    pub claimed: u64,
     pub bump: u8,
 }
 

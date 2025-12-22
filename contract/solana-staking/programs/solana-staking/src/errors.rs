@@ -11,8 +11,8 @@ pub enum StakingError {
     #[msg("Insufficient staked amount")]
     InsufficientStakedAmount,
 
-    #[msg("Invalid reward rate")]
-    InvalidRewardRate,
+    #[msg("Invalid reward per second")]
+    InvalidRewardPerSecond,
 
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
@@ -28,4 +28,10 @@ pub enum StakingError {
 
     #[msg("Address is already in blacklist")]
     AddressAlreadyBlacklisted,
+
+    #[msg("Invalid fund amount")]
+    InvalidFundAmount,
+
+    #[msg("Nothing to withdraw")]
+    NothingToWithdraw,
 }

@@ -46,12 +46,7 @@ pub struct Initialize<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn initialize_handler(ctx: Context<Initialize>, reward_rate: u64) -> Result<()> {
-    require!(
-        reward_rate > 0 && reward_rate <= 1000,
-        crate::errors::StakingError::InvalidRewardRate
-    );
-
+pub fn initialize_handler(ctx: Context<Initialize>, reward_per_second: u64) -> Result<()> {
     let state = &mut ctx.accounts.state;
 
     state.admin = ctx.accounts.admin.key();
@@ -59,13 +54,19 @@ pub fn initialize_handler(ctx: Context<Initialize>, reward_rate: u64) -> Result<
     state.reward_mint = ctx.accounts.reward_mint.key();
     state.staking_vault = ctx.accounts.staking_vault.key();
     state.reward_vault = ctx.accounts.reward_vault.key();
-    state.reward_rate = reward_rate;
+    require!(
+        reward_per_second > 0,
+        crate::errors::StakingError::InvalidRewardPerSecond
+    );
+    state.reward_per_second = reward_per_second;
+    state.acc_reward_per_share = 0;
+    state.last_reward_time = ctx.accounts.clock.unix_timestamp;
     state.total_staked = 0;
     state.bump = ctx.bumps.state;
 
     msg!(
-        "Staking program initialized with reward rate: {}%",
-        reward_rate as f64 / 100.0
+        "Staking program initialized with reward per second: {}",
+        reward_per_second
     );
 
     // Emit initialized event
@@ -73,7 +74,7 @@ pub fn initialize_handler(ctx: Context<Initialize>, reward_rate: u64) -> Result<
         authority: ctx.accounts.admin.key(),
         staking_mint: ctx.accounts.staking_mint.key(),
         reward_mint: ctx.accounts.reward_mint.key(),
-        reward_rate,
+        reward_per_second,
         timestamp: ctx.accounts.clock.unix_timestamp,
     });
 

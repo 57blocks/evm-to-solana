@@ -12,6 +12,7 @@ pub struct ClaimRewards<'info> {
     pub user: Signer<'info>,
 
     #[account(
+        mut,
         seeds = [STATE_SEED, state.staking_mint.as_ref()],
         bump = state.bump
     )]
@@ -56,7 +57,7 @@ pub fn claim_rewards_handler(ctx: Context<ClaimRewards>) -> Result<()> {
         StakingError::AddressBlacklisted
     );
 
-    let state = &ctx.accounts.state;
+    let state = &mut ctx.accounts.state;
     let user_stake = &mut ctx.accounts.user_stake_info;
     let clock = &ctx.accounts.clock;
 

@@ -9,14 +9,14 @@ pub mod utils;
 
 use instructions::*;
 
-declare_id!("1gGFthN24CB1p2LEvmhpnJVHAHm3koZDQnHgDoe6Ra2");
+declare_id!("EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX");
 
 #[program]
 pub mod solana_staking {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>, reward_rate: u64) -> Result<()> {
-        instructions::initialize::initialize_handler(ctx, reward_rate)
+    pub fn initialize(ctx: Context<Initialize>, reward_per_second: u64) -> Result<()> {
+        instructions::initialize::initialize_handler(ctx, reward_per_second)
     }
 
     pub fn stake(ctx: Context<Stake>, amount: u64) -> Result<()> {
@@ -29,6 +29,14 @@ pub mod solana_staking {
 
     pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
         instructions::claim_rewards::claim_rewards_handler(ctx)
+    }
+
+    pub fn fund_rewards(ctx: Context<FundRewards>, amount: u64) -> Result<()> {
+        instructions::fund_rewards::fund_rewards_handler(ctx, amount)
+    }
+
+    pub fn emergency_withdraw(ctx: Context<EmergencyWithdraw>) -> Result<()> {
+        instructions::emergency_withdraw::emergency_withdraw_handler(ctx)
     }
 
     pub fn add_to_blacklist(ctx: Context<AddToBlacklist>, address: Pubkey) -> Result<()> {

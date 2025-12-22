@@ -23,6 +23,7 @@ import {
 } from "./helper";
 
 const SECONDS_IN_A_DAY = 86400;
+const REWARD_PER_SECOND = toToken(1) / BigInt(1000); // 0.001 token/sec
 
 describe("solana-staking", () => {
   let svm: LiteSVM;
@@ -153,11 +154,59 @@ describe("solana-staking", () => {
     );
   }
 
+  async function createNewPoolAccounts() {
+    stakingMint = createMint(provider, admin, admin.publicKey, null, 9);
+    rewardMint = createMint(provider, admin, admin.publicKey, null, 9);
+
+    [statePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("state"), stakingMint.toBuffer()],
+      programId
+    );
+
+    [stakingVaultPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("staking_vault"), statePda.toBuffer()],
+      programId
+    );
+
+    [rewardVaultPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("reward_vault"), statePda.toBuffer()],
+      programId
+    );
+  }
+
+  async function initializePool() {
+    const initializeInstruction = programClient.getInitializeInstruction({
+      admin: adminSigner,
+      state: address(statePda.toBase58()),
+      stakingMint: address(stakingMint.toBase58()),
+      rewardMint: address(rewardMint.toBase58()),
+      stakingVault: address(stakingVaultPda.toBase58()),
+      rewardVault: address(rewardVaultPda.toBase58()),
+      tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
+      rewardPerSecond: REWARD_PER_SECOND,
+    });
+    await sendTransaction(provider, initializeInstruction, admin);
+
+    mintTo(
+      provider,
+      admin, // payer
+      rewardMint,
+      rewardVaultPda,
+      admin, // mint authority
+      toToken(5000) // 5000 tokens for rewards
+    );
+  }
+
+  async function setupNewPool() {
+    await createNewPoolAccounts();
+    await initializePool();
+  }
+
   before(async () => {
     // Initialize LiteSVM with transaction history disabled
     svm = new LiteSVM().withTransactionHistory(0n);
 
-    const adminData = await createTestUser(svm);
+    const adminData = await createTestUser(svm, 100);
     admin = adminData.user;
     adminSigner = adminData.userSigner;
 
@@ -174,30 +223,16 @@ describe("solana-staking", () => {
     svm.addProgram(programId, programBinary);
     console.log("Staking program deployed to LiteSVM");
 
-    // Create mints
-    stakingMint = createMint(provider, admin, admin.publicKey, null, 9);
-    rewardMint = createMint(provider, admin, admin.publicKey, null, 9);
-
-    // Derive PDAs
-    [statePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("state"), stakingMint.toBuffer()],
-      programId
-    );
-
-    [stakingVaultPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("staking_vault"), statePda.toBuffer()],
-      programId
-    );
-
-    [rewardVaultPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("reward_vault"), statePda.toBuffer()],
-      programId
-    );
+    await createNewPoolAccounts();
   });
 
   describe("Initialize", () => {
-    it("should fail with invalid reward rate", async () => {
-      // Test with reward rate > 1000
+    beforeEach(async () => {
+      await createNewPoolAccounts();
+    });
+
+    it("should fail with invalid reward per second", async () => {
+      // Test with reward per second = 0
       try {
         const initializeInstruction = programClient.getInitializeInstruction({
           admin: adminSigner,
@@ -207,34 +242,14 @@ describe("solana-staking", () => {
           stakingVault: address(stakingVaultPda.toBase58()),
           rewardVault: address(rewardVaultPda.toBase58()),
           tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
-          rewardRate: 1001, // Invalid: > 1000
+          rewardPerSecond: 0, // Invalid: = 0
         });
 
         await sendTransaction(provider, initializeInstruction, admin);
         expect.fail("Should have thrown an error");
       } catch (error: any) {
         expect(error).to.not.be.null;
-        expect(error.toString()).to.include("InvalidRewardRate");
-      }
-
-      // Test with reward rate = 0
-      try {
-        const initializeInstruction = programClient.getInitializeInstruction({
-          admin: adminSigner,
-          state: address(statePda.toBase58()),
-          stakingMint: address(stakingMint.toBase58()),
-          rewardMint: address(rewardMint.toBase58()),
-          stakingVault: address(stakingVaultPda.toBase58()),
-          rewardVault: address(rewardVaultPda.toBase58()),
-          tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
-          rewardRate: 0, // Invalid: = 0
-        });
-
-        await sendTransaction(provider, initializeInstruction, admin);
-        expect.fail("Should have thrown an error");
-      } catch (error: any) {
-        expect(error).to.not.be.null;
-        expect(error.toString()).to.include("InvalidRewardRate");
+        expect(error.toString()).to.include("InvalidRewardPerSecond");
       }
     });
 
@@ -248,7 +263,7 @@ describe("solana-staking", () => {
         stakingVault: address(stakingVaultPda.toBase58()),
         rewardVault: address(rewardVaultPda.toBase58()),
         tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
-        rewardRate: 500, // 5% daily rate
+        rewardPerSecond: REWARD_PER_SECOND,
       });
 
       // Create and send transaction
@@ -285,7 +300,11 @@ describe("solana-staking", () => {
         stakingVaultPda.toBase58()
       );
       expect(globalState!.rewardVault.toString(), rewardVaultPda.toBase58());
-      expect(Number(globalState!.rewardRate.toString())).to.equal(500);
+      expect(globalState!.rewardPerSecond.toString()).to.equal(
+        REWARD_PER_SECOND.toString()
+      );
+      expect(globalState!.accRewardPerShare.toString()).to.equal("0");
+      expect(Number(globalState!.lastRewardTime.toString())).to.be.above(0);
       expect(globalState!.totalStaked.toString()).to.equal("0");
 
       mintTo(
@@ -302,6 +321,10 @@ describe("solana-staking", () => {
   });
 
   describe("Stake", () => {
+    beforeEach(async () => {
+      await setupNewPool();
+    });
+
     it("should allow user to stake tokens", async () => {
       const { user, userSigner } = await createTestUser(svm);
       const { stakingToken, rewardToken } = await setupUserWithTokens(
@@ -330,7 +353,7 @@ describe("solana-staking", () => {
       expect(userStakeInfo).to.not.be.null;
       expect(userStakeInfo!.amount.toString()).to.equal(stakeAmount.toString());
       expect(userStakeInfo!.rewardDebt.toString()).to.equal("0");
-      expect(Number(userStakeInfo!.stakeTimestamp.toString())).to.be.above(0);
+      expect(userStakeInfo!.claimed.toString()).to.equal("0");
 
       // Verify global state total staked was updated
       const globalState = getGlobalState(provider, statePda);
@@ -463,6 +486,10 @@ describe("solana-staking", () => {
   });
 
   describe("Claim Rewards with Time Manipulation", () => {
+    beforeEach(async () => {
+      await setupNewPool();
+    });
+
     it("should calculate rewards correctly after time advancement", async () => {
       const { user, userSigner } = await createTestUser(svm);
       const { stakingToken, rewardToken } = await setupUserWithTokens(
@@ -483,13 +510,13 @@ describe("solana-staking", () => {
 
       // Get initial state
       const userStakePda = getUserStakePda(statePda, user.publicKey);
-      const stakeInfo = getUserStakeInfo(provider, userStakePda);
-      const stakeTime = Number(stakeInfo!.stakeTimestamp.toString());
-      console.log("Stake timestamp:", stakeTime);
+      const stateAfterStake = getGlobalState(provider, statePda);
+      const stakeTime = Number(stateAfterStake!.lastRewardTime.toString());
+      console.log("Last reward time:", stakeTime);
 
       // Get initial reward balance
       const initialRewardAccount = getAccount(provider, rewardToken);
-      const initialBalance = Number(initialRewardAccount.amount);
+      const initialBalance = BigInt(initialRewardAccount.amount);
       console.log("Initial reward balance:", initialBalance);
 
       // Advance time by 5 days from stake time
@@ -504,20 +531,19 @@ describe("solana-staking", () => {
       // Check rewards received
       const afterRewardAccount = getAccount(provider, rewardToken);
       const rewardsReceived =
-        Number(afterRewardAccount.amount) - initialBalance;
+        BigInt(afterRewardAccount.amount) - initialBalance;
 
-      // Calculate expected rewards based on seconds
-      // staked: 100 tokens, rate: 5% (500 basis points), time: 5 days = 432000 seconds
-      // rewards = (100 * 500 * 432000) / (86400 * 10000) = 25 tokens
-      const expectedRewards = Number(toToken(25));
+      // Single staker: rewards = time * rewardPerSecond
+      const expectedRewards =
+        BigInt(5 * SECONDS_IN_A_DAY) * REWARD_PER_SECOND;
       console.log(`Rewards received: ${rewardsReceived}`);
       console.log(`Expected rewards: ${expectedRewards}`);
       expect(rewardsReceived).to.equal(expectedRewards);
 
-      // Verify lastClaimTime was updated
+      // Verify claimed was updated
       const updatedStakeInfo = getUserStakeInfo(provider, userStakePda);
-      expect(updatedStakeInfo!.lastClaimTime?.toString()).to.equal(
-        fiveDaysLater.toString()
+      expect(updatedStakeInfo!.claimed.toString()).to.equal(
+        expectedRewards.toString()
       );
     });
 
@@ -540,49 +566,46 @@ describe("solana-staking", () => {
         toToken(100)
       );
 
-      // Get initial stake timestamp
+      // Get initial time from global state
       const userStakePda = getUserStakePda(statePda, user.publicKey);
-      const initialStakeInfo = getUserStakeInfo(provider, userStakePda);
-      const originalStakeTimestamp =
-        initialStakeInfo!.stakeTimestamp.toString();
-
-      // Advance time by 2 days
-      const currentTime = Number(initialStakeInfo!.stakeTimestamp.toString());
+      const stateAfterStake = getGlobalState(provider, statePda);
+      const currentTime = Number(stateAfterStake!.lastRewardTime.toString());
       const twoDaysLater = currentTime + 2 * SECONDS_IN_A_DAY;
       setNextBlockTimestamp(twoDaysLater);
 
       // Claim rewards
+      const rewardBalanceBefore = BigInt(getAccount(provider, rewardToken).amount);
       await claimUserRewards(user, userSigner, rewardToken);
+      const rewardBalanceAfter = BigInt(getAccount(provider, rewardToken).amount);
 
-      // Verify stake timestamp hasn't changed
+      // Verify stake amount hasn't changed
       const afterClaimStakeInfo = getUserStakeInfo(provider, userStakePda);
-      expect(afterClaimStakeInfo!.stakeTimestamp.toString()).to.equal(
-        originalStakeTimestamp
+      expect(afterClaimStakeInfo!.amount.toString()).to.equal(
+        toToken(100).toString()
       );
-
-      // Verify lastClaimTime was updated
-      expect(afterClaimStakeInfo!.lastClaimTime?.toString()).to.equal(
-        twoDaysLater.toString()
+      expect(rewardBalanceAfter - rewardBalanceBefore).to.equal(
+        BigInt(2 * SECONDS_IN_A_DAY) * REWARD_PER_SECOND
       );
 
       // Advance time by another 3 days and claim again
       const fiveDaysFromStart = currentTime + 5 * SECONDS_IN_A_DAY;
       setNextBlockTimestamp(fiveDaysFromStart);
+      const rewardBalanceBefore2 = BigInt(getAccount(provider, rewardToken).amount);
       await claimUserRewards(user, userSigner, rewardToken);
+      const rewardBalanceAfter2 = BigInt(getAccount(provider, rewardToken).amount);
 
-      // Verify stake timestamp still hasn't changed
+      // Verify amount still hasn't changed and rewards match incremental time
       const finalStakeInfo = getUserStakeInfo(provider, userStakePda);
-      expect(finalStakeInfo!.stakeTimestamp.toString()).to.equal(
-        originalStakeTimestamp
+      expect(finalStakeInfo!.amount.toString()).to.equal(
+        toToken(100).toString()
       );
-      expect(finalStakeInfo!.lastClaimTime?.toString()).to.equal(
-        fiveDaysFromStart.toString()
+      expect(rewardBalanceAfter2 - rewardBalanceBefore2).to.equal(
+        BigInt(3 * SECONDS_IN_A_DAY) * REWARD_PER_SECOND
       );
     });
 
     it("should calculate rewards accurately for various time periods", async () => {
       // Test reward calculation precision with different time periods
-      // For 100 tokens staked at 5% rate (500 basis points)
       const { user, userSigner } = await createTestUser(svm);
       const { stakingToken, rewardToken } = await setupUserWithTokens(
         provider,
@@ -600,32 +623,27 @@ describe("solana-staking", () => {
       );
       const userStakePda = getUserStakePda(statePda, user.publicKey);
       const testCases = [
-        { hoursFromStart: 1, expectedLamports: 208_333_333 }, // ~0.208 tokens
-        { hoursFromStart: 6, expectedLamports: 1_250_000_000 }, // 1.25 tokens
-        { hoursFromStart: 18, expectedLamports: 3_750_000_000 }, // 3.75 tokens
-        { hoursFromStart: 36, expectedLamports: 7_500_000_000 }, // 7.5 tokens
-        { hoursFromStart: 60, expectedLamports: 12_500_000_000 }, // 12.5 tokens
+        { hoursFromStart: 1 },
+        { hoursFromStart: 6 },
+        { hoursFromStart: 18 },
+        { hoursFromStart: 36 },
+        { hoursFromStart: 60 },
       ];
 
-      // Store the initial stake timestamp
-      const initialStakeInfo = getUserStakeInfo(provider, userStakePda);
-      const stakeTimestamp = Number(initialStakeInfo!.stakeTimestamp);
-      let totalClaimedRewards = 0;
+      // Store the initial time from global state
+      const initialState = getGlobalState(provider, statePda);
+      const stakeTimestamp = Number(initialState!.lastRewardTime);
+      let totalClaimedRewards = BigInt(0);
 
       for (const testCase of testCases) {
         // Get current state
-        const beforeStakeInfo = getUserStakeInfo(provider, userStakePda);
-        const lastClaim = Number(
-          beforeStakeInfo!.lastClaimTime || beforeStakeInfo!.stakeTimestamp
-        );
-        console.log("lastClaim", lastClaim);
         const beforeBalance = getAccount(provider, rewardToken);
-        const startBalance = Number(beforeBalance.amount);
+        const startBalance = BigInt(beforeBalance.amount);
         console.log("startBalance", startBalance);
 
         // Check reward vault balance
         const rewardVaultBalance = getAccount(provider, rewardVaultPda);
-        console.log("rewardVaultBalance", Number(rewardVaultBalance.amount));
+        console.log("rewardVaultBalance", rewardVaultBalance.amount);
 
         // Advance time to X hours from initial stake
         const newTime = stakeTimestamp + testCase.hoursFromStart * 3600;
@@ -635,9 +653,9 @@ describe("solana-staking", () => {
         );
 
         // Calculate expected rewards for this claim
-        const expectedIncrementalRewards = Math.floor(
-          (100_000_000_000 * 500 * (newTime - lastClaim)) / (86400 * 10000)
-        );
+        const expectedIncrementalRewards =
+          BigInt(newTime - stakeTimestamp) * REWARD_PER_SECOND -
+          totalClaimedRewards;
         console.log(
           `Expected incremental rewards: ${expectedIncrementalRewards} lamports`
         );
@@ -648,7 +666,7 @@ describe("solana-staking", () => {
           `Reward vault before claim: ${rewardVaultBeforeClaim.amount} lamports`
         );
         console.log(
-          `Has enough balance: ${Number(rewardVaultBeforeClaim.amount) >= expectedIncrementalRewards}`
+          `Has enough balance: ${BigInt(rewardVaultBeforeClaim.amount) >= expectedIncrementalRewards}`
         );
 
         // Claim rewards
@@ -657,13 +675,16 @@ describe("solana-staking", () => {
         // Check rewards
         const afterBalance = getAccount(provider, rewardToken);
         console.log("afterBalance", afterBalance.amount);
-        const incrementalRewards = Number(afterBalance.amount) - startBalance;
+        const incrementalRewards =
+          BigInt(afterBalance.amount) - startBalance;
         totalClaimedRewards += incrementalRewards;
         console.log(`Incremental rewards: ${incrementalRewards} lamports`);
         console.log(`Total claimed rewards: ${totalClaimedRewards} lamports`);
-        console.log(`Expected total: ${testCase.expectedLamports} lamports`);
+        const expectedTotal =
+          BigInt(testCase.hoursFromStart * 3600) * REWARD_PER_SECOND;
+        console.log(`Expected total: ${expectedTotal} lamports`);
         // Verify total rewards match expected
-        expect(totalClaimedRewards).to.be.closeTo(testCase.expectedLamports, 1); // Allow 1 lamport difference
+        expect(totalClaimedRewards).to.equal(expectedTotal);
       }
     });
 
@@ -711,6 +732,10 @@ describe("solana-staking", () => {
   });
 
   describe("Unstake", () => {
+    beforeEach(async () => {
+      await setupNewPool();
+    });
+
     it("should allow user to unstake tokens", async () => {
       const { user, userSigner } = await createTestUser(svm);
       const { stakingToken, rewardToken } = await setupUserWithTokens(
@@ -750,7 +775,7 @@ describe("solana-staking", () => {
       expect(userStakeInfo).to.not.be.null;
       expect(userStakeInfo!.amount.toString()).to.equal(toToken(60).toString());
       expect(userStakeInfo!.rewardDebt.toString()).to.equal("0");
-      expect(Number(userStakeInfo!.stakeTimestamp.toString())).to.be.above(0);
+      expect(userStakeInfo!.claimed.toString()).to.equal("0");
 
       // Verify global state total staked was updated
       const globalStateAfter = getGlobalState(provider, statePda);
@@ -899,6 +924,10 @@ describe("solana-staking", () => {
   });
 
   describe("Blacklist", () => {
+    beforeEach(async () => {
+      await setupNewPool();
+    });
+
     it("should add user to blacklist", async () => {
       const { user: blacklistedUser } = await createTestUser(svm);
 

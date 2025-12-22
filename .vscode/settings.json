@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["Claimeds", "lamports", "Solana", "unstake"]
+  "cSpell.words": ["Claimeds", "lamports", "Solana", "unstake"],
+  "rust-analyzer.linkedProjects": ["contract/solana-staking/Cargo.toml"]
 }

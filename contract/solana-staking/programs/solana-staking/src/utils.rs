@@ -4,39 +4,104 @@ use crate::state::{GlobalState, UserStakeInfo};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
+fn calculate_reward_debt_delta(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
+    let delta = (amount as u128)
+        .checked_mul(acc_reward_per_share)
+        .ok_or(StakingError::ArithmeticOverflow)?
+        .checked_div(ACC_REWARD_PRECISION)
+        .ok_or(StakingError::ArithmeticOverflow)?;
+    i128::try_from(delta).map_err(|_| error!(StakingError::ArithmeticOverflow))
+}
+
+fn calculate_accumulated_reward(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
+    let accumulated = (amount as u128)
+        .checked_mul(acc_reward_per_share)
+        .ok_or(StakingError::ArithmeticOverflow)?
+        .checked_div(ACC_REWARD_PRECISION)
+        .ok_or(StakingError::ArithmeticOverflow)?;
+    i128::try_from(accumulated).map_err(|_| error!(StakingError::ArithmeticOverflow))
+}
+
+fn calculate_acc_reward_per_share(
+    state: &GlobalState,
+    current_time: i64,
+) -> Result<u128> {
+    if current_time <= state.last_reward_time {
+        return Ok(state.acc_reward_per_share);
+    }
+
+    let total_staked = state.total_staked;
+    if total_staked == 0 {
+        return Ok(state.acc_reward_per_share);
+    }
+
+    let time_elapsed = (current_time - state.last_reward_time) as u64;
+    let reward = (time_elapsed as u128)
+        .checked_mul(state.reward_per_second as u128)
+        .ok_or(StakingError::ArithmeticOverflow)?;
+    let acc_increment = reward
+        .checked_mul(ACC_REWARD_PRECISION)
+        .ok_or(StakingError::ArithmeticOverflow)?
+        .checked_div(total_staked as u128)
+        .ok_or(StakingError::ArithmeticOverflow)?;
+    state
+        .acc_reward_per_share
+        .checked_add(acc_increment)
+        .ok_or_else(|| error!(StakingError::ArithmeticOverflow))
+}
+
+pub fn update_pool(state: &mut Account<GlobalState>, clock: &Sysvar<Clock>) -> Result<()> {
+    let current_time = clock.unix_timestamp;
+    if current_time <= state.last_reward_time {
+        return Ok(());
+    }
+
+    if state.total_staked > 0 {
+        let new_acc = calculate_acc_reward_per_share(state, current_time)?;
+        state.acc_reward_per_share = new_acc;
+    }
+
+    state.last_reward_time = current_time;
+    Ok(())
+}
+
+pub fn pending_reward(
+    state: &GlobalState,
+    user_stake: &UserStakeInfo,
+    current_time: i64,
+) -> Result<u64> {
+    let acc_reward_per_share = calculate_acc_reward_per_share(state, current_time)?;
+    let accumulated = calculate_accumulated_reward(user_stake.amount, acc_reward_per_share)?;
+    let pending = accumulated
+        .checked_sub(user_stake.reward_debt)
+        .ok_or_else(|| error!(StakingError::ArithmeticOverflow))?;
+    if pending <= 0 {
+        return Ok(0);
+    }
+    u64::try_from(pending).map_err(|_| error!(StakingError::ArithmeticOverflow))
+}
+
 pub fn claim_pending_rewards<'info>(
-    state: &Account<'info, GlobalState>,
+    state: &mut Account<'info, GlobalState>,
     user_stake: &mut Account<'info, UserStakeInfo>,
     reward_vault: &Account<'info, TokenAccount>,
     user_reward_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
     clock: &Sysvar<'info, Clock>,
 ) -> Result<u64> {
-    // Calculate rewards from last claim time (or stake time if never claimed)
-    let last_claim = if user_stake.last_claim_time > 0 {
-        user_stake.last_claim_time
-    } else {
-        user_stake.stake_timestamp
-    };
+    update_pool(state, clock)?;
 
-    let rewards = calculate_rewards(
-        user_stake.amount,
-        last_claim,
-        clock.unix_timestamp,
-        state.reward_rate,
-    )?;
-    
-    msg!(
-        "Calculating rewards: amount={}, last_claim={}, current_time={}, rate={}, rewards={}",
-        user_stake.amount,
-        last_claim,
-        clock.unix_timestamp,
-        state.reward_rate,
-        rewards
-    );
+    let accumulated = calculate_accumulated_reward(user_stake.amount, state.acc_reward_per_share)?;
+    let pending = accumulated
+        .checked_sub(user_stake.reward_debt)
+        .ok_or_else(|| error!(StakingError::ArithmeticOverflow))?;
 
-    if rewards > 0 {
-        // Transfer rewards from reward vault to user
+    user_stake.reward_debt = accumulated;
+
+    if pending > 0 {
+        let rewards =
+            u64::try_from(pending).map_err(|_| error!(StakingError::ArithmeticOverflow))?;
+
         let seeds = &[STATE_SEED.as_ref(), state.staking_mint.as_ref(), &[state.bump]];
         let signer = &[&seeds[..]];
 
@@ -49,55 +114,17 @@ pub fn claim_pending_rewards<'info>(
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
         token::transfer(cpi_ctx, rewards)?;
 
-        // Update user stake info
-        user_stake.reward_debt = user_stake
-            .reward_debt
+        user_stake.claimed = user_stake
+            .claimed
             .checked_add(rewards)
             .ok_or(StakingError::ArithmeticOverflow)?;
-        user_stake.last_claim_time = clock.unix_timestamp;
+
+        return Ok(rewards);
     }
 
-    Ok(rewards)
+    Ok(0)
 }
 
-pub fn calculate_rewards(
-    amount: u64,
-    start_timestamp: i64,
-    end_timestamp: i64,
-    reward_rate: u64,
-) -> Result<u64> {
-    let duration = (end_timestamp - start_timestamp) as u64; // duration in seconds
-    
-    msg!(
-        "calculate_rewards: amount={}, start={}, end={}, duration={}, rate={}",
-        amount,
-        start_timestamp,
-        end_timestamp,
-        duration,
-        reward_rate
-    );
-
-    // Calculate rewards based on seconds to match EVM implementation
-    // Formula: (amount * rate * time_in_seconds) / (seconds_per_day * precision)
-    // This ensures continuous rewards calculation without losing partial days
-
-    // Use u128 for intermediate calculations to avoid overflow
-    // First multiply amount by rate
-    let amount_rate = (amount as u128)
-        .checked_mul(reward_rate as u128)
-        .ok_or(StakingError::ArithmeticOverflow)?;
-
-    // Then multiply by duration
-    let numerator = amount_rate
-        .checked_mul(duration as u128)
-        .ok_or(StakingError::ArithmeticOverflow)?;
-
-    // Finally divide by (seconds_per_day * precision)
-    let denominator = 86400u128 * 10000u128; // 86400 seconds per day * 10000 basis points
-    let rewards = numerator
-        .checked_div(denominator)
-        .ok_or(StakingError::ArithmeticOverflow)?;
-
-    // Convert back to u64, checking for overflow
-    Ok(u64::try_from(rewards).map_err(|_| StakingError::ArithmeticOverflow)?)
+pub fn reward_debt_delta(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
+    calculate_reward_debt_delta(amount, acc_reward_per_share)
 }

@@ -7,10 +7,10 @@ A Token Staking program implementation using Anchor framework. Users can stake t
 ### Required Versions
 
 - **Rust**: 1.88.0
-- **Solana CLI**: 2.1.0
-- **Anchor**: 0.31.1
-- **Node.js**: 20.19.0
-- **Solana build-sbf**: 2.1.0
+- **Solana CLI**: 3.0.11
+- **Anchor**: 0.32.1
+- **Node.js**: 22.11.0
+- **Solana build-sbf**: 3.0.11
 
 You can check your installed versions:
 
@@ -49,7 +49,7 @@ bash show-versions.sh
 1. Install dependencies:
 
 ```bash
-yarn install
+npm install
 ```
 
 2. Build the program:
@@ -73,6 +73,14 @@ anchor deploy --provider.cluster devnet
 ```
 
 For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+### Deployed Addresses (Devnet)
+
+The following contracts have been deployed to the Devnet network:
+
+- Program ID: [`EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX`](https://explorer.solana.com/address/EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX?cluster=devnet)
+- Staking Token: [`AUtJrxJALb2qE1DbqJG12oxvM13XXmvxA99YeBJDgT2q`](https://explorer.solana.com/address/AUtJrxJALb2qE1DbqJG12oxvM13XXmvxA99YeBJDgT2q?cluster=devnet)
+- Reward Token: [`4WpSGVUqeHmJeYK3PmbRqDYFXy9sWbFCGBxrXGqsy3nm`](https://explorer.solana.com/address/4WpSGVUqeHmJeYK3PmbRqDYFXy9sWbFCGBxrXGqsy3nm?cluster=devnet)
 
 ## Verification and Testing
 

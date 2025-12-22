@@ -5,8 +5,8 @@ This guide provides step-by-step instructions for deploying the Solana staking p
 ## Prerequisites
 
 - Solana CLI installed and configured
-- Anchor framework installed (v0.31.1+)
-- Node.js and Yarn installed
+- Anchor framework installed
+- Node.js installed
 - Sufficient SOL balance for deployment (at least 5 SOL recommended)
 
 ## Pre-deployment Setup

@@ -2,7 +2,7 @@ use crate::constants::*;
 use crate::errors::StakingError;
 use crate::events::Staked;
 use crate::state::{GlobalState, UserStakeInfo};
-use crate::utils::claim_pending_rewards;
+use crate::utils::{reward_debt_delta, update_pool};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
@@ -80,17 +80,7 @@ pub fn stake_handler(ctx: Context<Stake>, amount: u64) -> Result<()> {
     let user_stake = &mut ctx.accounts.user_stake_info;
     let clock = &ctx.accounts.clock;
 
-    // If user already has a stake, claim rewards first
-    if user_stake.amount > 0 {
-        claim_pending_rewards(
-            state,
-            user_stake,
-            &ctx.accounts.reward_vault,
-            &ctx.accounts.user_reward_account,
-            &ctx.accounts.token_program,
-            clock,
-        )?;
-    }
+    update_pool(state, clock)?;
 
     // Transfer staking tokens from user to vault
     let cpi_accounts = Transfer {
@@ -108,10 +98,11 @@ pub fn stake_handler(ctx: Context<Stake>, amount: u64) -> Result<()> {
         .amount
         .checked_add(amount)
         .ok_or(StakingError::ArithmeticOverflow)?;
-    // Only update stake_timestamp on first stake
-    if user_stake.stake_timestamp == 0 {
-        user_stake.stake_timestamp = clock.unix_timestamp;
-    }
+    let debt_delta = reward_debt_delta(amount, state.acc_reward_per_share)?;
+    user_stake.reward_debt = user_stake
+        .reward_debt
+        .checked_add(debt_delta)
+        .ok_or(StakingError::ArithmeticOverflow)?;
     user_stake.bump = ctx.bumps.user_stake_info;
 
     // Update global state

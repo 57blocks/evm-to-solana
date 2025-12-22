@@ -1,6 +1,6 @@
 [toolchain]
-solana_version = "2.1.0"
-anchor_version = "0.31.1"
+solana_version = "3.0.11"
+anchor_version = "0.32.1"
 package_manager = "npm"
 
 [features]
@@ -8,10 +8,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-solana_staking = "1gGFthN24CB1p2LEvmhpnJVHAHm3koZDQnHgDoe6Ra2"
+solana_staking = "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX"
 
 [programs.devnet]
-solana_staking = "1gGFthN24CB1p2LEvmhpnJVHAHm3koZDQnHgDoe6Ra2"
+solana_staking = "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX"
 
 [registry]
 url = "https://api.apr.dev"

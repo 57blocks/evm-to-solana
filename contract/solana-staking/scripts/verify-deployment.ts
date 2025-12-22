@@ -17,7 +17,10 @@ import BN from "bn.js";
 import type { SolanaStaking } from "../target/types/solana_staking";
 
 // Program ID
-const PROGRAM_ID = new PublicKey("1gGFthN24CB1p2LEvmhpnJVHAHm3koZDQnHgDoe6Ra2");
+const PROGRAM_ID = new PublicKey(
+  "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX"
+);
+const REWARD_PER_SECOND = new BN(1_000_000); // 0.001 token/sec (9 decimals)
 const SYSVAR_CLOCK_PUBKEY = new PublicKey(
   "SysvarC1ock11111111111111111111111111111111"
 );
@@ -51,11 +54,14 @@ function debug(message: string, ...args: any[]) {
 
 async function main() {
   log("🚀 Starting Solana Staking contract deployment verification...\n");
-  
+
   if (createNewTokens) {
     log("📝 Mode: Create new tokens");
   } else if (providedStakingToken) {
-    log("📝 Mode: Use specified staking token:", providedStakingToken.toString());
+    log(
+      "📝 Mode: Use specified staking token:",
+      providedStakingToken.toString()
+    );
   } else {
     log("📝 Mode: Reuse existing tokens (if available)");
   }
@@ -94,31 +100,34 @@ async function main() {
 
     // Check if contract is already initialized
     log("\n🔍 Checking for existing deployment...");
-    
+
     // Get all GlobalState accounts
     const globalStates = await program.account.globalState.all();
-    
+
     // If specific token provided, find that deployment
     if (providedStakingToken && !createNewTokens) {
-      const matchingState = globalStates.find(
-        state => state.account.stakingMint.equals(providedStakingToken)
+      const matchingState = globalStates.find((state) =>
+        state.account.stakingMint.equals(providedStakingToken)
       );
-      
+
       if (matchingState) {
         statePda = matchingState.publicKey;
         const stateAccount = matchingState.account;
-        
+
         stakingMint = stateAccount.stakingMint;
         rewardMint = stateAccount.rewardMint;
-        
+
         log("✅ Found deployment with specified staking token:");
         log("  - State PDA:", statePda.toString());
         log("  - Staking Mint:", stakingMint.toString());
         log("  - Reward Mint:", rewardMint.toString());
         log("  - Total Staked:", stateAccount.totalStaked.toString());
-        log("  - Reward Rate:", stateAccount.rewardRate.toString());
+        log("  - Reward Per Second:", stateAccount.rewardPerSecond.toString());
       } else {
-        log("❌ No deployment found with staking token:", providedStakingToken.toString());
+        log(
+          "❌ No deployment found with staking token:",
+          providedStakingToken.toString()
+        );
         log("\nAvailable deployments:");
         for (const state of globalStates) {
           log("  -", state.account.stakingMint.toString());
@@ -130,22 +139,21 @@ async function main() {
       const existingState = globalStates[0];
       statePda = existingState.publicKey;
       const stateAccount = existingState.account;
-      
+
       stakingMint = stateAccount.stakingMint;
       rewardMint = stateAccount.rewardMint;
-      
+
       log("✅ Found existing deployment:");
       log("  - State PDA:", statePda.toString());
       log("  - Staking Mint:", stakingMint.toString());
       log("  - Reward Mint:", rewardMint.toString());
       log("  - Total Staked:", stateAccount.totalStaked.toString());
-      log("  - Reward Rate:", stateAccount.rewardRate.toString());
-      
+      log("  - Reward Per Second:", stateAccount.rewardPerSecond.toString());
     } else {
       // Create new tokens and initialize
       isNewDeployment = true;
       log("\n1️⃣ Creating new test tokens...");
-      
+
       // Create staking token
       stakingMint = await createMint(
         provider.connection,
@@ -184,10 +192,10 @@ async function main() {
 
       // Initialize contract
       log("\n2️⃣ Initializing contract...");
-      
+
       try {
         const tx = await program.methods
-          .initialize(new BN(100)) // 1% per day
+          .initialize(REWARD_PER_SECOND)
           .accountsPartial({
             admin: wallet.publicKey,
             state: statePda,
@@ -221,20 +229,22 @@ async function main() {
 
     // Prepare test accounts
     log("\n3️⃣ Preparing test accounts...");
-    
+
     // Get or create user token accounts
     let userStakingAccount: PublicKey;
     let userRewardAccount: PublicKey;
-    
+
     try {
       const associatedStakingAddress = await getAssociatedTokenAddress(
         stakingMint,
         wallet.publicKey
       );
-      
+
       // Check if account exists
-      const accountInfo = await provider.connection.getAccountInfo(associatedStakingAddress);
-      
+      const accountInfo = await provider.connection.getAccountInfo(
+        associatedStakingAddress
+      );
+
       if (accountInfo) {
         userStakingAccount = associatedStakingAddress;
         debug("Using existing staking token account");
@@ -251,16 +261,18 @@ async function main() {
       debug("Error handling staking account:", e);
       throw e;
     }
-    
+
     try {
       const associatedRewardAddress = await getAssociatedTokenAddress(
         rewardMint,
         wallet.publicKey
       );
-      
+
       // Check if account exists
-      const accountInfo = await provider.connection.getAccountInfo(associatedRewardAddress);
-      
+      const accountInfo = await provider.connection.getAccountInfo(
+        associatedRewardAddress
+      );
+
       if (accountInfo) {
         userRewardAccount = associatedRewardAddress;
         debug("Using existing reward token account");
@@ -279,11 +291,14 @@ async function main() {
     }
 
     // Check balances and mint if needed
-    const stakingAccountInfo = await getAccount(provider.connection, userStakingAccount);
-    const currentStakingBalance = Number(stakingAccountInfo.amount) / (10 ** 9);
-    
+    const stakingAccountInfo = await getAccount(
+      provider.connection,
+      userStakingAccount
+    );
+    const currentStakingBalance = Number(stakingAccountInfo.amount) / 10 ** 9;
+
     log(`📊 Current staking token balance: ${currentStakingBalance}`);
-    
+
     if (currentStakingBalance < 100) {
       const mintAmount = 1000 * 10 ** 9;
       await mintTo(
@@ -298,49 +313,71 @@ async function main() {
     }
 
     // Check reward vault balance and mint if needed
-    const rewardVaultAccountInfo = await getAccount(provider.connection, rewardVaultPda);
-    const currentRewardVaultBalance = Number(rewardVaultAccountInfo.amount) / (10 ** 9);
-    
+    const rewardVaultAccountInfo = await getAccount(
+      provider.connection,
+      rewardVaultPda
+    );
+    const currentRewardVaultBalance =
+      Number(rewardVaultAccountInfo.amount) / 10 ** 9;
+
     log(`📊 Current reward vault balance: ${currentRewardVaultBalance}`);
-    
+
     if (currentRewardVaultBalance < 1000) {
       const mintAmount = 10000 * 10 ** 9;
       await mintTo(
         provider.connection,
         wallet.payer,
         rewardMint,
-        rewardVaultPda,
+        userRewardAccount,
         wallet.payer,
         mintAmount
       );
-      log("✅ Minted 10000 reward tokens to vault");
+
+      const tx = await program.methods
+        .fundRewards(new BN(mintAmount))
+        .accountsPartial({
+          admin: wallet.publicKey,
+          state: statePda,
+          adminRewardAccount: userRewardAccount,
+          rewardVault: rewardVaultPda,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          clock: SYSVAR_CLOCK_PUBKEY,
+        })
+        .rpc();
+
+      log("✅ Funded 10000 reward tokens to vault. Transaction:", tx);
     }
 
     // Test stake
     log("\n4️⃣ Testing stake method...");
-    
+
     const [userStakeInfoPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("stake"), statePda.toBuffer(), wallet.publicKey.toBuffer()],
       program.programId
     );
 
     const [blacklistPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("blacklist"), statePda.toBuffer(), wallet.publicKey.toBuffer()],
+      [
+        Buffer.from("blacklist"),
+        statePda.toBuffer(),
+        wallet.publicKey.toBuffer(),
+      ],
       program.programId
     );
 
     // Check current stake
     let currentStake = 0;
     try {
-      const stakeInfo = await program.account.userStakeInfo.fetch(userStakeInfoPda);
-      currentStake = Number(stakeInfo.amount) / (10 ** 9);
+      const stakeInfo =
+        await program.account.userStakeInfo.fetch(userStakeInfoPda);
+      currentStake = Number(stakeInfo.amount) / 10 ** 9;
       log(`📊 Current stake: ${currentStake} tokens`);
     } catch (e) {
       log("📊 No existing stake found");
     }
 
     const stakeAmount = new BN(100 * 10 ** 9); // 100 tokens
-    
+
     try {
       const tx = await program.methods
         .stake(stakeAmount)
@@ -360,11 +397,12 @@ async function main() {
         .rpc();
 
       log("✅ Stake successful! Transaction:", tx);
-      
+
       // Verify stake info
-      const stakeInfo = await program.account.userStakeInfo.fetch(userStakeInfoPda);
+      const stakeInfo =
+        await program.account.userStakeInfo.fetch(userStakeInfoPda);
       log("📊 Updated stake info:");
-      log("  - Amount:", Number(stakeInfo.amount) / (10 ** 9), "tokens");
+      log("  - Amount:", Number(stakeInfo.amount) / 10 ** 9, "tokens");
       log("  - Owner:", stakeInfo.owner.toString());
     } catch (error) {
       console.error("❌ Stake failed:", error);
@@ -375,9 +413,12 @@ async function main() {
     await new Promise((resolve) => setTimeout(resolve, 5000));
 
     try {
-      const beforeBalance = await getAccount(provider.connection, userRewardAccount);
-      const beforeAmount = Number(beforeBalance.amount) / (10 ** 9);
-      
+      const beforeBalance = await getAccount(
+        provider.connection,
+        userRewardAccount
+      );
+      const beforeAmount = Number(beforeBalance.amount) / 10 ** 9;
+
       const tx = await program.methods
         .claimRewards()
         .accountsPartial({
@@ -393,12 +434,15 @@ async function main() {
         .rpc();
 
       log("✅ Claim rewards successful! Transaction:", tx);
-      
+
       // Check reward balance
-      const afterBalance = await getAccount(provider.connection, userRewardAccount);
-      const afterAmount = Number(afterBalance.amount) / (10 ** 9);
+      const afterBalance = await getAccount(
+        provider.connection,
+        userRewardAccount
+      );
+      const afterAmount = Number(afterBalance.amount) / 10 ** 9;
       const rewardsEarned = afterAmount - beforeAmount;
-      
+
       log(`🎁 Rewards earned: ${rewardsEarned.toFixed(6)} tokens`);
     } catch (error) {
       console.error("❌ Claim rewards failed:", error);
@@ -406,9 +450,9 @@ async function main() {
 
     // Test partial unstake
     log("\n6️⃣ Testing unstake method (partial)...");
-    
+
     const unstakeAmount = new BN(50 * 10 ** 9); // 50 tokens
-    
+
     try {
       const tx = await program.methods
         .unstake(unstakeAmount)
@@ -427,10 +471,11 @@ async function main() {
         .rpc();
 
       log("✅ Unstake successful! Transaction:", tx);
-      
+
       // Verify remaining stake
-      const stakeInfo = await program.account.userStakeInfo.fetch(userStakeInfoPda);
-      log("📊 Remaining stake:", Number(stakeInfo.amount) / (10 ** 9), "tokens");
+      const stakeInfo =
+        await program.account.userStakeInfo.fetch(userStakeInfoPda);
+      log("📊 Remaining stake:", Number(stakeInfo.amount) / 10 ** 9, "tokens");
     } catch (error) {
       console.error("❌ Unstake failed:", error);
     }
@@ -438,11 +483,15 @@ async function main() {
     // Test blacklist functionality (only if new deployment)
     if (isNewDeployment) {
       log("\n7️⃣ Testing blacklist functionality...");
-      
+
       // Create a test address
       const testUser = Keypair.generate();
       const [testBlacklistPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("blacklist"), statePda.toBuffer(), testUser.publicKey.toBuffer()],
+        [
+          Buffer.from("blacklist"),
+          statePda.toBuffer(),
+          testUser.publicKey.toBuffer(),
+        ],
         program.programId
       );
 
@@ -459,9 +508,10 @@ async function main() {
           .rpc();
 
         log("✅ Add to blacklist successful! Transaction:", tx);
-        
+
         // Verify blacklist
-        const blacklistEntry = await program.account.blacklistEntry.fetch(testBlacklistPda);
+        const blacklistEntry =
+          await program.account.blacklistEntry.fetch(testBlacklistPda);
         log("🚫 Blacklisted address:", blacklistEntry.address.toString());
 
         // Remove from blacklist
@@ -484,25 +534,43 @@ async function main() {
 
     // Final summary
     log("\n📊 Final Summary:");
-    
+
     const finalState = await program.account.globalState.fetch(statePda);
-    log("  - Total Staked:", Number(finalState.totalStaked) / (10 ** 9), "tokens");
-    
+    log(
+      "  - Total Staked:",
+      Number(finalState.totalStaked) / 10 ** 9,
+      "tokens"
+    );
+
     try {
-      const userStakeInfo = await program.account.userStakeInfo.fetch(userStakeInfoPda);
-      log("  - Your Stake:", Number(userStakeInfo.amount) / (10 ** 9), "tokens");
+      const userStakeInfo =
+        await program.account.userStakeInfo.fetch(userStakeInfoPda);
+      log("  - Your Stake:", Number(userStakeInfo.amount) / 10 ** 9, "tokens");
     } catch (e) {
       log("  - Your Stake: 0 tokens");
     }
-    
-    const stakingBalance = await getAccount(provider.connection, userStakingAccount);
-    log("  - Your Staking Token Balance:", Number(stakingBalance.amount) / (10 ** 9), "tokens");
-    
-    const rewardBalance = await getAccount(provider.connection, userRewardAccount);
-    log("  - Your Reward Token Balance:", Number(rewardBalance.amount) / (10 ** 9), "tokens");
+
+    const stakingBalance = await getAccount(
+      provider.connection,
+      userStakingAccount
+    );
+    log(
+      "  - Your Staking Token Balance:",
+      Number(stakingBalance.amount) / 10 ** 9,
+      "tokens"
+    );
+
+    const rewardBalance = await getAccount(
+      provider.connection,
+      userRewardAccount
+    );
+    log(
+      "  - Your Reward Token Balance:",
+      Number(rewardBalance.amount) / 10 ** 9,
+      "tokens"
+    );
 
     log("\n✨ Verification complete! All methods have been tested.");
-    
   } catch (error) {
     console.error("\n❌ Error during verification:", error);
     process.exit(1);

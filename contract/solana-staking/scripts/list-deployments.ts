@@ -8,7 +8,9 @@ import { getAccount } from "@solana/spl-token";
 import type { SolanaStaking } from "../target/types/solana_staking";
 
 // Program ID
-const PROGRAM_ID = new PublicKey("1gGFthN24CB1p2LEvmhpnJVHAHm3koZDQnHgDoe6Ra2");
+const PROGRAM_ID = new PublicKey(
+  "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX"
+);
 
 async function main() {
   console.log("🔍 Listing all Solana Staking deployments...\n");
@@ -32,10 +34,12 @@ async function main() {
   try {
     // Get all GlobalState accounts
     const globalStates = await program.account.globalState.all();
-    
+
     if (globalStates.length === 0) {
       console.log("❌ No deployments found on this network");
-      console.log("\nRun 'npm run verify -- --new-tokens' to create a new deployment");
+      console.log(
+        "\nRun 'npm run verify -- --new-tokens' to create a new deployment"
+      );
       return;
     }
 
@@ -44,39 +48,64 @@ async function main() {
     for (let i = 0; i < globalStates.length; i++) {
       const state = globalStates[i];
       const account = state.account;
-      
+
       console.log(`Deployment #${i + 1}:`);
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log("📍 State PDA:", state.publicKey.toString());
       console.log("👤 Admin:", account.admin.toString());
       console.log("🪙  Staking Token:", account.stakingMint.toString());
       console.log("🎁 Reward Token:", account.rewardMint.toString());
-      console.log("📊 Total Staked:", Number(account.totalStaked) / (10 ** 9), "tokens");
-      console.log("💰 Reward Rate:", account.rewardRate.toString(), "(basis points per day)");
-      
+      console.log(
+        "📊 Total Staked:",
+        Number(account.totalStaked) / 10 ** 9,
+        "tokens"
+      );
+      console.log(
+        "💰 Reward Per Second:",
+        account.rewardPerSecond.toString(),
+        "(raw units)"
+      );
+
       // Get vault balances
       try {
-        const stakingVaultInfo = await getAccount(provider.connection, account.stakingVault);
-        console.log("🏦 Staking Vault Balance:", Number(stakingVaultInfo.amount) / (10 ** 9), "tokens");
+        const stakingVaultInfo = await getAccount(
+          provider.connection,
+          account.stakingVault
+        );
+        console.log(
+          "🏦 Staking Vault Balance:",
+          Number(stakingVaultInfo.amount) / 10 ** 9,
+          "tokens"
+        );
       } catch (e) {
         console.log("🏦 Staking Vault Balance: Unable to fetch");
       }
-      
+
       try {
-        const rewardVaultInfo = await getAccount(provider.connection, account.rewardVault);
-        console.log("🏦 Reward Vault Balance:", Number(rewardVaultInfo.amount) / (10 ** 9), "tokens");
+        const rewardVaultInfo = await getAccount(
+          provider.connection,
+          account.rewardVault
+        );
+        console.log(
+          "🏦 Reward Vault Balance:",
+          Number(rewardVaultInfo.amount) / 10 ** 9,
+          "tokens"
+        );
       } catch (e) {
         console.log("🏦 Reward Vault Balance: Unable to fetch");
       }
-      
+
       console.log();
     }
 
     console.log("\n💡 Tips:");
     console.log("- The verify script will use the first deployment by default");
-    console.log("- Use 'npm run verify -- --new-tokens' to create a new deployment");
-    console.log("- Save the token addresses if you need to use them in other scripts");
-
+    console.log(
+      "- Use 'npm run verify -- --new-tokens' to create a new deployment"
+    );
+    console.log(
+      "- Save the token addresses if you need to use them in other scripts"
+    );
   } catch (error) {
     console.error("❌ Error listing deployments:", error);
     process.exit(1);
