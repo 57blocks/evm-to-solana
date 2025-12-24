@@ -13,10 +13,10 @@ export enum EventType {
  */
 export class UserActivity {
   public readonly userAddress: string; // Address
-  public readonly programId: string; // Address
+  public readonly vaultId: string; // Address
   public readonly eventType: EventType;
   public readonly rawData: string;
-  public readonly positionDelta: number; // 质押数量的变化量（正数表示增加，负数表示减少）
+  public readonly positionDelta: bigint; // 质押数量的变化量（正数表示增加，负数表示减少）
   public readonly rewards: bigint; // TokenAmount (u64)
   public readonly blockNumber: number; // Slot
   public readonly txHash: string; // TransactionHash
@@ -24,10 +24,10 @@ export class UserActivity {
 
   constructor(
     userAddress: string,
-    programId: string,
+    vaultId: string,
     eventType: EventType,
     rawData: string,
-    positionDelta: number,
+    positionDelta: bigint,
     rewards: bigint,
     blockNumber: number,
     txHash: string,
@@ -37,7 +37,7 @@ export class UserActivity {
       throw new Error("Timestamp must be non-negative");
     }
     this.userAddress = userAddress;
-    this.programId = programId;
+    this.vaultId = vaultId;
     this.eventType = eventType;
     this.rawData = rawData;
     this.positionDelta = positionDelta;
@@ -52,8 +52,8 @@ export class UserActivity {
    */
   static createStakedActivity(
     userAddress: string,
-    programId: string,
-    amount: number,
+    vaultId: string,
+    amount: bigint,
     blockNumber: number,
     txHash: string,
     timestamp: number,
@@ -61,11 +61,11 @@ export class UserActivity {
   ): UserActivity {
     return new UserActivity(
       userAddress,
-      programId,
+      vaultId,
       EventType.Staked,
       rawData,
-      amount, // 正数表示增加
-      BigInt(0),
+      amount,
+      0n,
       blockNumber,
       txHash,
       timestamp
@@ -77,9 +77,9 @@ export class UserActivity {
    */
   static createUnstakedActivity(
     userAddress: string,
-    programId: string,
-    amount: number,
-    rewards: number | bigint,
+    vaultId: string,
+    amount: bigint,
+    rewards: bigint,
     blockNumber: number,
     txHash: string,
     timestamp: number,
@@ -87,11 +87,11 @@ export class UserActivity {
   ): UserActivity {
     return new UserActivity(
       userAddress,
-      programId,
+      vaultId,
       EventType.Unstaked,
       rawData,
-      -amount, // 负数表示减少
-      typeof rewards === "bigint" ? rewards : BigInt(rewards),
+      -amount,
+      rewards,
       blockNumber,
       txHash,
       timestamp
@@ -103,8 +103,8 @@ export class UserActivity {
    */
   static createRewardsClaimedActivity(
     userAddress: string,
-    programId: string,
-    amount: number | bigint,
+    vaultId: string,
+    amount: bigint,
     blockNumber: number,
     txHash: string,
     timestamp: number,
@@ -112,11 +112,11 @@ export class UserActivity {
   ): UserActivity {
     return new UserActivity(
       userAddress,
-      programId,
+      vaultId,
       EventType.RewardsClaimed,
       rawData,
-      0, // 奖励领取不改变质押数量
-      typeof amount === "bigint" ? amount : BigInt(amount),
+      0n,
+      amount,
       blockNumber,
       txHash,
       timestamp

@@ -8,7 +8,7 @@ export interface ISyncStatusRepository {
   /**
    * 获取当前同步状态
    */
-  findByProgram(programId: string): Promise<SyncStatus | null>;
+  findByVault(vaultId: string): Promise<SyncStatus | null>;
 
   /**
    * 保存同步状态
@@ -19,7 +19,7 @@ export interface ISyncStatusRepository {
    * 更新同步进度
    */
   updateLastSyncBlock(
-    programId: string,
+    vaultId: string,
     lastSyncBlock: number
   ): Promise<void>;
 }

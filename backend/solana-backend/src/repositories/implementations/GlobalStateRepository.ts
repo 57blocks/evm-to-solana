@@ -2,16 +2,20 @@ import { PublicKey } from "@solana/web3.js";
 import { GlobalState } from "../../domain-models";
 import { IGlobalStateRepository } from "../interfaces/IGlobalStateRepository";
 import { SolanaConnections } from "../../infrastructure";
+import { BorshCoder, Idl } from "@coral-xyz/anchor";
+import StakingIDL from "../../solana_staking.json";
 
 /**
  * GlobalStateRepository 实现
  * 从Solana链上查询全局状态
  */
 export class GlobalStateRepository implements IGlobalStateRepository {
-  constructor(
-    private solanaConnections: SolanaConnections,
-    private chainId: number
-  ) {}
+  private solanaConnections: SolanaConnections;
+  private chainId: number;
+  constructor(solanaConnections: SolanaConnections, chainId: number) {
+    this.solanaConnections = solanaConnections;
+    this.chainId = chainId;
+  }
 
   /**
    * 获取全局状态
@@ -39,50 +43,25 @@ export class GlobalStateRepository implements IGlobalStateRepository {
       );
     }
 
-    // 解析账户数据（根据合约结构）
-    // 注意：这里需要根据实际的合约数据结构来解析
-    // 假设数据格式为：
-    // - admin: Pubkey (32 bytes)
-    // - staking_mint: Pubkey (32 bytes)
-    // - reward_mint: Pubkey (32 bytes)
-    // - staking_vault: Pubkey (32 bytes)
-    // - reward_vault: Pubkey (32 bytes)
-    // - reward_rate: u64 (8 bytes)
-    // - total_staked: u64 (8 bytes)
-    // - bump: u8 (1 byte)
-    // 前面可能有 discriminator (8 bytes)
-
-    const data = accountInfo.data;
-    let offset = 8; // 跳过 discriminator (假设是 8 bytes)
-
-    const admin = new PublicKey(data.slice(offset, offset + 32));
-    offset += 32;
-
-    const stakingMintFromChain = new PublicKey(data.slice(offset, offset + 32));
-    offset += 32;
-
-    const rewardMint = new PublicKey(data.slice(offset, offset + 32));
-    offset += 32;
-
-    const stakingVault = new PublicKey(data.slice(offset, offset + 32));
-    offset += 32;
-
-    const rewardVault = new PublicKey(data.slice(offset, offset + 32));
-    offset += 32;
-
-    const rewardRate = data.readBigUInt64LE(offset);
-    offset += 8;
-
-    const totalStaked = data.readBigUInt64LE(offset);
-
+    const coder = new BorshCoder(StakingIDL as Idl);
+    const decodedState = coder.accounts.decode("GlobalState", accountInfo.data) as {
+      admin: PublicKey;
+      stakingMint: PublicKey;
+      rewardMint: PublicKey;
+      stakingVault: PublicKey;
+      rewardVault: PublicKey;
+      rewardRate: number;
+      totalStaked: bigint;
+      bump: number;
+    };
     return GlobalState.fromChainData({
-      admin: admin.toBase58(),
-      stakingMint: stakingMintFromChain.toBase58(),
-      rewardMint: rewardMint.toBase58(),
-      stakingVault: stakingVault.toBase58(),
-      rewardVault: rewardVault.toBase58(),
-      rewardRate: Number(rewardRate),
-      totalStaked: totalStaked,
+      admin: decodedState.admin.toBase58(),
+      stakingMint: decodedState.stakingMint.toBase58(),
+      rewardMint: decodedState.rewardMint.toBase58(),
+      stakingVault: decodedState.stakingVault.toBase58(),
+      rewardVault: decodedState.rewardVault.toBase58(),
+      rewardRate: decodedState.rewardRate,
+      totalStaked: decodedState.totalStaked,
     });
   }
 }

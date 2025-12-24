@@ -980,7 +980,7 @@ Field
 Type
 user_address
 string
-program_id
+vault_id
 string
 event_type
 string

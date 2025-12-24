@@ -3,12 +3,12 @@
  * 事件同步服务维护的同步进度状态
  */
 export class SyncStatus {
-  public readonly programId: string; // Address
+  public readonly vaultId: string; // Address
   public readonly lastSyncBlock: number; // Slot
   public readonly initializeBlock: number; // Slot
 
   constructor(
-    programId: string,
+    vaultId: string,
     lastSyncBlock: number,
     initializeBlock: number
   ) {
@@ -17,7 +17,7 @@ export class SyncStatus {
         "lastSyncBlock must be greater than or equal to initializeBlock"
       );
     }
-    this.programId = programId;
+    this.vaultId = vaultId;
     this.lastSyncBlock = lastSyncBlock;
     this.initializeBlock = initializeBlock;
   }
@@ -26,12 +26,12 @@ export class SyncStatus {
    * 从数据库数据创建SyncStatus实体
    */
   static fromDatabase(data: {
-    programId: string;
+    vaultId: string;
     lastSyncBlock: number;
     initializeBlock: number;
   }): SyncStatus {
     return new SyncStatus(
-      data.programId,
+      data.vaultId,
       data.lastSyncBlock,
       data.initializeBlock
     );
@@ -41,7 +41,7 @@ export class SyncStatus {
    * 更新lastSyncBlock
    */
   updateLastSyncBlock(newLastSyncBlock: number): SyncStatus {
-    return new SyncStatus(this.programId, newLastSyncBlock, this.initializeBlock);
+    return new SyncStatus(this.vaultId, newLastSyncBlock, this.initializeBlock);
   }
 }
 

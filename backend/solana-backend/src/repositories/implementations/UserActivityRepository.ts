@@ -22,13 +22,13 @@ export class UserActivityRepository implements IUserActivityRepository {
    */
   async findByUser(
     userAddress: string,
-    programId: string
+    vaultId: string
   ): Promise<UserActivity[]> {
     const results: UserActivity[] = [];
     for (const activity of Array.from(this.activities.values())) {
       if (
         activity.userAddress === userAddress &&
-        activity.programId === programId
+        activity.vaultId === vaultId
       ) {
         results.push(activity);
       }
@@ -42,14 +42,14 @@ export class UserActivityRepository implements IUserActivityRepository {
    */
   async findByUserAndEventType(
     userAddress: string,
-    programId: string,
+    vaultId: string,
     eventType: string
   ): Promise<UserActivity[]> {
     const results: UserActivity[] = [];
     for (const activity of Array.from(this.activities.values())) {
       if (
         activity.userAddress === userAddress &&
-        activity.programId === programId &&
+        activity.vaultId === vaultId &&
         activity.eventType === eventType
       ) {
         results.push(activity);
