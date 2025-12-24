@@ -297,14 +297,8 @@ export class SolanaEventFetcher implements EventFetcher {
   }
 }
 
-import { SolanaConnections } from "../../../infrastructure";
+import { SolanaConnections } from "../../../common";
 
-/**
- * SolanaService (event-fetch 模块专用)
- * 扩展基础设施层的 SolanaService，添加事件解析功能
- * 所有模块应使用 infrastructure/SolanaService 作为基础服务
- * 此类的 parseTransactionEvents 方法用于 event-fetch 模块内部
- */
 export class SolanaService {
   private solanaConnections: SolanaConnections;
 
@@ -316,7 +310,6 @@ export class SolanaService {
     return this.solanaConnections.getConnection(chainId);
   }
 
-  // We have to do this because graphql mutation can't accept pool/juniorTranche/seniorTranche currently
   async parseTransactionEvents(
     chainId: number,
     sig: string,

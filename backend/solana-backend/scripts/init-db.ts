@@ -1,7 +1,7 @@
 import "dotenv/config";
-import { SyncStatus } from "../domain-models";
-import { SyncStatusRepository } from "../repositories/implementations/SyncStatusRepository";
-import { getPrismaClient, disconnectPrisma } from "../infrastructure/PrismaClient";
+import { SyncStatus } from "../src/domain-models";
+import { SyncStatusRepository } from "../src/repositories/implementations/SyncStatusRepository";
+import { getPrismaClient, disconnectPrisma } from "../src/common/PrismaClient";
 
 /**
  * 数据库初始化脚本（幂等）

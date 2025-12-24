@@ -1,4 +1,6 @@
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+dayjs.extend(utc);
 
 export interface TransactionEventsParser {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,7 +40,7 @@ export class BaseEvent {
   }
 
   static eventName(): string {
-    return "";
+    return "none";
   }
 
   static eventType(): string {
@@ -54,12 +56,5 @@ export class BaseEvent {
     return `${this.constructor.name} - ${Object.entries(this)
       .map(([key, value]) => `${key}: ${value}`)
       .join(", ")}`;
-  }
-}
-
-export class InvalidDepositTransactionError {
-  message: string;
-  constructor(message: string) {
-    this.message = message;
   }
 }

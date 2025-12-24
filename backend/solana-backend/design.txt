@@ -1012,3 +1012,10 @@ number
 在package.json中新增db初始化脚本命令
 使用prisma生成对应实体的repo
 
+// todo 接口层
+使用express搭建接口层
+接口定义: 
+/query/userStakeStatus?{userAddress}
+/query/globalState
+
+
