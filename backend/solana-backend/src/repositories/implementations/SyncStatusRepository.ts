@@ -12,28 +12,28 @@ export class SyncStatusRepository implements ISyncStatusRepository {
   /**
    * 获取当前同步状态
    */
-  async findByProgram(programId: string): Promise<SyncStatus | null> {
-    return this.syncStatuses.get(programId) || null;
+  async findByVault(vaultId: string): Promise<SyncStatus | null> {
+    return this.syncStatuses.get(vaultId) || null;
   }
 
   /**
    * 保存同步状态
    */
   async save(syncStatus: SyncStatus): Promise<void> {
-    this.syncStatuses.set(syncStatus.programId, syncStatus);
+    this.syncStatuses.set(syncStatus.vaultId, syncStatus);
   }
 
   /**
    * 更新同步进度
    */
   async updateLastSyncBlock(
-    programId: string,
+    vaultId: string,
     lastSyncBlock: number
   ): Promise<void> {
-    const existing = await this.findByProgram(programId);
+    const existing = await this.findByVault(vaultId);
     if (!existing) {
       throw new Error(
-        `SyncStatus not found for programId: ${programId}. Please save it first.`
+        `SyncStatus not found for vaultId: ${vaultId}. Please save it first.`
       );
     }
     const updated = existing.updateLastSyncBlock(lastSyncBlock);

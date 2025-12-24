@@ -13,14 +13,14 @@ export interface IUserActivityRepository {
   /**
    * 查询指定用户的所有活动
    */
-  findByUser(userAddress: string, programId: string): Promise<UserActivity[]>;
+  findByUser(userAddress: string, vaultId: string): Promise<UserActivity[]>;
 
   /**
    * 按事件类型过滤查询
    */
   findByUserAndEventType(
     userAddress: string,
-    programId: string,
+    vaultId: string,
     eventType: string
   ): Promise<UserActivity[]>;
 }

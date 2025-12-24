@@ -60,8 +60,8 @@ export class UserStakePositionRepository implements IUserStakePositionRepository
     return UserStakeStatus.fromChainData({
       owner: decodedStake.owner.toBase58(),
       amount: decodedStake.amount,
-      stakeTimestamp: decodedStake.stakeTimestamp,
-      lastClaimTime: decodedStake.lastClaimTime,
+      stakeTimestamp: parseInt(decodedStake.stakeTimestamp.toString()),
+      lastClaimTime: parseInt(decodedStake.lastClaimTime.toString()),
       rewardDebt: decodedStake.rewardDebt,
     });
   }

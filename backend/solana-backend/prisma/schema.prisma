@@ -1,0 +1,38 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// UserActivity 表
+model UserActivity {
+  userAddress   String   @map("user_address")
+  vaultId       String   @map("vault_id")
+  eventType     String   @map("event_type")
+  rawData       String   @map("raw_data")
+  positionDelta String    @map("position_delta")
+  rewards       String   @map("rewards") // 使用 String 存储 bigint
+  blockNumber   Int      @map("block_number")
+  txHash        String   @id @map("tx_hash") // 使用 txHash 作为主键
+  timestamp     Int @map("timestamp")
+  
+  @@index([userAddress, vaultId])
+  @@index([userAddress, vaultId, eventType])
+  @@map("user_activity")
+}
+
+// SyncStatus 表
+model SyncStatus {
+  vaultId         String  @id @map("vault_id") // 使用 vaultId 作为主键
+  lastSyncBlock   Int     @map("last_sync_block")
+  initializeBlock Int     @map("initialize_block")
+  
+  @@map("sync_status")
+}

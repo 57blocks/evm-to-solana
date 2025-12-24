@@ -5,15 +5,15 @@
 export class UserStakeStatus {
   public readonly userAddress: string; // Address
   public readonly amount: bigint; // TokenAmount (u64)
-  public readonly stakeTimestamp: bigint; // Unix timestamp
-  public readonly lastClaimTime: bigint; // Unix timestamp
+  public readonly stakeTimestamp: number; // Unix timestamp
+  public readonly lastClaimTime: number; // Unix timestamp
   public readonly rewardDebt: bigint; // TokenAmount (u64)
 
   constructor(
     userAddress: string,
     amount: bigint,
-    stakeTimestamp: bigint,
-    lastClaimTime: bigint,
+    stakeTimestamp: number,
+    lastClaimTime: number,
     rewardDebt: bigint,
   ) {
     if (stakeTimestamp < 0) {
@@ -38,8 +38,8 @@ export class UserStakeStatus {
   static fromChainData(data: {
     owner: string;
     amount: bigint;
-    stakeTimestamp: bigint;
-    lastClaimTime: bigint;
+    stakeTimestamp: number;
+    lastClaimTime: number;
     rewardDebt: bigint;
   }): UserStakeStatus {
     return new UserStakeStatus(
