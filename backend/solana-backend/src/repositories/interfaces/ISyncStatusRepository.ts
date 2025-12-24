@@ -14,13 +14,5 @@ export interface ISyncStatusRepository {
    * 保存同步状态
    */
   save(syncStatus: SyncStatus): Promise<void>;
-
-  /**
-   * 更新同步进度
-   */
-  updateLastSyncBlock(
-    vaultId: string,
-    lastSyncBlock: number
-  ): Promise<void>;
 }
 

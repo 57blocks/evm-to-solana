@@ -1,20 +1,47 @@
-import { UserActivity } from "../../domain-models";
+import { UserActivity, EventType } from "../../domain-models";
 import { IUserActivityRepository } from "../interfaces/IUserActivityRepository";
+import { getPrismaClient } from "../../infrastructure/PrismaClient";
+import { PrismaClient } from "../../generated/prisma/client";
 
 /**
  * UserActivityRepository 实现
- * 使用内存数据库（Map）存储用户活动记录
+ * 使用 Prisma 数据库存储用户活动记录
  */
 export class UserActivityRepository implements IUserActivityRepository {
-  // 内存数据库：使用 Map 存储，key 为 txHash（唯一标识）
-  private activities: Map<string, UserActivity> = new Map();
+  private prisma: PrismaClient;
+  
+  constructor() {
+    this.prisma = getPrismaClient();
+  }
 
   /**
    * 保存用户活动记录
    */
   async save(activity: UserActivity): Promise<void> {
-    // 使用 txHash 作为唯一标识，如果已存在则覆盖
-    this.activities.set(activity.txHash, activity);
+    await this.prisma.userActivity.upsert({
+      where: { txHash: activity.txHash },
+      update: {
+        userAddress: activity.userAddress,
+        vaultId: activity.vaultId,
+        eventType: activity.eventType,
+        rawData: activity.rawData,
+        positionDelta: activity.positionDelta.toString(),
+        rewards: activity.rewards.toString(),
+        blockNumber: activity.blockNumber,
+        timestamp: activity.timestamp,
+      },
+      create: {
+        userAddress: activity.userAddress,
+        vaultId: activity.vaultId,
+        eventType: activity.eventType,
+        rawData: activity.rawData,
+        positionDelta: activity.positionDelta.toString(),
+        rewards: activity.rewards.toString(),
+        blockNumber: activity.blockNumber,
+        txHash: activity.txHash,
+        timestamp: activity.timestamp,
+      },
+    });
   }
 
   /**
@@ -24,17 +51,17 @@ export class UserActivityRepository implements IUserActivityRepository {
     userAddress: string,
     vaultId: string
   ): Promise<UserActivity[]> {
-    const results: UserActivity[] = [];
-    for (const activity of Array.from(this.activities.values())) {
-      if (
-        activity.userAddress === userAddress &&
-        activity.vaultId === vaultId
-      ) {
-        results.push(activity);
-      }
-    }
-    // 按时间戳倒序排序
-    return results.sort((a, b) => b.timestamp - a.timestamp);
+    const records = await this.prisma.userActivity.findMany({
+      where: {
+        userAddress,
+        vaultId,
+      },
+      orderBy: {
+        timestamp: 'desc',
+      },
+    });
+
+    return records.map(this.toDomainModel);
   }
 
   /**
@@ -45,32 +72,45 @@ export class UserActivityRepository implements IUserActivityRepository {
     vaultId: string,
     eventType: string
   ): Promise<UserActivity[]> {
-    const results: UserActivity[] = [];
-    for (const activity of Array.from(this.activities.values())) {
-      if (
-        activity.userAddress === userAddress &&
-        activity.vaultId === vaultId &&
-        activity.eventType === eventType
-      ) {
-        results.push(activity);
-      }
-    }
-    // 按时间戳倒序排序
-    return results.sort((a, b) => b.timestamp - a.timestamp);
+    const records = await this.prisma.userActivity.findMany({
+      where: {
+        userAddress,
+        vaultId,
+        eventType,
+      },
+      orderBy: {
+        timestamp: 'desc',
+      },
+    });
+
+    return records.map(this.toDomainModel);
   }
 
   /**
-   * 清空所有数据（用于测试或重置）
+   * 将数据库记录转换为领域模型
    */
-  clear(): void {
-    this.activities.clear();
-  }
-
-  /**
-   * 获取所有活动记录（用于调试）
-   */
-  getAll(): UserActivity[] {
-    return Array.from(this.activities.values());
+  private toDomainModel(record: {
+    userAddress: string;
+    vaultId: string;
+    eventType: string;
+    rawData: string;
+    positionDelta: string;
+    rewards: string;
+    blockNumber: number;
+    txHash: string;
+    timestamp: number;
+  }): UserActivity {
+    return new UserActivity(
+      record.userAddress,
+      record.vaultId,
+      record.eventType as EventType,
+      record.rawData,
+      BigInt(record.positionDelta),
+      BigInt(record.rewards),
+      record.blockNumber,
+      record.txHash,
+      record.timestamp
+    );
   }
 }
 
