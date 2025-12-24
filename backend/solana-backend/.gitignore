@@ -6,6 +6,6 @@ dist
 *.swp
 .vscode
 .idea
-
+prisma
 
 /src/generated/prisma
