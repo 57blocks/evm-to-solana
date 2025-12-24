@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { UserStakeStatus } from "../../domain-models";
 import { IUserStakePositionRepository } from "../interfaces/IUserStakePositionRepository";
-import { SolanaConnections } from "../../infrastructure";
+import { SolanaConnections } from "../../common";
 import { BorshCoder, Idl } from "@coral-xyz/anchor";
 import StakingIDL from "../../solana_staking.json";
 
