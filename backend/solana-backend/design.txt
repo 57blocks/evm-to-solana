@@ -969,3 +969,46 @@ End of Module Architecture
 // - All repositories (GlobalStateRepository, UserStakePositionRepository) use SolanaService
 // - event-fetch module's SolanaService extends infrastructure SolanaService for event parsing
 // - All RPC interactions go through SolanaService, providing unified connection management
+
+
+
+// 数据库体系
+使用prisma数据库
+表结构
+UserActivity
+Field
+Type
+user_address
+string
+program_id
+string
+event_type
+string
+raw_data 
+string
+position
+number
+rewards
+number
+block_number
+number
+tx_hash
+string
+timestamp
+timestamp
+
+SyncStatus
+Field
+type
+vault_id 
+string
+last_sync_block
+number
+Initialize_block  
+number
+// 初始化流程
+建表
+在SyncStatus表中插入监控的vault_id数据
+在package.json中新增db初始化脚本命令
+使用prisma生成对应实体的repo
+
