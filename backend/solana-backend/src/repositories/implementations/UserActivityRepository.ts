@@ -1,4 +1,4 @@
-import { UserActivity, EventType } from "../../domain-models";
+import { UserActivity } from "../../domain-models";
 import { IUserActivityRepository } from "../interfaces/IUserActivityRepository";
 
 /**

@@ -17,7 +17,7 @@ export type SolanaEventFetcherConfig = {
 
 export class SolanaEventFetcher implements EventFetcher {
   private chainId: number;
-  private solanaEventsService: SolanaEventsService;
+  private solanaEventsService: SolanaService;
   private defaultStartBlock: number;
   private maxCount: number;
   private transferEventFetcher: SolscanTransferEventFetcher;
@@ -25,7 +25,7 @@ export class SolanaEventFetcher implements EventFetcher {
 
   constructor(
     chainId: number,
-    solanaEventsService: SolanaEventsService,
+    solanaEventsService: SolanaService,
     defaultStartBlock: number,
     maxCount: number,
     config: SolanaEventFetcherConfig,
@@ -305,7 +305,7 @@ import { SolanaConnections } from "../../../infrastructure";
  * 所有模块应使用 infrastructure/SolanaService 作为基础服务
  * 此类的 parseTransactionEvents 方法用于 event-fetch 模块内部
  */
-export class SolanaEventsService {
+export class SolanaService {
   private solanaConnections: SolanaConnections;
 
   constructor(solanaConnections: SolanaConnections) {

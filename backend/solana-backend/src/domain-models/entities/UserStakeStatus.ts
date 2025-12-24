@@ -5,18 +5,16 @@
 export class UserStakeStatus {
   public readonly userAddress: string; // Address
   public readonly amount: bigint; // TokenAmount (u64)
-  public readonly stakeTimestamp: number; // Unix timestamp
-  public readonly lastClaimTime: number; // Unix timestamp
+  public readonly stakeTimestamp: bigint; // Unix timestamp
+  public readonly lastClaimTime: bigint; // Unix timestamp
   public readonly rewardDebt: bigint; // TokenAmount (u64)
-  public readonly pendingRewards: bigint; // TokenAmount (u64) - 计算得出
 
   constructor(
     userAddress: string,
     amount: bigint,
-    stakeTimestamp: number,
-    lastClaimTime: number,
+    stakeTimestamp: bigint,
+    lastClaimTime: bigint,
     rewardDebt: bigint,
-    pendingRewards: bigint
   ) {
     if (stakeTimestamp < 0) {
       throw new Error("Stake timestamp must be non-negative");
@@ -32,7 +30,6 @@ export class UserStakeStatus {
     this.stakeTimestamp = stakeTimestamp;
     this.lastClaimTime = lastClaimTime;
     this.rewardDebt = rewardDebt;
-    this.pendingRewards = pendingRewards;
   }
 
   /**
@@ -40,21 +37,17 @@ export class UserStakeStatus {
    */
   static fromChainData(data: {
     owner: string;
-    amount: number | bigint;
-    stakeTimestamp: number;
-    lastClaimTime: number;
-    rewardDebt: number | bigint;
-    pendingRewards?: number | bigint;
+    amount: bigint;
+    stakeTimestamp: bigint;
+    lastClaimTime: bigint;
+    rewardDebt: bigint;
   }): UserStakeStatus {
     return new UserStakeStatus(
       data.owner,
-      typeof data.amount === "bigint" ? data.amount : BigInt(data.amount),
+      data.amount,
       data.stakeTimestamp,
       data.lastClaimTime,
-      typeof data.rewardDebt === "bigint" ? data.rewardDebt : BigInt(data.rewardDebt),
-      typeof data.pendingRewards === "bigint" 
-        ? data.pendingRewards 
-        : BigInt(data.pendingRewards ?? 0)
+      data.rewardDebt
     );
   }
 }
