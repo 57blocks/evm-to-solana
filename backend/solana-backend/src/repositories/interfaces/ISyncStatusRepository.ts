@@ -11,6 +11,11 @@ export interface ISyncStatusRepository {
   findByVault(vaultId: string): Promise<SyncStatus | null>;
 
   /**
+   * 获取所有 vault 的同步状态
+   */
+  findAll(): Promise<SyncStatus[]>;
+
+  /**
    * 保存同步状态
    */
   save(syncStatus: SyncStatus): Promise<void>;

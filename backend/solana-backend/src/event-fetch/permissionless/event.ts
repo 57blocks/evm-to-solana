@@ -13,13 +13,14 @@ import {
   BaseEvent,
   TransactionEventsParser,
   TransactionEventsParserFactory,
+  EventClass,
 } from "../chain/event";
 import StakingIDL from "../../solana_staking.json";
 
 const SOLANA_ANCHOR_EVENT = "solana.anchor.event";
 const SOLANA_SPL_EVENT = "solana.spl.event";
 
-export enum PermissionlessEventType {
+export enum PermissionlessEventName {
   PermissionlessEvent = "PermissionlessEvent",
   Staked = "Staked",
   Unstaked = "Unstaked",
@@ -30,13 +31,13 @@ export enum PermissionlessEventType {
 
 export class PermissionlessEvent extends BaseEvent {
   static eventName(): string {
-    return PermissionlessEventType.PermissionlessEvent;
+    return PermissionlessEventName.PermissionlessEvent;
   }
 }
 
 export class PermissionlessStakedEvent extends PermissionlessEvent {
   static eventName(): string {
-    return PermissionlessEventType.Staked;
+    return PermissionlessEventName.Staked;
   }
 
   static eventType(): string {
@@ -44,12 +45,14 @@ export class PermissionlessStakedEvent extends PermissionlessEvent {
   }
 
   userAddress: string;
-  amount: number;
+  amount: bigint;
+  rewards: bigint;
   stakeAt: number;
 
   constructor(baseEvent: BaseEvent,
               userAddress: string,
-              amount: number,
+              amount: bigint,
+              rewards: bigint,
               stakeAt: number) {
     super(baseEvent.chainId, 
           baseEvent.blockNumber,
@@ -59,6 +62,7 @@ export class PermissionlessStakedEvent extends PermissionlessEvent {
           baseEvent.monitorAddress);
     this.userAddress = userAddress;
     this.amount = amount;
+    this.rewards = rewards;
     this.stakeAt = stakeAt;
   }
 
@@ -73,7 +77,7 @@ export class PermissionlessStakedEvent extends PermissionlessEvent {
 
 export class PermissionlessUnstakedEvent extends PermissionlessEvent {
   static eventName(): string {
-    return PermissionlessEventType.Unstaked;
+    return PermissionlessEventName.Unstaked;
   }
 
   static eventType(): string {
@@ -81,14 +85,14 @@ export class PermissionlessUnstakedEvent extends PermissionlessEvent {
   }
 
   userAddress: string;
-  amount: number;
-  rewards: number;
+  amount: bigint;
+  rewards: bigint;
   unstakeAt: number;
 
   constructor(baseEvent: BaseEvent,
               userAddress: string,
-              amount: number,
-              rewards: number,
+              amount: bigint,
+              rewards: bigint,
               unstakeAt: number) {
     super(baseEvent.chainId, 
           baseEvent.blockNumber,
@@ -114,7 +118,7 @@ export class PermissionlessUnstakedEvent extends PermissionlessEvent {
 
 export class PermissionlessRewardsClaimedEvent extends PermissionlessEvent {
   static eventName(): string {
-    return PermissionlessEventType.RewardsClaimed;
+    return PermissionlessEventName.RewardsClaimed;
   }
 
   static eventType(): string {
@@ -122,12 +126,12 @@ export class PermissionlessRewardsClaimedEvent extends PermissionlessEvent {
   }
 
   userAddress: string;
-  amount: number;
+  amount: bigint;
   claimAt: number;
 
   constructor(baseEvent: BaseEvent,
               userAddress: string,
-              amount: number,
+              amount: bigint,
               claimAt: number) {
     super(baseEvent.chainId, 
           baseEvent.blockNumber,
@@ -226,6 +230,7 @@ class PermissionlessTransactionAnchorEventsParser
   implements TransactionEventsParser
 {
   private chainId: number;
+  private static readonly LOG_PREFIX = "Calculating rewards:";
 
   constructor(chainId: number) {
     this.chainId = chainId;
@@ -241,6 +246,18 @@ class PermissionlessTransactionAnchorEventsParser
     const coder = new BorshCoder(StakingIDL as Idl);
     const ep = new EventParser(programId, coder);
     const logs = ep.parseLogs(ptx.meta?.logMessages ?? []);
+    let rewards = 0n;
+    for (const log of ptx.meta?.logMessages ?? []) {
+      if (log.startsWith(PermissionlessTransactionAnchorEventsParser.LOG_PREFIX)) {
+        // format: Calculating rewards: amount=150000000000, last_claim=1766652608, current_time=1766652610, rate=100, rewards=34722"
+        const rewardsMatch = log.match(/rewards=(\d+)/);
+        if (rewardsMatch && rewardsMatch[1]) {
+          rewards = BigInt(rewardsMatch[1]);
+          console.log(`[Debug] Extracted rewards: ${rewards}`);
+          break;
+        }
+      }
+    }
     let next;
     try {
       next = logs.next();
@@ -255,7 +272,7 @@ class PermissionlessTransactionAnchorEventsParser
       if (eventValue) {
         const baseEvent = new BaseEvent(this.chainId, ptx.slot, data.sig, ptx.blockTime ?? 0,
            ptx.meta?.err ? "failed" : "success");
-        const event = this.parseEvent(baseEvent, eventValue);
+        const event = this.parseEvent(baseEvent, eventValue, rewards);
         if (event) {
           events.push(event);
         }
@@ -268,25 +285,26 @@ class PermissionlessTransactionAnchorEventsParser
   }
 
   // eventData type is the parsed event type from Anchor event parser's parseLogs function
-  private parseEvent(baseEvent: BaseEvent, data: any): PermissionlessEvent | null {
+  private parseEvent(baseEvent: BaseEvent, data: any, rewards: bigint): PermissionlessEvent | null {
     let event = null;
     const eventData = data;
     if (PermissionlessStakedEvent.eventName() === eventData.name) {
       event = new PermissionlessStakedEvent(baseEvent, eventData.data.user.toString(),
-       parseInt(eventData.data.amount.toString()),
-        parseInt(eventData.data.timestamp.toString()));
+       BigInt(eventData.data.amount.toString()),
+       rewards,
+       parseInt(eventData.data.timestamp.toString()));
     } else if (
       PermissionlessUnstakedEvent.eventName() === eventData.name
     ) {
       event = new PermissionlessUnstakedEvent(baseEvent, eventData.data.user.toString(),
-       parseInt(eventData.data.amount.toString()),
-        parseInt(eventData.data.rewards.toString()),
+       BigInt(eventData.data.amount.toString()),
+       rewards,
         parseInt(eventData.data.timestamp.toString()));
     } else if (
       PermissionlessRewardsClaimedEvent.eventName() === eventData.name
     ) {
       event = new PermissionlessRewardsClaimedEvent(baseEvent, eventData.data.user.toString(),
-       parseInt(eventData.data.amount.toString()),
+       rewards,
         parseInt(eventData.data.timestamp.toString()));
     } 
 
@@ -447,7 +465,7 @@ export class PermissionlessTransactionEventsParserFactory
   createTransactionEventsParser(
     chainId: number,
     sources: string[],
-    eventClasses: (typeof PermissionlessEvent)[]
+    eventClasses: EventClass[]
   ): TransactionEventsParser {
     const parser = new PermissionlessTransactionEventsParser(
       chainId,

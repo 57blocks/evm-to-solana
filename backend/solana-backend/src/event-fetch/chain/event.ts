@@ -7,12 +7,21 @@ export interface TransactionEventsParser {
   parseEvents(tx: any): BaseEvent[];
 }
 
+/**
+ * EventClass 类型定义：只要求类有静态方法 eventName() 和 eventType()
+ * 不要求构造函数签名匹配，因为实际使用时只调用静态方法
+ */
+export type EventClass = {
+  eventName(): string;
+  eventType(): string;
+};
+
 export interface TransactionEventsParserFactory {
   //TODO change to source: string
   createTransactionEventsParser(
     chainId: number,
     sources: string[],
-    eventClasses: (typeof BaseEvent)[]
+    eventClasses: EventClass[]
   ): TransactionEventsParser;
 }
 

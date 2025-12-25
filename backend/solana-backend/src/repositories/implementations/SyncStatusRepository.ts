@@ -29,6 +29,14 @@ export class SyncStatusRepository implements ISyncStatusRepository {
   }
 
   /**
+   * 获取所有 vault 的同步状态
+   */
+  async findAll(): Promise<SyncStatus[]> {
+    const records = await this.prisma.syncStatus.findMany();
+    return records.map((record) => this.toDomainModel(record));
+  }
+
+  /**
    * 保存同步状态
    */
   async save(syncStatus: SyncStatus): Promise<void> {

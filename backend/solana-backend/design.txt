@@ -984,7 +984,7 @@ vault_id
 string
 event_type
 string
-raw_data 
+raw_data //不需要这个字段了
 string
 position
 number
@@ -1017,5 +1017,124 @@ number
 接口定义: 
 /query/userStakeStatus?{userAddress}
 /query/globalState
+
+// UserActivity fetch 定时任务
+1. 服务启动时拉起
+2. 从数据库读取所有的vault记录
+3. 为每个vault记录拉起数据库同步定时任务 时间间隔：pollingInterval
+4. 同步任务需要记录每次最后同步完成的块，在每次任务执行时，从上次同步完成的块开始同步，同步完成后，更新lastSyncBlock，并更新数据库中的SyncStatus
+5. 写数据库失败，重试？等待下次被拉起？
+6. 流程：拉起，停止
+
+// FetchScheduler设计
+依赖
+- ISyncStatusRepository (需要添加 findAll 方法)
+- IUserActivityRepository
+- UserActivityRepository
+- SolanaEventFetcher
+- TransactionEventsParser / TransactionEventsParserFactory
+- SolanaService (用于创建 EventFetcher)
+
+配置
+- fetchingInterval: number (默认: 10000ms = 10s) - 定时同步间隔
+- retryDelayInterval: number (默认: 2000ms = 2s) - 重试延迟
+- maxRetries: number (默认: 3) - 最大重试次数
+- maxConcurrentVaults: number (默认: 5) - 最大并发同步的 vault 数量 //暂时不需要
+- vaultMonitorAddresses: Map<string, string[]> - vaultId -> monitorAddresses 映射 //不需要，vaultId就是monitorAddresses
+- chainId: number - Solana chain ID
+- eventParserFactory: TransactionEventsParserFactory - 事件解析器工厂
+
+职责
+1. 定时同步所有 vault 的事件
+2. 管理同步任务的执行
+3. 处理事件转换和持久化
+4. 错误处理和重试
+5. 状态管理和监控
+
+工作流
+1. 启动 FetchScheduler
+   - 初始化定时器
+   - 设置错误处理
+
+2. 定时任务（每 fetchingInterval 执行一次）
+   a. 从 SyncStatus 表获取所有 vault 记录（调用 ISyncStatusRepository.findAll()）
+   b. 过滤掉正在同步的 vault（避免重复）//不需要
+   c. 使用并发控制（最多 maxConcurrentVaults 个同时执行）//不需要
+   d. 为每个 vault 创建异步任务：
+      - 获取 vault 的 monitorAddresses（从配置中获取）
+      - 从 lastSyncBlock + 1 开始同步
+      - 调用 SolanaEventFetcher.fetchEvents()
+      - 处理返回的 events
+      - 转换 BaseEvent -> UserActivity
+      - 批量保存到 UserActivity 表
+      - 更新 SyncStatus 的 lastSyncBlock
+      - 错误处理和重试
+
+3. 错误处理
+   - 网络错误：重试（最多 maxRetries 次，使用指数退避）//不需要指数退避
+   - 解析错误：记录日志，跳过该事件
+   - 数据库错误：记录日志，重试
+   - 达到限制提前结束：正常处理，更新 lastSyncBlock
+
+4. 停止 FetchScheduler
+   - 取消定时器
+   - 等待正在执行的任务完成
+   - 清理资源
+
+事件转换逻辑
+需要处理 BaseEvent -> UserActivity 的转换：
+- PermissionlessStakedEvent -> UserActivity (EventType.Staked)
+  - userAddress: 从 event 中提取
+  - vaultId: 从 monitorAddress 或配置中获取
+  - eventType: EventType.Staked
+  - positionDelta: event.amount (正数)
+  - rewards: 0n
+  - blockNumber: event.blockNumber
+  - txHash: event.transactionHash
+  - timestamp: event.timestamp
+  - rawData: 序列化原始事件数据
+
+- PermissionlessUnstakedEvent -> UserActivity (EventType.Unstaked)
+  - userAddress: 从 event 中提取
+  - vaultId: 从 monitorAddress 或配置中获取
+  - eventType: EventType.Unstaked
+  - positionDelta: -event.amount (负数)
+  - rewards: event.rewards
+  - blockNumber: event.blockNumber
+  - txHash: event.transactionHash
+  - timestamp: event.timestamp
+  - rawData: 序列化原始事件数据
+
+- PermissionlessRewardsClaimedEvent -> UserActivity (EventType.RewardsClaimed)
+  - userAddress: 从 event 中提取
+  - vaultId: 从 monitorAddress 或配置中获取
+  - eventType: EventType.RewardsClaimed
+  - positionDelta: 0n
+  - rewards: event.amount
+  - blockNumber: event.blockNumber
+  - txHash: event.transactionHash
+  - timestamp: event.timestamp
+  - rawData: 序列化原始事件数据
+
+接口补充
+需要在 ISyncStatusRepository 中添加：
+- findAll(): Promise<SyncStatus[]> - 获取所有 vault 的同步状态
+
+需要补充的关键点
+1. 获取所有 vault：在 ISyncStatusRepository 中添加 findAll() 方法
+2. 并发控制：使用 Promise.allSettled 和信号量控制并发数 // 不需要控制并发
+3. 事件转换：实现 BaseEvent 到 UserActivity 的转换逻辑
+4. 批量保存：考虑批量插入以提高性能 //暂不考虑性能，一次性插入
+5. 状态管理：跟踪正在同步的 vault，避免重复同步 //不需要
+6. 优雅关闭：实现 stop() 方法，等待任务完成
+
+潜在问题检查
+1. 数据一致性：批量保存时使用事务
+2. 内存管理：大量事件时考虑分批处理  //暂时不需要
+3. 性能优化：批量插入而非逐条插入 //暂时不需要
+4. 监控地址：确保每个 vault 有正确的 monitorAddresses 配置 //不是问题
+5. 错误恢复：同步失败后，下次应从上次成功的位置继续
+6. 幂等性：通过 txHash 唯一性保证，避免重复插入
+
 
 
