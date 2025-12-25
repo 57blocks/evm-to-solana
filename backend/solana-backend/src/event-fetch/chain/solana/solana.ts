@@ -20,7 +20,7 @@ export class SolanaEventFetcher implements EventFetcher {
   private solanaEventsService: SolanaService;
   private defaultStartBlock: number;
   private maxCount: number;
-  private transferEventFetcher: SolscanTransferEventFetcher;
+  private transferEventFetcher: SolscanTransferEventFetcher | undefined;
   private config: SolanaEventFetcherConfig;
 
   constructor(
@@ -29,7 +29,7 @@ export class SolanaEventFetcher implements EventFetcher {
     defaultStartBlock: number,
     maxCount: number,
     config: SolanaEventFetcherConfig,
-    transferEventFetcher: SolscanTransferEventFetcher
+    transferEventFetcher?: SolscanTransferEventFetcher
   ) {
     this.chainId = chainId;
     this.solanaEventsService = solanaEventsService;
@@ -44,7 +44,7 @@ export class SolanaEventFetcher implements EventFetcher {
     startBlock: number,
     eventsParser: TransactionEventsParser,
     endBlock: number = 0
-  ): Promise<FetchingResult> {``
+  ): Promise<FetchingResult> {
     if (startBlock == 0) {
       startBlock = this.defaultStartBlock - 1;
     }

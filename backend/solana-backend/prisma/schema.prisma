@@ -15,7 +15,6 @@ model UserActivity {
   userAddress   String   @map("user_address")
   vaultId       String   @map("vault_id")
   eventType     String   @map("event_type")
-  rawData       String   @map("raw_data")
   positionDelta String    @map("position_delta")
   rewards       String   @map("rewards") // 使用 String 存储 bigint
   blockNumber   Int      @map("block_number")

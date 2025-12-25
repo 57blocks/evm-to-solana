@@ -24,7 +24,6 @@ export class UserActivityRepository implements IUserActivityRepository {
         userAddress: activity.userAddress,
         vaultId: activity.vaultId,
         eventType: activity.eventType,
-        rawData: activity.rawData,
         positionDelta: activity.positionDelta.toString(),
         rewards: activity.rewards.toString(),
         blockNumber: activity.blockNumber,
@@ -34,7 +33,6 @@ export class UserActivityRepository implements IUserActivityRepository {
         userAddress: activity.userAddress,
         vaultId: activity.vaultId,
         eventType: activity.eventType,
-        rawData: activity.rawData,
         positionDelta: activity.positionDelta.toString(),
         rewards: activity.rewards.toString(),
         blockNumber: activity.blockNumber,
@@ -93,7 +91,6 @@ export class UserActivityRepository implements IUserActivityRepository {
     userAddress: string;
     vaultId: string;
     eventType: string;
-    rawData: string;
     positionDelta: string;
     rewards: string;
     blockNumber: number;
@@ -104,7 +101,6 @@ export class UserActivityRepository implements IUserActivityRepository {
       record.userAddress,
       record.vaultId,
       record.eventType as EventType,
-      record.rawData,
       BigInt(record.positionDelta),
       BigInt(record.rewards),
       record.blockNumber,

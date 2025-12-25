@@ -15,7 +15,6 @@ export class UserActivity {
   public readonly userAddress: string; // Address
   public readonly vaultId: string; // Address
   public readonly eventType: EventType;
-  public readonly rawData: string;
   public readonly positionDelta: bigint; // 质押数量的变化量（正数表示增加，负数表示减少）
   public readonly rewards: bigint; // TokenAmount (u64)
   public readonly blockNumber: number; // Slot
@@ -26,7 +25,6 @@ export class UserActivity {
     userAddress: string,
     vaultId: string,
     eventType: EventType,
-    rawData: string,
     positionDelta: bigint,
     rewards: bigint,
     blockNumber: number,
@@ -39,7 +37,6 @@ export class UserActivity {
     this.userAddress = userAddress;
     this.vaultId = vaultId;
     this.eventType = eventType;
-    this.rawData = rawData;
     this.positionDelta = positionDelta;
     this.rewards = rewards;
     this.blockNumber = blockNumber;
@@ -54,18 +51,17 @@ export class UserActivity {
     userAddress: string,
     vaultId: string,
     amount: bigint,
+    rewards: bigint,
     blockNumber: number,
     txHash: string,
     timestamp: number,
-    rawData: string
   ): UserActivity {
     return new UserActivity(
       userAddress,
       vaultId,
       EventType.Staked,
-      rawData,
       amount,
-      0n,
+      rewards,
       blockNumber,
       txHash,
       timestamp
@@ -83,13 +79,11 @@ export class UserActivity {
     blockNumber: number,
     txHash: string,
     timestamp: number,
-    rawData: string
   ): UserActivity {
     return new UserActivity(
       userAddress,
       vaultId,
       EventType.Unstaked,
-      rawData,
       -amount,
       rewards,
       blockNumber,
@@ -108,13 +102,11 @@ export class UserActivity {
     blockNumber: number,
     txHash: string,
     timestamp: number,
-    rawData: string
   ): UserActivity {
     return new UserActivity(
       userAddress,
       vaultId,
       EventType.RewardsClaimed,
-      rawData,
       0n,
       amount,
       blockNumber,
