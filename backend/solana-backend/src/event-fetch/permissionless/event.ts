@@ -66,6 +66,13 @@ export class PermissionlessStakedEvent extends BaseEvent {
       stakeAt: this.stakeAt,
     };
   }
+
+  toString(): string {
+    return `${this.constructor.name}(chainId=${this.chainId}, blockNumber=${this.blockNumber}, ` +
+      `txHash=${this.transactionHash}, userAddress=${this.userAddress}, ` +
+      `amount=${this.amount.toString()}, rewards=${this.rewards.toString()}, ` +
+      `stakeAt=${this.stakeAt}, timestamp=${this.timestamp}, status=${this.status})`;
+  }
 }
 
 export class PermissionlessUnstakedEvent extends BaseEvent {
@@ -107,6 +114,13 @@ export class PermissionlessUnstakedEvent extends BaseEvent {
       unstakeAt: this.unstakeAt,
     };
   }
+
+  toString(): string {
+    return `${this.constructor.name}(chainId=${this.chainId}, blockNumber=${this.blockNumber}, ` +
+      `txHash=${this.transactionHash}, userAddress=${this.userAddress}, ` +
+      `amount=${this.amount.toString()}, rewards=${this.rewards.toString()}, ` +
+      `unstakeAt=${this.unstakeAt}, timestamp=${this.timestamp}, status=${this.status})`;
+  }
 }
 
 export class PermissionlessRewardsClaimedEvent extends BaseEvent {
@@ -143,6 +157,13 @@ export class PermissionlessRewardsClaimedEvent extends BaseEvent {
       amount: this.amount,
       claimAt: this.claimAt,
     };
+  }
+
+  toString(): string {
+    return `${this.constructor.name}(chainId=${this.chainId}, blockNumber=${this.blockNumber}, ` +
+      `txHash=${this.transactionHash}, userAddress=${this.userAddress}, ` +
+      `amount=${this.amount.toString()}, claimAt=${this.claimAt}, ` +
+      `timestamp=${this.timestamp}, status=${this.status})`;
   }
 }
 
@@ -181,6 +202,14 @@ export class PermissionlessSPLTransferEvent extends BaseEvent {
       froms: this.froms,
       tos: this.tos,
     };
+  }
+
+  toString(): string {
+    const fromsStr = this.froms.map(f => `${f.address}:${f.amount.toString()}`).join(", ");
+    const tosStr = this.tos.map(t => `${t.address}:${t.amount.toString()}`).join(", ");
+    return `${this.constructor.name}(chainId=${this.chainId}, blockNumber=${this.blockNumber}, ` +
+      `txHash=${this.transactionHash}, monitorAddress=${this.monitorAddress || "N/A"}, ` +
+      `froms=[${fromsStr}], tos=[${tosStr}], timestamp=${this.timestamp}, status=${this.status})`;
   }
 }
 
@@ -223,7 +252,7 @@ class PermissionlessTransactionAnchorEventsParser
   implements TransactionEventsParser
 {
   private chainId: number;
-  private static readonly LOG_PREFIX = "Calculating rewards:";
+  private static readonly LOG_PREFIX = "Program log: Calculating rewards:";
 
   constructor(chainId: number) {
     this.chainId = chainId;
@@ -241,7 +270,9 @@ class PermissionlessTransactionAnchorEventsParser
     const logs = ep.parseLogs(ptx.meta?.logMessages ?? []);
     let rewards = 0n;
     for (const log of ptx.meta?.logMessages ?? []) {
+      console.log(`[Debug] Log: ${log}`);
       if (log.startsWith(PermissionlessTransactionAnchorEventsParser.LOG_PREFIX)) {
+        console.log(`[Debug] Log starts with Calculating rewards: ${log}`);
         // format: Calculating rewards: amount=150000000000, last_claim=1766652608, current_time=1766652610, rate=100, rewards=34722"
         const rewardsMatch = log.match(/rewards=(\d+)/);
         if (rewardsMatch && rewardsMatch[1]) {
