@@ -14,7 +14,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
-    "db:init": "tsx src/scripts/init-db.ts",
+    "db:init": "tsx scripts/db/init-db.ts",
     "db:reset": "prisma migrate reset"
   },
   "keywords": [
