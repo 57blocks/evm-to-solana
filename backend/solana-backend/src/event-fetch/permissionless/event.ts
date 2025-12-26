@@ -21,7 +21,6 @@ const SOLANA_ANCHOR_EVENT = "solana.anchor.event";
 const SOLANA_SPL_EVENT = "solana.spl.event";
 
 export enum PermissionlessEventName {
-  PermissionlessEvent = "PermissionlessEvent",
   Staked = "Staked",
   Unstaked = "Unstaked",
   RewardsClaimed = "RewardsClaimed",
@@ -29,13 +28,7 @@ export enum PermissionlessEventName {
   TransferChecked = "TransferChecked"
 }
 
-export class PermissionlessEvent extends BaseEvent {
-  static eventName(): string {
-    return PermissionlessEventName.PermissionlessEvent;
-  }
-}
-
-export class PermissionlessStakedEvent extends PermissionlessEvent {
+export class PermissionlessStakedEvent extends BaseEvent {
   static eventName(): string {
     return PermissionlessEventName.Staked;
   }
@@ -75,7 +68,7 @@ export class PermissionlessStakedEvent extends PermissionlessEvent {
   }
 }
 
-export class PermissionlessUnstakedEvent extends PermissionlessEvent {
+export class PermissionlessUnstakedEvent extends BaseEvent {
   static eventName(): string {
     return PermissionlessEventName.Unstaked;
   }
@@ -116,7 +109,7 @@ export class PermissionlessUnstakedEvent extends PermissionlessEvent {
   }
 }
 
-export class PermissionlessRewardsClaimedEvent extends PermissionlessEvent {
+export class PermissionlessRewardsClaimedEvent extends BaseEvent {
   static eventName(): string {
     return PermissionlessEventName.RewardsClaimed;
   }
@@ -155,7 +148,7 @@ export class PermissionlessRewardsClaimedEvent extends PermissionlessEvent {
 
 
 
-export class PermissionlessSPLTransferEvent extends PermissionlessEvent {
+export class PermissionlessSPLTransferEvent extends BaseEvent {
 
   static eventType(): string {
     return SOLANA_SPL_EVENT;
@@ -206,7 +199,7 @@ export class PermissionlessTransactionEventsParser
     );
   }
 
-  addEventClass(eventClass: typeof PermissionlessEvent) {
+  addEventClass(eventClass: EventClass) {
     switch (eventClass.eventType()) {
       case SOLANA_SPL_EVENT:
         this.splEventParser.addEventClass(eventClass);
@@ -285,7 +278,7 @@ class PermissionlessTransactionAnchorEventsParser
   }
 
   // eventData type is the parsed event type from Anchor event parser's parseLogs function
-  private parseEvent(baseEvent: BaseEvent, data: any, rewards: bigint): PermissionlessEvent | null {
+  private parseEvent(baseEvent: BaseEvent, data: any, rewards: bigint): BaseEvent | null {
     let event = null;
     const eventData = data;
     if (PermissionlessStakedEvent.eventName() === eventData.name) {
@@ -324,7 +317,7 @@ class PermissionlessSPLTransactionEventsParser implements TransactionEventsParse
     this.tokenMints = tokenMints;
   }
 
-  addEventClass(eventClass: typeof PermissionlessEvent) {
+  addEventClass(eventClass: EventClass) {
     this.monitorLogs.add(
       PermissionlessSPLTransactionEventsParser.LOG_PREFIX + eventClass.eventName()
     );
@@ -472,7 +465,7 @@ export class PermissionlessTransactionEventsParserFactory
       sources
     );
     eventClasses.forEach((eventClass) =>
-      parser.addEventClass(eventClass as typeof PermissionlessEvent)
+      parser.addEventClass(eventClass)
     );
     return parser;
   }
