@@ -37,7 +37,6 @@
     "@coral-xyz/anchor": "^0.32.1",
     "@prisma/adapter-better-sqlite3": "^7.2.0",
     "@prisma/client": "^7.2.0",
-    "@solana/kit": "^5.0.0",
     "@solana/rpc": "^5.0.0",
     "@solana/web3.js": "^1.98.4",
     "axios": "^1.13.2",
