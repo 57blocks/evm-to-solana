@@ -1,6 +1,6 @@
 import { SyncStatus } from "../../domain-models";
 import { ISyncStatusRepository } from "../interfaces/ISyncStatusRepository";
-import { getPrismaClient } from "../../common/PrismaClient";
+import { getPrismaClient } from "../../infrastructure/PrismaClient";
 import { PrismaClient } from "../../generated/prisma/client";
 
 /**
