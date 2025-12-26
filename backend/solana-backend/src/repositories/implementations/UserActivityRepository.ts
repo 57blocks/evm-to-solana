@@ -19,11 +19,15 @@ export class UserActivityRepository implements IUserActivityRepository {
    */
   async save(activity: UserActivity): Promise<void> {
     await this.prisma.userActivity.upsert({
-      where: { txHash: activity.txHash },
+      where: {
+        txHash_eventType: {
+          txHash: activity.txHash,
+          eventType: activity.eventType,
+        },
+      },
       update: {
         userAddress: activity.userAddress,
         vaultId: activity.vaultId,
-        eventType: activity.eventType,
         positionDelta: activity.positionDelta.toString(),
         rewards: activity.rewards.toString(),
         blockNumber: activity.blockNumber,

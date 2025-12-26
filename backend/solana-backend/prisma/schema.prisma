@@ -12,15 +12,17 @@ datasource db {
 
 // UserActivity 表
 model UserActivity {
+  id            String   @id @default(uuid())
   userAddress   String   @map("user_address")
   vaultId       String   @map("vault_id")
   eventType     String   @map("event_type")
   positionDelta String    @map("position_delta")
   rewards       String   @map("rewards") // 使用 String 存储 bigint
   blockNumber   Int      @map("block_number")
-  txHash        String   @id @map("tx_hash") // 使用 txHash 作为主键
+  txHash        String   @map("tx_hash")
   timestamp     Int @map("timestamp")
   
+  @@unique([txHash, eventType]) // 使用 (txHash, eventType) 作为唯一性约束
   @@index([userAddress, vaultId])
   @@index([userAddress, vaultId, eventType])
   @@map("user_activity")
