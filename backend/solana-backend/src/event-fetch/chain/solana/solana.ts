@@ -297,7 +297,7 @@ export class SolanaEventFetcher implements EventFetcher {
   }
 }
 
-import { SolanaConnections } from "../../../common";
+import { SolanaConnections } from "../../../infrastructure";
 
 export class SolanaService {
   private solanaConnections: SolanaConnections;

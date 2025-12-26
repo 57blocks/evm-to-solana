@@ -10,7 +10,7 @@ import {
   PermissionlessUnstakedEvent,
   PermissionlessRewardsClaimedEvent
 } from "./permissionless/event";
-import { SolanaConnections } from "../common/SolanaConnections";
+import { SolanaConnections } from "../infrastructure/SolanaConnections";
 import { SolscanTransferEventFetcher } from "./chain/solana/solscan";
 import { EventFetcher } from "./chain/chain";
 

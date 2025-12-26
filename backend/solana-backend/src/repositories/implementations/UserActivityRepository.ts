@@ -1,6 +1,6 @@
 import { UserActivity, EventType } from "../../domain-models";
 import { IUserActivityRepository } from "../interfaces/IUserActivityRepository";
-import { getPrismaClient } from "../../common/PrismaClient";
+import { getPrismaClient } from "../../infrastructure/PrismaClient";
 import { PrismaClient } from "../../generated/prisma/client";
 
 /**

@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { GlobalState } from "../../domain-models";
 import { IGlobalStateRepository } from "../interfaces/IGlobalStateRepository";
-import { SolanaConnections } from "../../common";
+import { SolanaConnections } from "../../infrastructure";
 import { BorshCoder, Idl } from "@coral-xyz/anchor";
 import StakingIDL from "../../solana_staking.json";
 
