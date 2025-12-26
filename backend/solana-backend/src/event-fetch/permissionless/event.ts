@@ -270,14 +270,11 @@ class PermissionlessTransactionAnchorEventsParser
     const logs = ep.parseLogs(ptx.meta?.logMessages ?? []);
     let rewards = 0n;
     for (const log of ptx.meta?.logMessages ?? []) {
-      console.log(`[Debug] Log: ${log}`);
       if (log.startsWith(PermissionlessTransactionAnchorEventsParser.LOG_PREFIX)) {
-        console.log(`[Debug] Log starts with Calculating rewards: ${log}`);
         // format: Calculating rewards: amount=150000000000, last_claim=1766652608, current_time=1766652610, rate=100, rewards=34722"
         const rewardsMatch = log.match(/rewards=(\d+)/);
         if (rewardsMatch && rewardsMatch[1]) {
           rewards = BigInt(rewardsMatch[1]);
-          console.log(`[Debug] Extracted rewards: ${rewards}`);
           break;
         }
       }
