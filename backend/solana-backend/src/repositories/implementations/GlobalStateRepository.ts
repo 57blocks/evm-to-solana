@@ -33,8 +33,6 @@ export class GlobalStateRepository implements IGlobalStateRepository {
       [Buffer.from(stateSeed), stakingMintPubkey.toBuffer()],
       programPubkey
     );
-
-    // 查询账户数据
     const connection = this.solanaConnections.getConnection(this.chainId);
     const accountInfo = await connection.getAccountInfo(statePda);
     if (!accountInfo) {
@@ -42,26 +40,25 @@ export class GlobalStateRepository implements IGlobalStateRepository {
         `GlobalState account not found at PDA: ${statePda.toBase58()}`
       );
     }
-
     const coder = new BorshCoder(StakingIDL as Idl);
     const decodedState = coder.accounts.decode("GlobalState", accountInfo.data) as {
       admin: PublicKey;
-      stakingMint: PublicKey;
-      rewardMint: PublicKey;
-      stakingVault: PublicKey;
-      rewardVault: PublicKey;
-      rewardRate: number;
-      totalStaked: bigint;
+      staking_mint: PublicKey;
+      reward_mint: PublicKey;
+      staking_vault: PublicKey;
+      reward_vault: PublicKey;
+      reward_rate: bigint; // u64 in IDL
+      total_staked: bigint; // u64 in IDL
       bump: number;
     };
     return GlobalState.fromChainData({
       admin: decodedState.admin.toBase58(),
-      stakingMint: decodedState.stakingMint.toBase58(),
-      rewardMint: decodedState.rewardMint.toBase58(),
-      stakingVault: decodedState.stakingVault.toBase58(),
-      rewardVault: decodedState.rewardVault.toBase58(),
-      rewardRate: decodedState.rewardRate,
-      totalStaked: decodedState.totalStaked,
+      stakingMint: decodedState.staking_mint.toBase58(),
+      rewardMint: decodedState.reward_mint.toBase58(),
+      stakingVault: decodedState.staking_vault.toBase58(),
+      rewardVault: decodedState.reward_vault.toBase58(),
+      rewardRate: Number(decodedState.reward_rate), // Convert bigint to number
+      totalStaked: decodedState.total_staked,
     });
   }
 }
