@@ -52,17 +52,17 @@ export class UserStakePositionRepository implements IUserStakePositionRepository
     const decodedStake = coder.accounts.decode("UserStakeInfo", accountInfo.data) as {
       owner: PublicKey;
       amount: bigint;
-      stakeTimestamp: bigint;
-      lastClaimTime: bigint;
-      rewardDebt: bigint;
+      stake_timestamp: bigint; // i64 in IDL
+      last_claim_time: bigint; // i64 in IDL
+      reward_debt: bigint; // u64 in IDL
       bump: number;
     };
     return UserStakeStatus.fromChainData({
       owner: decodedStake.owner.toBase58(),
       amount: decodedStake.amount,
-      stakeTimestamp: parseInt(decodedStake.stakeTimestamp.toString()),
-      lastClaimTime: parseInt(decodedStake.lastClaimTime.toString()),
-      rewardDebt: decodedStake.rewardDebt,
+      stakeTimestamp: Number(decodedStake.stake_timestamp), // Convert i64 to number
+      lastClaimTime: Number(decodedStake.last_claim_time), // Convert i64 to number
+      rewardDebt: decodedStake.reward_debt,
     });
   }
 }
