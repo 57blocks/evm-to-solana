@@ -64,20 +64,14 @@ export const executeStakeTransaction = async ({
   const accountInfo = await createStakeAccountInfo(publicKey, program);
 
   const txSignature = await program.methods
-    .stake(new BN(convertToLamports(stakeAmount)))
-    .accounts({
+    .stake(new BN(convertToLamports(stakeAmount).toString()))
+    .accountsPartial({
       user: publicKey,
-      //@ts-ignore
       state: accountInfo.statePda,
       userStakeInfo: accountInfo.userStakeInfoPda,
       userTokenAccount: accountInfo.userTokenAccount,
-      stakingVault: accountInfo.stakingVault,
-      rewardVault: accountInfo.rewardVault,
       userRewardAccount: accountInfo.userRewardAccount,
-      tokenProgram: TOKEN_PROGRAM_ID,
       blacklistEntry: accountInfo.blacklistPda,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
     })
     .rpc();
 
@@ -95,20 +89,14 @@ export const createStakeInstruction = async ({
   const accountInfo = await createStakeAccountInfo(publicKey, program);
 
   const instruction = await program.methods
-    .stake(new BN(convertToLamports(stakeAmount)))
-    .accounts({
+    .stake(new BN(convertToLamports(stakeAmount).toString()))
+    .accountsPartial({
       user: publicKey,
-      //@ts-ignore
       state: accountInfo.statePda,
       userStakeInfo: accountInfo.userStakeInfoPda,
       userTokenAccount: accountInfo.userTokenAccount,
-      stakingVault: accountInfo.stakingVault,
-      rewardVault: accountInfo.rewardVault,
       userRewardAccount: accountInfo.userRewardAccount,
-      tokenProgram: TOKEN_PROGRAM_ID,
       blacklistEntry: accountInfo.blacklistPda,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
     })
     .instruction();
 

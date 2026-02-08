@@ -35,22 +35,16 @@ export const useUnstake = () => {
         userRewardAccount,
       } = await createStakingAccount(publicKey);
 
-      const state = await program.account.globalState.fetch(statePda);
 
       const transaction = await program.methods
-        .unstake(new BN(convertToLamports(unstakeAmount)))
-        .accounts({
+        .unstake(new BN(convertToLamports(unstakeAmount).toString()))
+        .accountsPartial({
           user: publicKey,
-          //@ts-ignore
           state: statePda,
           userStakeInfo: userStakeInfoPda,
           userTokenAccount: userTokenAccount,
-          stakingVault: state.stakingVault,
-          rewardVault: state.rewardVault,
           userRewardAccount: userRewardAccount,
-          tokenProgram: TOKEN_PROGRAM_ID,
           blacklistEntry: blacklistPda,
-          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
       return { success: true, transaction };
