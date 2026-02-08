@@ -1,4 +1,4 @@
-import { AddressLookupTableAccount, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 
 /**
  * Address Lookup Table (ALT) Account Information

@@ -15,11 +15,6 @@ import { SOLANA_CONFIG } from "../config/solana";
 
 // Import wallet adapter CSS
 import "@solana/wallet-adapter-react-ui/styles.css";
-import {
-  BackpackWalletAdapter,
-  OKXWalletAdapter,
-  BinanceWalletAdapter,
-} from "@/components/CustomWallets/CustomWallet";
 
 interface WalletProviderProps {
   children: ReactNode;
@@ -37,9 +32,6 @@ export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
       new LedgerWalletAdapter(),
       new PhantomWalletAdapter(),
       new SolflareWalletAdapter(),
-      BinanceWalletAdapter(),
-      OKXWalletAdapter(),
-      BackpackWalletAdapter(),
     ],
     []
   );

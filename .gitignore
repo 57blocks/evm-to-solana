@@ -6,7 +6,7 @@ frontend/**/.next/
 frontend/*/out/
 
 # production
-frontend/**/build
+frontend/**/dist
 frontend/*/tsconfig.tsbuildinfo
 
 # debug
