@@ -138,6 +138,12 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
           min="0"
           step="1"
           value={unstakeAmount}
+          onKeyDown={(e) => {
+            // Block e, E, +, -, . which are allowed by type="number"
+            if (["e", "E", "+", "-", "."].includes(e.key)) {
+              e.preventDefault();
+            }
+          }}
           onChange={(e) => {
             const value = e.target.value;
             // Only allow positive integers or empty string

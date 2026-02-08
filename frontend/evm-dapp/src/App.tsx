@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import StakingActions from "./components/StakingActions";
@@ -33,17 +33,17 @@ const App: React.FC = () => {
       }
     : null;
 
-  const handleOnSuccess = () => {
+  const handleOnSuccess = useCallback(() => {
     stakeInfoRef.current?.refresh();
-  };
+  }, []);
 
-  const handleError = (message: string) => {
+  const handleError = useCallback((message: string) => {
     setErrorMessage(message);
-  };
+  }, []);
 
-  const handleStakeTransactionStart = (transactionHash: string) => {
+  const handleStakeTransactionStart = useCallback((transactionHash: string) => {
     setCurrentTransactionHash(transactionHash);
-  };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] px-4 sm:px-8">
