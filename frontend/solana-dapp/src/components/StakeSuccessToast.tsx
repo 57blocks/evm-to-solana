@@ -1,15 +1,28 @@
+import { useEffect } from "react";
 import { StakeEventState } from "@/hooks/useStakeEvents";
 import { formatTokenAmount } from "@/utils/tokenUtils";
 
 interface StakeSuccessToastProps {
   stakeEvent: StakeEventState | null;
   onClose: () => void;
+  autoHideDuration?: number;
 }
 
 const StakeSuccessToast: React.FC<StakeSuccessToastProps> = ({
   stakeEvent,
   onClose,
+  autoHideDuration = 1000,
 }) => {
+  useEffect(() => {
+    if (!stakeEvent) return;
+
+    const timer = setTimeout(() => {
+      onClose();
+    }, autoHideDuration);
+
+    return () => clearTimeout(timer);
+  }, [stakeEvent, onClose, autoHideDuration]);
+
   if (!stakeEvent) return null;
 
   return (

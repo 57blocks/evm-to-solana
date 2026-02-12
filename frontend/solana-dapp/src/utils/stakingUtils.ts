@@ -2,7 +2,7 @@ import { PublicKey, Connection } from "@solana/web3.js";
 import { Program } from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { createStakingAccount } from "./account";
-import { convertToLamports } from "./tokenUtils";
+import { convertToLamports, convertFromLamports } from "./tokenUtils";
 import { SolanaStaking } from "../idl/type";
 
 export interface StakeTransactionParams {
@@ -134,4 +134,41 @@ export const sendAndConfirmTransaction = async (
     "confirmed"
   );
   return signature;
+};
+
+/**
+ * User stake info type
+ */
+export interface UserStakeInfo {
+  owner: PublicKey;
+  amount: number;
+  rewardDebt: number;
+}
+
+/**
+ * Fetch user stake info from the program
+ */
+export const fetchUserStakeInfo = async (
+  publicKey: PublicKey,
+  program: Program<SolanaStaking>
+): Promise<UserStakeInfo | null> => {
+  try {
+    const { userStakeInfoPda } = await createStakingAccount(publicKey);
+    const userStakeInfo = await program.account.userStakeInfo.fetch(
+      userStakeInfoPda
+    );
+
+    if (!userStakeInfo) {
+      return null;
+    }
+
+    return {
+      owner: userStakeInfo.owner,
+      amount: convertFromLamports(userStakeInfo.amount ?? BigInt(0)),
+      rewardDebt: convertFromLamports(userStakeInfo.rewardDebt ?? BigInt(0)),
+    };
+  } catch (error) {
+    // Account doesn't exist or other error
+    return null;
+  }
 };

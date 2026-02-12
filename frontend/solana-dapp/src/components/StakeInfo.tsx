@@ -6,10 +6,9 @@ import {
   useCallback,
 } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import useUserStakeInfo from "@/hooks/useUserStakeInfo";
-import { UserStakeInfo } from "@/hooks/useUserStakeInfo";
 import { useProgram } from "@/hooks/useProgram";
 import { formatErrorForDisplay } from "@/utils/programErrors";
+import { fetchUserStakeInfo, UserStakeInfo } from "@/utils/stakingUtils";
 
 export interface StakeInfoRef {
   refresh: () => void;
@@ -19,7 +18,6 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
   const { publicKey, connected } = useWallet();
   const [stakeInfo, setStakeInfo] = useState<UserStakeInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { fetchUserStakeInfo } = useUserStakeInfo();
   const { program } = useProgram();
 
   const loadStakeInfo = useCallback(async () => {
@@ -28,8 +26,8 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
     setIsLoading(true);
 
     try {
-      const userStakeInfo = await fetchUserStakeInfo(publicKey);
-      setStakeInfo(userStakeInfo ?? null);
+      const userStakeInfo = await fetchUserStakeInfo(publicKey, program);
+      setStakeInfo(userStakeInfo);
     } catch (err) {
       console.error(
         "Error loading stake info:",
@@ -38,7 +36,7 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
     } finally {
       setIsLoading(false);
     }
-  }, [publicKey, fetchUserStakeInfo, program]);
+  }, [publicKey, program]);
 
   useEffect(() => {
     if (connected && publicKey && program) {
@@ -123,23 +121,9 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
               </span>
             </div>
             <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-              <label className="font-medium text-gray-700">Staking Time:</label>
-              <span className="font-mono font-semibold text-gray-900 bg-white px-3 py-1.5 rounded-lg">
-                {stakeInfo.stakeTimestamp}
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
               <label className="font-medium text-gray-700">Reward Debt:</label>
               <span className="font-mono font-semibold text-gray-900 bg-white px-3 py-1.5 rounded-lg">
                 {stakeInfo.rewardDebt} tokens
-              </span>
-            </div>
-            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-              <label className="font-medium text-gray-700">
-                Last Claim Time:
-              </label>
-              <span className="font-mono font-semibold text-gray-900 bg-white px-3 py-1.5 rounded-lg">
-                {stakeInfo.lastClaimTime}
               </span>
             </div>
           </div>

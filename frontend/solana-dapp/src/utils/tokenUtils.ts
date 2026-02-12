@@ -95,10 +95,3 @@ export const formatTokenAmount = (
   // Remove trailing zeros and unnecessary decimal point
   return formatted.replace(/\.?0+$/, "");
 };
-
-export const formatTimestamp = (timestamp: bigint) => {
-  const timestampNumber = Number(timestamp);
-  if (timestampNumber === 0) return "-";
-  const date = new Date(timestampNumber * 1000);
-  return date.toLocaleString("en-US");
-};
