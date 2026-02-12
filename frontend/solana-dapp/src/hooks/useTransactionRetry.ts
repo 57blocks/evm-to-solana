@@ -1,14 +1,16 @@
 import { Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
-import { createStakeInstruction } from "../utils/stakingUtils";
+import { createStakeInstruction, sleep } from "../utils/stakingUtils";
 import { ERROR_MESSAGES } from "../utils/tokenUtils";
 import { ErrorInfo } from "@/components/ErrorModal";
+
 type UseTransactionRetryOptions = {
   onSuccess: () => void;
   onError: (error: ErrorInfo) => void;
   stakeAmount: number;
 };
+
 export const useTransactionRetry = ({
   onSuccess,
   onError,
@@ -17,10 +19,6 @@ export const useTransactionRetry = ({
   const { publicKey, signTransaction } = useWallet();
   const { program } = useProgram();
   const { connection } = useConnection();
-
-  const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  };
 
   /**
    * Executes the stake transaction with blockhash retry logic.

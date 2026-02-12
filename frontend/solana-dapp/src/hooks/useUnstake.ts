@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
-import { createStakingAccount } from "../utils/account";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { BN } from "@coral-xyz/anchor";
-import * as anchor from "@coral-xyz/anchor";
-import { convertToLamports, ERROR_MESSAGES } from "@/utils/tokenUtils";
+import { ERROR_MESSAGES } from "@/utils/tokenUtils";
+import { executeUnstakeTransaction } from "@/utils/stakingUtils";
+
 export const useUnstake = () => {
   const { publicKey } = useWallet();
   const { program } = useProgram();
@@ -27,26 +25,11 @@ export const useUnstake = () => {
     setError(null);
 
     try {
-      const {
-        statePda,
-        userStakeInfoPda,
-        blacklistPda,
-        userTokenAccount,
-        userRewardAccount,
-      } = await createStakingAccount(publicKey);
-
-
-      const transaction = await program.methods
-        .unstake(new BN(convertToLamports(unstakeAmount).toString()))
-        .accountsPartial({
-          user: publicKey,
-          state: statePda,
-          userStakeInfo: userStakeInfoPda,
-          userTokenAccount: userTokenAccount,
-          userRewardAccount: userRewardAccount,
-          blacklistEntry: blacklistPda,
-        })
-        .rpc();
+      const transaction = await executeUnstakeTransaction({
+        publicKey,
+        program,
+        unstakeAmount: parseFloat(unstakeAmount),
+      });
       return { success: true, transaction };
     } catch (err) {
       const errorMessage =

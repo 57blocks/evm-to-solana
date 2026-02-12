@@ -1,28 +1,22 @@
 import { useState, useRef } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import {
   createStakeAccountInfo,
-  createStakeInstruction,
   sendAndConfirmTransaction,
 } from "../utils/stakingUtils";
+import {
+  createLookupTable,
+  createVersionedStakeTransaction,
+  AltAccountInfo,
+} from "../utils/lookupTableUtils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import * as anchor from "@coral-xyz/anchor";
 import { ERROR_MESSAGES } from "@/utils/tokenUtils";
-import {
-  PublicKey,
-  AddressLookupTableAccount,
-  TransactionMessage,
-  VersionedTransaction,
-  AddressLookupTableProgram,
-  Transaction,
-} from "@solana/web3.js";
-import { AltAccountInfo, UseStakeByAltReturn } from "../types/lookupTable";
-import { useConnection } from "@solana/wallet-adapter-react";
+import { AddressLookupTableAccount } from "@solana/web3.js";
+import { UseStakeByAltReturn } from "../types/lookupTable";
 import { ErrorInfo } from "@/components/ErrorModal";
 import { formatErrorForDisplay } from "@/utils/programErrors";
-import { Program } from "@coral-xyz/anchor";
-import { SolanaStaking } from "@/idl/type";
 
 export const useStakeByLookupTable = (
   stakeAmount: number,
@@ -38,118 +32,31 @@ export const useStakeByLookupTable = (
   const altCache = useRef<AddressLookupTableAccount>();
 
   /**
-   * Create an Address Lookup Table (ALT) for stake accounts with optimized single transaction
-   * Combines both create and extend instructions into one transaction
-   */
-  const createLookupTable = async (
-    payer: PublicKey,
-    accounts: AltAccountInfo
-  ): Promise<AddressLookupTableAccount | undefined> => {
-    console.log("Creating Address Lookup Table (ALT) for stake accounts...");
-
-    const recentSlot = await connection.getSlot();
-
-    // Create lookup table instruction
-    const [lookupTableInst, lookupTable] =
-      AddressLookupTableProgram.createLookupTable({
-        authority: payer,
-        payer,
-        recentSlot,
-      });
-
-    // Add accounts to lookup table instruction
-    const addAccountsInst = AddressLookupTableProgram.extendLookupTable({
-      payer: payer,
-      authority: payer,
-      lookupTable,
-      addresses: [
-        accounts.state,
-        accounts.userStakeInfo,
-        accounts.userTokenAccount,
-        accounts.stakingVault,
-        accounts.rewardVault,
-        accounts.userRewardAccount,
-        accounts.tokenProgram,
-        accounts.blacklistEntry,
-        accounts.systemProgram,
-        accounts.clock,
-      ],
-    });
-
-    // Combine both instructions in a single transaction
-    const combinedTx = new Transaction()
-      .add(lookupTableInst)
-      .add(addAccountsInst);
-
-    combinedTx.recentBlockhash = (
-      await connection.getLatestBlockhash()
-    ).blockhash;
-    combinedTx.feePayer = payer;
-
-    if (!signTransaction) {
-      onError?.({ message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED });
-      return;
-    }
-
-    const signedTx = await signTransaction(combinedTx);
-    await sendAndConfirmTransaction(connection, signedTx.serialize());
-    // Fetch the created lookup table
-    const lookupTableResponse = await connection.getAddressLookupTable(
-      lookupTable
-    );
-    if (!lookupTableResponse.value) {
-      onError?.({ message: ERROR_MESSAGES.FAILED_TO_LOAD_STAKE_INFO });
-      return;
-    }
-    const lookupTableAccount = lookupTableResponse.value;
-
-    altCache.current = lookupTableAccount;
-
-    return lookupTableAccount;
-  };
-
-  /**
    * Get or create Address Lookup Table (ALT) with caching
    */
   const getOrCreateLookupTable = async (
-    payer: PublicKey,
     accounts: AltAccountInfo
-  ): Promise<AddressLookupTableAccount | undefined> => {
+  ): Promise<AddressLookupTableAccount | null> => {
     if (altCache.current) {
       return altCache.current;
     }
 
-    const result = await createLookupTable(payer, accounts);
+    if (!publicKey || !signTransaction) {
+      return null;
+    }
+
+    const result = await createLookupTable(
+      connection,
+      publicKey,
+      accounts,
+      signTransaction
+    );
+
+    if (result) {
+      altCache.current = result;
+    }
 
     return result;
-  };
-
-  /**
-   * Create versioned stake transaction using Address Lookup Table (ALT)
-   * ALT optimizes transaction size by referencing accounts by index
-   */
-  const createVersionedStakeTransaction = async (
-    publicKey: PublicKey,
-    program: Program<SolanaStaking>,
-    stakeAmount: number,
-    lookupTable: AddressLookupTableAccount
-  ): Promise<VersionedTransaction> => {
-    // Use common utility to create stake instruction
-    const { instruction: stakeInstruction } = await createStakeInstruction({
-      publicKey,
-      program,
-      stakeAmount,
-    });
-
-    const blockhash = (await connection.getLatestBlockhash()).blockhash;
-
-    const messageV0 = new TransactionMessage({
-      payerKey: publicKey,
-      recentBlockhash: blockhash,
-      instructions: [stakeInstruction],
-    }).compileToV0Message([lookupTable]);
-
-    return new VersionedTransaction(messageV0);
   };
 
   /**
@@ -168,6 +75,11 @@ export const useStakeByLookupTable = (
 
     if (isStaking || isButtonClicked) {
       onError?.({ message: "Already staking or button clicked, skipping..." });
+      return;
+    }
+
+    if (!signTransaction) {
+      onError?.({ message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED });
       return;
     }
 
@@ -192,23 +104,20 @@ export const useStakeByLookupTable = (
       };
 
       // Get or create Address Lookup Table (ALT)
-      const lookupTable = await getOrCreateLookupTable(publicKey, accounts);
+      const lookupTable = await getOrCreateLookupTable(accounts);
       if (!lookupTable) {
         onError?.({ message: ERROR_MESSAGES.FAILED_TO_LOAD_LOOKUP_TABLE });
         return;
       }
+
       // Create versioned stake transaction using ALT
       const versionedTx = await createVersionedStakeTransaction(
+        connection,
         publicKey,
         program,
         stakeAmount,
         lookupTable
       );
-
-      if (!signTransaction) {
-        onError?.({ message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED });
-        return;
-      }
 
       const signedVersionedTx = await signTransaction(versionedTx);
 

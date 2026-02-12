@@ -11,10 +11,23 @@ export interface StakeTransactionParams {
   stakeAmount: number;
 }
 
+export interface UnstakeTransactionParams {
+  publicKey: PublicKey;
+  program: Program<SolanaStaking>;
+  unstakeAmount: number;
+}
+
 export interface ClaimRewardsParams {
   publicKey: PublicKey;
   program: Program<SolanaStaking>;
 }
+
+/**
+ * Sleep utility for delays
+ */
+export const sleep = (ms: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
 
 export interface StakeAccountInfo {
   statePda: PublicKey;
@@ -171,4 +184,106 @@ export const fetchUserStakeInfo = async (
     // Account doesn't exist or other error
     return null;
   }
+};
+
+/**
+ * Execute unstake transaction using RPC
+ */
+export const executeUnstakeTransaction = async ({
+  publicKey,
+  program,
+  unstakeAmount,
+}: UnstakeTransactionParams): Promise<string> => {
+  const accountInfo = await createStakeAccountInfo(publicKey, program);
+
+  const txSignature = await program.methods
+    .unstake(new BN(convertToLamports(unstakeAmount).toString()))
+    .accountsPartial({
+      user: publicKey,
+      state: accountInfo.statePda,
+      userStakeInfo: accountInfo.userStakeInfoPda,
+      userTokenAccount: accountInfo.userTokenAccount,
+      userRewardAccount: accountInfo.userRewardAccount,
+      blacklistEntry: accountInfo.blacklistPda,
+    })
+    .rpc();
+
+  return txSignature;
+};
+
+/**
+ * Create unstake instruction (for use in custom transactions)
+ */
+export const createUnstakeInstruction = async ({
+  publicKey,
+  program,
+  unstakeAmount,
+}: UnstakeTransactionParams) => {
+  const accountInfo = await createStakeAccountInfo(publicKey, program);
+
+  const instruction = await program.methods
+    .unstake(new BN(convertToLamports(unstakeAmount).toString()))
+    .accountsPartial({
+      user: publicKey,
+      state: accountInfo.statePda,
+      userStakeInfo: accountInfo.userStakeInfoPda,
+      userTokenAccount: accountInfo.userTokenAccount,
+      userRewardAccount: accountInfo.userRewardAccount,
+      blacklistEntry: accountInfo.blacklistPda,
+    })
+    .instruction();
+
+  return {
+    instruction,
+    accountInfo,
+  };
+};
+
+/**
+ * Execute claim rewards transaction using RPC
+ */
+export const executeClaimRewardsTransaction = async ({
+  publicKey,
+  program,
+}: ClaimRewardsParams): Promise<string> => {
+  const accountInfo = await createStakeAccountInfo(publicKey, program);
+
+  const txSignature = await program.methods
+    .claimRewards()
+    .accountsPartial({
+      user: publicKey,
+      state: accountInfo.statePda,
+      userStakeInfo: accountInfo.userStakeInfoPda,
+      userRewardAccount: accountInfo.userRewardAccount,
+      blacklistEntry: accountInfo.blacklistPda,
+    })
+    .rpc();
+
+  return txSignature;
+};
+
+/**
+ * Create claim rewards instruction (for use in custom transactions)
+ */
+export const createClaimRewardsInstruction = async ({
+  publicKey,
+  program,
+}: ClaimRewardsParams) => {
+  const accountInfo = await createStakeAccountInfo(publicKey, program);
+
+  const instruction = await program.methods
+    .claimRewards()
+    .accountsPartial({
+      user: publicKey,
+      state: accountInfo.statePda,
+      userStakeInfo: accountInfo.userStakeInfoPda,
+      userRewardAccount: accountInfo.userRewardAccount,
+      blacklistEntry: accountInfo.blacklistPda,
+    })
+    .instruction();
+
+  return {
+    instruction,
+    accountInfo,
+  };
 };

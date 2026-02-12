@@ -1,3 +1,6 @@
+import { Connection, PublicKey, ComputeBudgetProgram, TransactionInstruction } from "@solana/web3.js";
+import { StakeAccountInfo } from "./stakingUtils";
+
 export const DEFAULT_PRIORITY_FEE = 1;
 export const DEFAULT_COMPUTE_UNITS = 200000;
 
@@ -24,4 +27,62 @@ export const calculateRecommendedFee = (fees: number[]): number => {
 export const addSafetyMargin = (computeUnits: number): number => {
   const safeUnits = Math.ceil(computeUnits * 1.2);
   return Math.max(safeUnits, DEFAULT_COMPUTE_UNITS);
+};
+
+/**
+ * Fetch recent priority fees for given accounts
+ */
+export const getRecentPriorityFees = async (
+  connection: Connection,
+  publicKey: PublicKey,
+  accountInfo: StakeAccountInfo
+): Promise<number> => {
+  try {
+    const response = await connection.getRecentPrioritizationFees({
+      lockedWritableAccounts: [
+        publicKey,
+        accountInfo.statePda,
+        accountInfo.userStakeInfoPda,
+        accountInfo.userTokenAccount,
+        accountInfo.stakingVault,
+        accountInfo.rewardVault,
+        accountInfo.userRewardAccount,
+        accountInfo.blacklistPda,
+      ],
+    });
+
+    if (!response || response.length === 0) {
+      return DEFAULT_PRIORITY_FEE;
+    }
+
+    const allFees = response.map((item) => item.prioritizationFee);
+    const validFees = filterValidFees(allFees);
+
+    if (areAllFeesZero(validFees)) {
+      return DEFAULT_PRIORITY_FEE;
+    }
+
+    return calculateRecommendedFee(validFees);
+  } catch (error) {
+    console.warn("Failed to fetch priority fees:", error);
+    return DEFAULT_PRIORITY_FEE;
+  }
+};
+
+/**
+ * Create compute unit limit instruction
+ */
+export const createComputeUnitLimitInstruction = (
+  units: number
+): TransactionInstruction => {
+  return ComputeBudgetProgram.setComputeUnitLimit({ units });
+};
+
+/**
+ * Create compute unit price instruction
+ */
+export const createComputeUnitPriceInstruction = (
+  microLamports: number
+): TransactionInstruction => {
+  return ComputeBudgetProgram.setComputeUnitPrice({ microLamports });
 };
