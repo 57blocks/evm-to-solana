@@ -113,9 +113,7 @@ export const fetchTipFloor = async (): Promise<TipFloorResponse | null> => {
 
   try {
     // Add cache-busting to avoid 304 responses
-    const response = await fetch(`${JITO_TIP_FLOOR_URL}?_t=${Date.now()}`, {
-      cache: "no-store",
-    });
+    const response = await fetch(`${JITO_TIP_FLOOR_URL}`);
     if (!response.ok) {
       throw new Error(`API request failed: ${response.status}`);
     }

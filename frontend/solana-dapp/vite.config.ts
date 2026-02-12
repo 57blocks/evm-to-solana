@@ -17,6 +17,7 @@ export default defineConfig({
     include: ["buffer"],
   },
   server: {
+    host: true, // Listen on all network interfaces (0.0.0.0)
     proxy: {
       // Proxy Jito tip_floor API to avoid CORS issues
       "/api/v1/bundles/tip_floor": {
