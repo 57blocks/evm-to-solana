@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import { executeStakeTransaction } from "../utils/stakingUtils";
@@ -32,7 +32,6 @@ export const useStake = (
   const [transactionSignature, setTransactionSignature] = useState<
     string | null
   >(null);
-  const stakeAmountRef = useRef("");
 
   const handleStake = async () => {
     if (!publicKey || !program) {
@@ -65,8 +64,7 @@ export const useStake = (
       setTransactionSignature(txSignature);
       // Reset form and notify parent
       setStakeAmount(undefined);
-      stakeAmountRef.current = "";
-      onSuccess && onSuccess();
+      onSuccess?.();
 
       // Reset transaction signature after success
       setTransactionSignature(null);

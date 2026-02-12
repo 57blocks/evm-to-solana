@@ -133,7 +133,7 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
             Transaction Retry Stake
           </h3>
           <p className="text-sm text-gray-600 mb-3">
-            Auto-retry until blockhash expires (~2 minutes)
+            Auto-retry until blockhash expires 
           </p>
           <div className="flex gap-3">
             <TokenAmountInput
