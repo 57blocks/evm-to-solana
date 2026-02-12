@@ -46,7 +46,7 @@ async function main() {
 
   // Initialize Solana connection to devnet
   const connection = new Connection(
-    "https://api.devnet.solana.com",
+    "https://api.testnet.solana.com",
     "confirmed"
   );
 
@@ -74,8 +74,7 @@ async function main() {
   );
 
   // Load deployment configuration
-  let deploymentInfo;
-  deploymentInfo = JSON.parse(
+  const deploymentInfo = JSON.parse(
     fs.readFileSync("./scripts/deployment-info.json", "utf8")
   );
 

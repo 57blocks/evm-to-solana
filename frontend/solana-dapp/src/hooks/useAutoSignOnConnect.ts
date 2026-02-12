@@ -20,8 +20,8 @@ export const useAutoSignOnConnect = (
   const [isSigning, setIsSigning] = useState(false);
   // Generate a sign-in message
   const generateSignInMessage = useCallback((walletAddress: PublicKey) => {
-    const appName = import.meta.env.VITE_APP_NAME || "Solana Staking Platform";
-    const domain = import.meta.env.VITE_APP_DOMAIN || window.location.hostname;
+    const appName = "Solana Staking Platform";
+    const domain =  window.location.hostname;
     const timestamp = new Date().toISOString();
     const nonce = Math.random().toString(36).substring(7);
 

@@ -1,5 +1,5 @@
 {
-  "address": "B2hHcUhK56zA2CLRAcpqpmrK5662qDnnQ3tx8AqjfYAD",
+  "address": "3qjRAH6gdr55QgxwmZdVYJYxqKiNY5qBdeye67q9yUh7",
   "metadata": {
     "name": "solana_staking",
     "version": "0.1.0",
@@ -112,6 +112,7 @@
         },
         {
           "name": "state",
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -230,6 +231,240 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "emergency_withdraw",
+      "discriminator": [
+        239,
+        45,
+        203,
+        64,
+        150,
+        73,
+        218,
+        92
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state.staking_mint",
+                "account": "GlobalState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_stake_info",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "staking_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  107,
+                  105,
+                  110,
+                  103,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "blacklist_entry",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  108,
+                  97,
+                  99,
+                  107,
+                  108,
+                  105,
+                  115,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
+              },
+              {
+                "kind": "account",
+                "path": "user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "fund_rewards",
+      "discriminator": [
+        114,
+        64,
+        163,
+        112,
+        175,
+        167,
+        19,
+        121
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "state"
+          ]
+        },
+        {
+          "name": "state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  116,
+                  97,
+                  116,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state.staking_mint",
+                "account": "GlobalState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "admin_reward_account",
+          "writable": true
+        },
+        {
+          "name": "reward_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  119,
+                  97,
+                  114,
+                  100,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
     },
     {
       "name": "initialize",
@@ -351,7 +586,7 @@
       ],
       "args": [
         {
-          "name": "reward_rate",
+          "name": "reward_per_second",
           "type": "u64"
         }
       ]
@@ -856,6 +1091,19 @@
       ]
     },
     {
+      "name": "EmergencyWithdraw",
+      "discriminator": [
+        128,
+        80,
+        236,
+        119,
+        137,
+        129,
+        241,
+        144
+      ]
+    },
+    {
       "name": "Initialized",
       "discriminator": [
         208,
@@ -892,6 +1140,19 @@
         112,
         88,
         121
+      ]
+    },
+    {
+      "name": "RewardsFunded",
+      "discriminator": [
+        84,
+        233,
+        245,
+        203,
+        228,
+        147,
+        165,
+        92
       ]
     },
     {
@@ -939,8 +1200,8 @@
     },
     {
       "code": 6003,
-      "name": "InvalidRewardRate",
-      "msg": "Invalid reward rate"
+      "name": "InvalidRewardPerSecond",
+      "msg": "Invalid reward per second"
     },
     {
       "code": 6004,
@@ -966,6 +1227,16 @@
       "code": 6008,
       "name": "AddressAlreadyBlacklisted",
       "msg": "Address is already in blacklist"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidFundAmount",
+      "msg": "Invalid fund amount"
+    },
+    {
+      "code": 6010,
+      "name": "NothingToWithdraw",
+      "msg": "Nothing to withdraw"
     }
   ],
   "types": [
@@ -1010,6 +1281,26 @@
       }
     },
     {
+      "name": "EmergencyWithdraw",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "GlobalState",
       "type": {
         "kind": "struct",
@@ -1035,8 +1326,16 @@
             "type": "pubkey"
           },
           {
-            "name": "reward_rate",
+            "name": "reward_per_second",
             "type": "u64"
+          },
+          {
+            "name": "acc_reward_per_share",
+            "type": "u128"
+          },
+          {
+            "name": "last_reward_time",
+            "type": "i64"
           },
           {
             "name": "total_staked",
@@ -1067,7 +1366,7 @@
             "type": "pubkey"
           },
           {
-            "name": "reward_rate",
+            "name": "reward_per_second",
             "type": "u64"
           },
           {
@@ -1104,6 +1403,26 @@
         "fields": [
           {
             "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RewardsFunded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "funder",
             "type": "pubkey"
           },
           {
@@ -1175,15 +1494,11 @@
             "type": "u64"
           },
           {
-            "name": "stake_timestamp",
-            "type": "i64"
-          },
-          {
-            "name": "last_claim_time",
-            "type": "i64"
-          },
-          {
             "name": "reward_debt",
+            "type": "i128"
+          },
+          {
+            "name": "claimed",
             "type": "u64"
           },
           {

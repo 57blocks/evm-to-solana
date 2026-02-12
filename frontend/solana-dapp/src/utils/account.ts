@@ -3,8 +3,9 @@ import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import idl from "@/idl/idl.json";
 
 // Extract mint addresses into constants for clarity and maintainability
-const STAKING_MINT_ADDRESS = "HXnRNQr25LNAxC5Z6fHyRJvUAmsenj5dkpjG3CRz4hve";
-const REWARD_MINT_ADDRESS = "8JpEiC5n5QDsYd9tZyBXPQjJXwDKH9oK4s5JmhQZPrpy";
+// These must match the deployed tokens in deployment-info.json
+const STAKING_MINT_ADDRESS = "GHpr1Ry8HF1zUpRPp9juQWK9yXyGPXaVmgGuA2UMokV1";
+const REWARD_MINT_ADDRESS = "BAHDWzvohjo3cj8HDXJ397SL4pcRhABQkGYZxA1sNrqS";
 
 // PDA seed constants (UTF-8 byte arrays) from idl.json
 const STATE_SEED = new Uint8Array([115, 116, 97, 116, 101]); // "state"
@@ -22,7 +23,6 @@ export const createStakingAccount = async (publicKey: PublicKey) => {
     [STATE_SEED, stakingMint.toBuffer()],
     programAddress
   );
-
   const [userStakeInfoPda] = PublicKey.findProgramAddressSync(
     [STAKE_SEED, statePda.toBuffer(), publicKey.toBuffer()],
     programAddress
@@ -40,7 +40,6 @@ export const createStakingAccount = async (publicKey: PublicKey) => {
     rewardMint,
     publicKey
   );
-
   return {
     statePda,
     userStakeInfoPda,

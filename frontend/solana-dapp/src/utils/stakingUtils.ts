@@ -1,8 +1,6 @@
 import { PublicKey, Connection } from "@solana/web3.js";
 import { Program } from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import * as anchor from "@coral-xyz/anchor";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { createStakingAccount } from "./account";
 import { convertToLamports } from "./tokenUtils";
 import { SolanaStaking } from "../idl/type";
@@ -11,6 +9,11 @@ export interface StakeTransactionParams {
   publicKey: PublicKey;
   program: Program<SolanaStaking>;
   stakeAmount: number;
+}
+
+export interface ClaimRewardsParams {
+  publicKey: PublicKey;
+  program: Program<SolanaStaking>;
 }
 
 export interface StakeAccountInfo {
