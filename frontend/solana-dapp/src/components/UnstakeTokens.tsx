@@ -1,8 +1,7 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { validateTokenAmount } from "../utils/tokenUtils";
+import { validateTokenAmount, parseAmount } from "../utils/tokenUtils";
 import { useUnstake } from "@/hooks/useUnstake";
-import { formatErrorForDisplay } from "@/utils/programErrors";
 import { ErrorInfo } from "./ErrorModal";
 import { TokenAmountInput } from "./TokenAmountInput";
 import { ActionButton } from "./ActionButton";
@@ -17,10 +16,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
   onError,
 }) => {
   const [unstakeAmount, setUnstakeAmount] = useState("");
-  const [isUnstaking, setIsUnstaking] = useState(false);
-  const [isButtonClicked, setIsButtonClicked] = useState(false);
-  const { unstake } = useUnstake();
-  const unstakeAmountRef = useRef("");
+  const { unstake, isUnstaking } = useUnstake({ onSuccess, onError });
   const { connected, publicKey } = useWallet();
 
   const handleUnstake = async () => {
@@ -29,7 +25,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       return;
     }
 
-    if (!unstakeAmount || isUnstaking || isButtonClicked) {
+    if (!unstakeAmount || isUnstaking) {
       return;
     }
 
@@ -40,37 +36,19 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       return;
     }
 
-    // Immediately disable button to prevent multiple clicks
-    setIsButtonClicked(true);
-    setIsUnstaking(true);
-
-    try {
-      await unstake(unstakeAmount);
-
+    const result = await unstake(unstakeAmount);
+    if (result) {
       setUnstakeAmount("");
-      unstakeAmountRef.current = "";
-      onSuccess();
-    } catch (error) {
-      onError({
-        message: formatErrorForDisplay(error).message,
-        title: formatErrorForDisplay(error).title,
-      });
-    } finally {
-      setIsUnstaking(false);
-      setIsButtonClicked(false);
     }
   };
 
-  const isDisabled = !connected || isUnstaking || isButtonClicked;
+  const isDisabled = !connected || isUnstaking;
 
   return (
     <div className="flex gap-3">
       <TokenAmountInput
         value={unstakeAmount}
-        onChange={(value) => {
-          setUnstakeAmount(value);
-          unstakeAmountRef.current = value;
-        }}
+        onChange={setUnstakeAmount}
         placeholder={
           connected
             ? "Enter unstake amount (1 = 1 token)"
@@ -81,7 +59,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       />
       <ActionButton
         onClick={handleUnstake}
-        disabled={!unstakeAmount || isDisabled || parseInt(unstakeAmount) <= 0}
+        disabled={!unstakeAmount || isDisabled || parseAmount(unstakeAmount) <= 0}
         isLoading={isUnstaking}
         loadingText="Unstaking..."
         spinnerType="char"

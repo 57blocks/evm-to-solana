@@ -6,6 +6,7 @@ import { usePriorityFee } from "@/hooks/usePriorityFee";
 import { useStakeByLookupTable } from "@/hooks/useStakeByLookupTable";
 import { useJitoStake } from "@/hooks/useJitoStake";
 import { useTransactionRetry } from "@/hooks/useTransactionRetry";
+import { parseAmount, formatAmountForInput } from "@/utils/tokenUtils";
 
 interface StakingOptimizationsProps {
   onSuccess: () => void;
@@ -16,64 +17,46 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
   onSuccess,
   onError,
 }) => {
-  const [priorityAmount, setPriorityAmount] = useState("");
-  const [altAmount, setAltAmount] = useState("");
-  const [jitoAmount, setJitoAmount] = useState("");
-  const [retryAmount, setRetryAmount] = useState("");
-
-  const parsedPriorityAmount = Number.parseInt(priorityAmount || "0", 10);
-  const parsedAltAmount = Number.parseInt(altAmount || "0", 10);
-  const parsedJitoAmount = Number.parseInt(jitoAmount || "0", 10);
-  const parsedRetryAmount = Number.parseInt(retryAmount || "0", 10);
+  const [priorityAmount, setPriorityAmount] = useState(0);
+  const [altAmount, setAltAmount] = useState(0);
+  const [jitoAmount, setJitoAmount] = useState(0);
+  const [retryAmount, setRetryAmount] = useState(0);
 
   const { handlePriorityStake } = usePriorityFee({
-    onSuccess,
+    onSuccess: () => {
+      setPriorityAmount(0);
+      onSuccess();
+    },
     onError,
-    stakeAmount: parsedPriorityAmount,
+    stakeAmount: priorityAmount,
   });
 
-  const altStake = useStakeByLookupTable(
-    parsedAltAmount,
-    onSuccess,
-    onError
-  );
-
-  const { executeJitoStake, isSubmitting: isJitoSubmitting } =
-    useJitoStake({
-      onSuccess,
-      onError,
-      stakeAmount: parsedJitoAmount,
-    });
-
-  const { executeStakeTransaction: executeRetryStake } = useTransactionRetry({
-    onSuccess,
+  const altStake = useStakeByLookupTable({
+    stakeAmount: altAmount,
+    onSuccess: () => {
+      setAltAmount(0);
+      onSuccess();
+    },
     onError,
-    stakeAmount: parsedRetryAmount,
   });
 
-  const handlePriorityClick = async () => {
-    if (!parsedPriorityAmount || parsedPriorityAmount <= 0) {
-      onError({ message: "Please enter a valid stake amount" });
-      return;
-    }
-    await handlePriorityStake();
-  };
+  const { executeJitoStake, isSubmitting: isJitoSubmitting } = useJitoStake({
+    onSuccess: () => {
+      setJitoAmount(0);
+      onSuccess();
+    },
+    onError,
+    stakeAmount: jitoAmount,
+  });
 
-  const handleJitoClick = async () => {
-    if (!parsedJitoAmount || parsedJitoAmount <= 0) {
-      onError({ message: "Please enter a valid stake amount" });
-      return;
-    }
-    await executeJitoStake();
-  };
-
-  const handleRetryClick = async () => {
-    if (!parsedRetryAmount || parsedRetryAmount <= 0) {
-      onError({ message: "Please enter a valid stake amount" });
-      return;
-    }
-    await executeRetryStake();
-  };
+  const { executeStakeWithRetry } = useTransactionRetry({
+    onSuccess: () => {
+      setRetryAmount(0);
+      onSuccess();
+    },
+    onError,
+    stakeAmount: retryAmount,
+  });
 
   return (
     <div className="bg-white/95 rounded-2xl shadow-xl backdrop-blur-sm p-6">
@@ -88,17 +71,17 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
           </h3>
           <div className="flex gap-3">
             <TokenAmountInput
-              value={priorityAmount}
-              onChange={setPriorityAmount}
+              value={formatAmountForInput(priorityAmount)}
+              onChange={(v) => setPriorityAmount(parseAmount(v))}
               placeholder="Enter stake amount"
               min={0}
             />
             <ActionButton
-              onClick={handlePriorityClick}
+              onClick={handlePriorityStake}
               isLoading={false}
               loadingText="Submitting..."
               className="min-w-[140px]"
-              disabled={parsedPriorityAmount <= 0}
+              disabled={priorityAmount <= 0}
             >
               Stake (Priority)
             </ActionButton>
@@ -111,14 +94,14 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
           </h3>
           <div className="flex gap-3">
             <TokenAmountInput
-              value={altAmount}
-              onChange={setAltAmount}
+              value={formatAmountForInput(altAmount)}
+              onChange={(v) => setAltAmount(parseAmount(v))}
               placeholder="Enter stake amount"
               min={0}
             />
             <ActionButton
               onClick={altStake.handleStake}
-              disabled={altStake.isDisabled || parsedAltAmount <= 0}
+              disabled={altStake.isDisabled || altAmount <= 0}
               isLoading={altStake.isStaking}
               loadingText="Staking..."
               className="min-w-[120px]"
@@ -133,26 +116,27 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
             Transaction Retry Stake
           </h3>
           <p className="text-sm text-gray-600 mb-3">
-            Auto-retry until blockhash expires 
+            Auto-retry until blockhash expires
           </p>
           <div className="flex gap-3">
             <TokenAmountInput
-              value={retryAmount}
-              onChange={setRetryAmount}
+              value={formatAmountForInput(retryAmount)}
+              onChange={(v) => setRetryAmount(parseAmount(v))}
               placeholder="Enter stake amount"
               min={0}
             />
             <ActionButton
-              onClick={handleRetryClick}
+              onClick={executeStakeWithRetry}
               isLoading={false}
               loadingText="Retrying..."
               className="min-w-[140px]"
-              disabled={parsedRetryAmount <= 0}
+              disabled={retryAmount <= 0}
             >
               Stake (Retry)
             </ActionButton>
           </div>
         </div>
+
         <div className="p-5 rounded-xl border border-gray-100 bg-gray-50/40">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Jito Bundle Stake
@@ -162,17 +146,17 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
           </p>
           <div className="flex gap-3">
             <TokenAmountInput
-              value={jitoAmount}
-              onChange={setJitoAmount}
+              value={formatAmountForInput(jitoAmount)}
+              onChange={(v) => setJitoAmount(parseAmount(v))}
               placeholder="Enter stake amount"
               min={0}
             />
             <ActionButton
-              onClick={handleJitoClick}
+              onClick={executeJitoStake}
               isLoading={isJitoSubmitting}
               loadingText="Submitting..."
               className="min-w-[140px]"
-              disabled={parsedJitoAmount <= 0 || isJitoSubmitting}
+              disabled={jitoAmount <= 0 || isJitoSubmitting}
             >
               Stake (Jito)
             </ActionButton>

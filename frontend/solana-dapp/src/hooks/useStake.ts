@@ -2,94 +2,73 @@ import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import { executeStakeTransaction } from "../utils/stakingUtils";
-import { ERROR_MESSAGES } from "@/utils/tokenUtils";
 import { formatErrorForDisplay } from "@/utils/programErrors";
 import { ErrorInfo } from "@/components/ErrorModal";
+import { validateStakeParams } from "./useStakeValidation";
 
 export interface UseStakeReturn {
-  // State
   isStaking: boolean;
   transactionSignature: string | null;
-
-  // Actions
   setStakeAmount: (value: number | undefined) => void;
   handleStake: () => Promise<void>;
-
-  // Computed states
   isDisabled: boolean;
   stakeAmount: number | undefined;
 }
 
-export const useStake = (
-  onSuccess: () => void,
-  onError: (errorInfo: ErrorInfo) => void
-): UseStakeReturn => {
+export type UseStakeOptions = {
+  onSuccess: () => void;
+  onError: (errorInfo: ErrorInfo) => void;
+};
+
+export const useStake = ({
+  onSuccess,
+  onError,
+}: UseStakeOptions): UseStakeReturn => {
   const { publicKey } = useWallet();
   const { program } = useProgram();
   const [stakeAmount, setStakeAmount] = useState<number | undefined>(undefined);
   const [isStaking, setIsStaking] = useState(false);
-  const [isButtonClicked, setIsButtonClicked] = useState(false);
-  const [transactionSignature, setTransactionSignature] = useState<
-    string | null
-  >(null);
+  const [transactionSignature, setTransactionSignature] = useState<string | null>(null);
 
   const handleStake = async () => {
-    if (!publicKey || !program) {
-      const errorMsg = ERROR_MESSAGES.WALLET_NOT_CONNECTED;
-      onError?.({ message: errorMsg });
-      return;
-    }
+    const { isValid } = validateStakeParams({
+      publicKey,
+      program,
+      stakeAmount,
+      onError,
+    });
+    if (!isValid) return;
 
-    if (!stakeAmount || stakeAmount <= 0) {
-      const errorMsg = ERROR_MESSAGES.INVALID_STAKE_AMOUNT;
-      onError?.({ message: errorMsg });
-      return;
-    }
+    if (isStaking) return;
 
-    if (isStaking || isButtonClicked) {
-      return;
-    }
-
-    // Immediately disable button to prevent multiple clicks
-    setIsButtonClicked(true);
     setIsStaking(true);
 
     try {
       const txSignature = await executeStakeTransaction({
-        publicKey,
-        program,
-        stakeAmount,
+        publicKey: publicKey!,
+        program: program!,
+        stakeAmount: stakeAmount!,
       });
-      // Set transaction signature AFTER confirmation
       setTransactionSignature(txSignature);
-      // Reset form and notify parent
       setStakeAmount(undefined);
-      onSuccess?.();
-
-      // Reset transaction signature after success
+      onSuccess();
       setTransactionSignature(null);
     } catch (err) {
-      const errorMessage = formatErrorForDisplay(err);
-      onError?.({ message: errorMessage.message, title: errorMessage.title });
+      const errorInfo = formatErrorForDisplay(err);
+      onError(errorInfo);
     } finally {
       setIsStaking(false);
-      setIsButtonClicked(false);
     }
   };
 
-  const isDisabled = !publicKey || isStaking || isButtonClicked;
+  const isDisabled = !publicKey || isStaking;
 
   return {
-    // State
     stakeAmount,
     isStaking,
     transactionSignature,
-
-    // Actions
     setStakeAmount,
     handleStake,
-
-    // Computed states
     isDisabled,
   };
 };

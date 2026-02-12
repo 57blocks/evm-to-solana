@@ -2,8 +2,8 @@ import { Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import { createStakeInstruction, sleep } from "../utils/stakingUtils";
-import { ERROR_MESSAGES } from "../utils/tokenUtils";
 import { ErrorInfo } from "@/components/ErrorModal";
+import { validateStakeParams } from "./useStakeValidation";
 
 type UseTransactionRetryOptions = {
   onSuccess: () => void;
@@ -24,7 +24,16 @@ export const useTransactionRetry = ({
    * Executes the stake transaction with blockhash retry logic.
    * Returns the transaction signature if successful, or undefined on error.
    */
-  const executeStakeTransaction = async (): Promise<string | undefined> => {
+  const executeStakeWithRetry = async (): Promise<string | undefined> => {
+    const { isValid } = validateStakeParams({
+      publicKey,
+      program,
+      signTransaction,
+      stakeAmount,
+      onError,
+    });
+    if (!isValid) return;
+
     // Get latest blockhash and set lastValidBlockHeight
     const blockhashResponse = await connection.getLatestBlockhash();
     // Subtract a small safety buffer to ensure we stop retrying
@@ -47,21 +56,13 @@ export const useTransactionRetry = ({
       lastValidBlockHeight: lastValidBlockHeight,
     }).add(instruction);
 
-    // Sign transaction with wallet
-    if (!signTransaction) {
-      onError({
-        message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED,
-        title: "Wallet Not Supported",
-      });
-      return;
-    }
-
-    const signedTransaction = await signTransaction(transaction);
+    const signedTransaction = await signTransaction!(transaction);
     const rawTransaction = signedTransaction.serialize();
 
     // Get current block height
     let blockHeight = await connection.getBlockHeight();
-    let lastSuccessfulSend = false;
+    let confirmedSignature: string | undefined;
+
     // Keep sending transaction until block height exceeds lastValidBlockHeight
     while (blockHeight < lastValidBlockHeight) {
       try {
@@ -84,7 +85,7 @@ export const useTransactionRetry = ({
           "confirmed"
         );
         if (!confirmation.value.err) {
-          lastSuccessfulSend = true;
+          confirmedSignature = signature;
           onSuccess();
           break;
         }
@@ -96,8 +97,9 @@ export const useTransactionRetry = ({
         blockHeight = await connection.getBlockHeight();
       }
     }
-    // Check if we had at least one successful send during the retry period
-    if (!lastSuccessfulSend) {
+
+    // Check if we had a successful confirmation
+    if (!confirmedSignature) {
       onError({
         message:
           "Transaction failed to send during the valid block height window. Please try again with a new transaction.",
@@ -105,7 +107,9 @@ export const useTransactionRetry = ({
       });
       return;
     }
+
+    return confirmedSignature;
   };
 
-  return { executeStakeTransaction };
+  return { executeStakeWithRetry };
 };

@@ -44,7 +44,7 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
     } else {
       setStakeInfo(null);
     }
-  }, [connected, publicKey, program]);
+  }, [connected, publicKey, program, loadStakeInfo]);
 
   const handleRefresh = useCallback(async () => {
     if (!publicKey) {

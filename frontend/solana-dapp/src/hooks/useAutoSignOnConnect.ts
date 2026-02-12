@@ -4,6 +4,8 @@ import { SignMessageResult, useSignMessage } from "./useSignMessage";
 import { PublicKey } from "@solana/web3.js";
 import { ErrorInfo } from "@/components/ErrorModal";
 
+const appName = "Solana Staking Platform";
+const domain =  window.location.hostname;
 /**
  * Hook to automatically sign message when wallet connects
  */
@@ -20,8 +22,7 @@ export const useAutoSignOnConnect = (
   const [isSigning, setIsSigning] = useState(false);
   // Generate a sign-in message
   const generateSignInMessage = useCallback((walletAddress: PublicKey) => {
-    const appName = "Solana Staking Platform";
-    const domain =  window.location.hostname;
+    
     const timestamp = new Date().toISOString();
     const nonce = Math.random().toString(36).substring(7);
 

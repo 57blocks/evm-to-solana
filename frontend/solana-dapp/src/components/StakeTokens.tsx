@@ -3,6 +3,7 @@ import { useStake } from "../hooks/useStake";
 import { ErrorInfo } from "./ErrorModal";
 import { TokenAmountInput } from "./TokenAmountInput";
 import { ActionButton } from "./ActionButton";
+import { formatAmountForInput, parseAmount } from "@/utils/tokenUtils";
 
 interface StakeTokensProps {
   onSuccess: () => void;
@@ -14,16 +15,13 @@ const StakeTokens: React.FC<StakeTokensProps> = ({ onSuccess, onError }) => {
 
   // Use custom hook
   const { stakeAmount, isStaking, setStakeAmount, handleStake, isDisabled } =
-    useStake(onSuccess, onError);
+    useStake({ onSuccess, onError });
 
   return (
     <div className="flex gap-3">
       <TokenAmountInput
-        value={stakeAmount?.toString() || ""}
-        onChange={(value) => {
-          const num = value === "" ? undefined : parseInt(value);
-          setStakeAmount(num);
-        }}
+        value={formatAmountForInput(stakeAmount)}
+        onChange={(v) => setStakeAmount(parseAmount(v) || undefined)}
         placeholder={
           connected
             ? "Enter stake amount (1 = 1 token)"

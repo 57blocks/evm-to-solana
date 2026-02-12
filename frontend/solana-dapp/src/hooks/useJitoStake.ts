@@ -3,7 +3,6 @@ import { Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import { createStakeInstruction } from "../utils/stakingUtils";
-import { ERROR_MESSAGES } from "../utils/tokenUtils";
 import { formatErrorForDisplay } from "@/utils/programErrors";
 import { ErrorInfo } from "@/components/ErrorModal";
 import {
@@ -13,6 +12,7 @@ import {
   sendJitoTransaction,
   waitForConfirmation,
 } from "@/utils/jitoUtils";
+import { validateStakeParams } from "./useStakeValidation";
 
 type UseJitoStakeOptions = {
   onSuccess: () => void;
@@ -39,23 +39,14 @@ export const useJitoStake = ({
    * Includes priority fee (70%) and Jito tip (30%) for optimal landing
    */
   const executeJitoStake = useCallback(async (): Promise<string | undefined> => {
-    if (!publicKey || !program) {
-      onError({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
-      return;
-    }
-
-    if (!stakeAmount || stakeAmount <= 0) {
-      onError({ message: ERROR_MESSAGES.INVALID_STAKE_AMOUNT });
-      return;
-    }
-
-    if (!signTransaction) {
-      onError({
-        message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED,
-        title: "Wallet Not Supported",
-      });
-      return;
-    }
+    const { isValid } = validateStakeParams({
+      publicKey,
+      program,
+      signTransaction,
+      stakeAmount,
+      onError,
+    });
+    if (!isValid) return;
 
     setIsSubmitting(true);
 
@@ -72,8 +63,8 @@ export const useJitoStake = ({
 
       // 3. Create stake instruction
       const { instruction: stakeInstruction } = await createStakeInstruction({
-        publicKey,
-        program,
+        publicKey: publicKey!,
+        program: program!,
         stakeAmount,
       });
 
@@ -81,7 +72,7 @@ export const useJitoStake = ({
       const priorityFeeInstruction = createPriorityFeeInstruction(priorityFee);
 
       // 5. Create Jito tip instruction
-      const tipInstruction = await createJitoTipInstruction(publicKey, jitoTip);
+      const tipInstruction = await createJitoTipInstruction(publicKey!, jitoTip);
 
       // 6. Build transaction with all instructions
       const transaction = new Transaction({
@@ -94,7 +85,7 @@ export const useJitoStake = ({
         .add(tipInstruction); // Jito tip last
 
       // 7. Sign transaction
-      const signedTx = await signTransaction(transaction);
+      const signedTx = await signTransaction!(transaction);
 
       // 8. Send via Jito
       const signature = await sendJitoTransaction(signedTx);

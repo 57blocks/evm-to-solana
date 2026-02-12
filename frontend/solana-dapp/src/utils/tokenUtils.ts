@@ -95,3 +95,18 @@ export const formatTokenAmount = (
   // Remove trailing zeros and unnecessary decimal point
   return formatted.replace(/\.?0+$/, "");
 };
+
+/**
+ * Parse string to number, returns 0 if invalid
+ */
+export const parseAmount = (value: string): number => {
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+/**
+ * Format number to input string, returns empty string if 0, undefined or less
+ */
+export const formatAmountForInput = (amount: number | undefined): string => {
+  return amount && amount > 0 ? amount.toString() : "";
+};

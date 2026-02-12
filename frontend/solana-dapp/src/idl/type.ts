@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/solana_staking.json`.
  */
 export type SolanaStaking = {
-  address: "B2hHcUhK56zA2CLRAcpqpmrK5662qDnnQ3tx8AqjfYAD";
+  address: "3qjRAH6gdr55QgxwmZdVYJYxqKiNY5qBdeye67q9yUh7";
   metadata: {
     name: "solanaStaking";
     version: "0.1.0";

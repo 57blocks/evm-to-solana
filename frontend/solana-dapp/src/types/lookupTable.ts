@@ -21,17 +21,7 @@ export interface AltAccountInfo {
  */
 export interface UseStakeByAltReturn {
   isStaking: boolean;
-  isButtonClicked: boolean;
   transactionSignature?: string;
-  lookupTableAddress?: PublicKey;
   handleStake: () => Promise<void>;
   isDisabled: boolean;
-}
-
-/**
- * Address Lookup Table (ALT) Hook Parameters
- */
-export interface UseStakeByAltParams {
-  onTransactionSuccess?: () => void;
-  onError?: (message: string) => void;
 }

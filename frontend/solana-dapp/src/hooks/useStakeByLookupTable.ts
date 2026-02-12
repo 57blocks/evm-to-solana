@@ -14,20 +14,26 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import * as anchor from "@coral-xyz/anchor";
 import { ERROR_MESSAGES } from "@/utils/tokenUtils";
 import { AddressLookupTableAccount } from "@solana/web3.js";
-import { UseStakeByAltReturn } from "../types/lookupTable";
-import { ErrorInfo } from "@/components/ErrorModal";
 import { formatErrorForDisplay } from "@/utils/programErrors";
+import { ErrorInfo } from "@/components/ErrorModal";
+import { UseStakeByAltReturn } from "@/types/lookupTable";
+import { validateStakeParams } from "./useStakeValidation";
 
-export const useStakeByLookupTable = (
-  stakeAmount: number,
-  onSuccess: () => void,
-  onError: (error: ErrorInfo) => void
-): UseStakeByAltReturn => {
+export type UseStakeByLookupTableOptions = {
+  stakeAmount: number;
+  onSuccess: () => void;
+  onError: (error: ErrorInfo) => void;
+};
+
+export const useStakeByLookupTable = ({
+  stakeAmount,
+  onSuccess,
+  onError,
+}: UseStakeByLookupTableOptions): UseStakeByAltReturn => {
   const { publicKey, signTransaction } = useWallet();
   const { program } = useProgram();
-  const [isStaking, setIsStaking] = useState(false);
   const { connection } = useConnection();
-  const [isButtonClicked, setIsButtonClicked] = useState(false);
+  const [isStaking, setIsStaking] = useState(false);
   const [transactionSignature, setTransactionSignature] = useState<string>();
   const altCache = useRef<AddressLookupTableAccount>();
 
@@ -63,32 +69,21 @@ export const useStakeByLookupTable = (
    * Handle stake transaction using Address Lookup Table (ALT)
    */
   const handleStake = async () => {
-    if (!publicKey || !program) {
-      onError?.({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
-      return;
-    }
+    const { isValid } = validateStakeParams({
+      publicKey,
+      program,
+      signTransaction,
+      stakeAmount,
+      onError,
+    });
+    if (!isValid) return;
 
-    if (!stakeAmount || stakeAmount <= 0) {
-      onError?.({ message: ERROR_MESSAGES.INVALID_STAKE_AMOUNT });
-      return;
-    }
+    if (isStaking) return;
 
-    if (isStaking || isButtonClicked) {
-      onError?.({ message: "Already staking or button clicked, skipping..." });
-      return;
-    }
-
-    if (!signTransaction) {
-      onError?.({ message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED });
-      return;
-    }
-
-    setIsButtonClicked(true);
     setIsStaking(true);
 
     try {
-      // Create staking accounts using common utility
-      const accountInfo = await createStakeAccountInfo(publicKey, program);
+      const accountInfo = await createStakeAccountInfo(publicKey!, program!);
 
       const accounts: AltAccountInfo = {
         state: accountInfo.statePda,
@@ -103,51 +98,42 @@ export const useStakeByLookupTable = (
         clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
       };
 
-      // Get or create Address Lookup Table (ALT)
       const lookupTable = await getOrCreateLookupTable(accounts);
       if (!lookupTable) {
-        onError?.({ message: ERROR_MESSAGES.FAILED_TO_LOAD_LOOKUP_TABLE });
+        onError({ message: ERROR_MESSAGES.FAILED_TO_LOAD_LOOKUP_TABLE });
         return;
       }
 
-      // Create versioned stake transaction using ALT
       const versionedTx = await createVersionedStakeTransaction(
         connection,
-        publicKey,
-        program,
+        publicKey!,
+        program!,
         stakeAmount,
         lookupTable
       );
 
-      const signedVersionedTx = await signTransaction(versionedTx);
+      const signedVersionedTx = await signTransaction!(versionedTx);
 
       const signature = await sendAndConfirmTransaction(
         connection,
         signedVersionedTx.serialize()
       );
 
-      console.log(
-        "Address Lookup Table (ALT) stake successful! Signature:",
-        signature
-      );
       setTransactionSignature(signature);
       onSuccess();
-
       setTransactionSignature(undefined);
     } catch (err) {
       const errorInfo = formatErrorForDisplay(err);
-      onError({ message: errorInfo.message, title: errorInfo.title });
+      onError(errorInfo);
     } finally {
       setIsStaking(false);
-      setIsButtonClicked(false);
     }
   };
 
-  const isDisabled = !publicKey || isStaking || isButtonClicked;
+  const isDisabled = !publicKey || isStaking;
 
   return {
     isStaking,
-    isButtonClicked,
     transactionSignature,
     handleStake,
     isDisabled,

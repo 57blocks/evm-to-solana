@@ -1,12 +1,7 @@
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
+import { createStakeInstruction, sendAndConfirmTransaction } from "../utils/stakingUtils";
 import {
-  createStakeInstruction,
-  sendAndConfirmTransaction,
-} from "../utils/stakingUtils";
-import { ERROR_MESSAGES } from "../utils/tokenUtils";
-import {
-  DEFAULT_PRIORITY_FEE,
   DEFAULT_COMPUTE_UNITS,
   getRecentPriorityFees,
   addSafetyMargin,
@@ -16,6 +11,7 @@ import {
 import { createVersionedTransaction } from "../utils/lookupTableUtils";
 import { formatErrorForDisplay } from "@/utils/programErrors";
 import { ErrorInfo } from "@/components/ErrorModal";
+import { validateStakeParams } from "./useStakeValidation";
 
 export interface PriorityFeeReturn {
   handlePriorityStake: () => Promise<string | undefined>;
@@ -36,56 +32,44 @@ export const usePriorityFee = ({
   const { program } = useProgram();
   const { connection } = useConnection();
 
-  // Handle stake transaction with Priority Fee
   const handlePriorityStake = async (): Promise<string | undefined> => {
-    if (!publicKey || !program) {
-      onError?.({ message: ERROR_MESSAGES.WALLET_NOT_CONNECTED });
-      return;
-    }
-
-    if (!stakeAmount) {
-      onError?.({ message: ERROR_MESSAGES.INVALID_STAKE_AMOUNT });
-      return;
-    }
-
-    if (!signTransaction) {
-      onError({ message: ERROR_MESSAGES.WALLET_NOT_SUPPORTED });
-      return;
-    }
+    const { isValid } = validateStakeParams({
+      publicKey,
+      program,
+      signTransaction,
+      stakeAmount,
+      onError,
+    });
+    if (!isValid) return;
 
     try {
-      // Create stake instruction and get account info
       const { instruction, accountInfo } = await createStakeInstruction({
-        publicKey,
-        program,
+        publicKey: publicKey!,
+        program: program!,
         stakeAmount,
       });
 
-      // Get recent priority fees for these accounts
       const priorityFee = await getRecentPriorityFees(
         connection,
-        publicKey,
+        publicKey!,
         accountInfo
       );
 
-      // Use default compute units with safety margin
       const computeUnits = addSafetyMargin(DEFAULT_COMPUTE_UNITS);
 
-      // Build instructions array with priority fee instructions first
       const instructions = [
-        createComputeUnitPriceInstruction(priorityFee * 1000000), // Convert to microLamports
+        createComputeUnitPriceInstruction(priorityFee * 1000000),
         createComputeUnitLimitInstruction(computeUnits),
         instruction,
       ];
 
-      // Create VersionedTransaction
       const versionedTx = await createVersionedTransaction(
         connection,
-        publicKey,
+        publicKey!,
         instructions
       );
 
-      const signedTx = await signTransaction(versionedTx);
+      const signedTx = await signTransaction!(versionedTx);
 
       const signature = await sendAndConfirmTransaction(
         connection,
