@@ -17,3 +17,8 @@ export {
   createBackpackWalletAdapter,
   createBackpackMobileAdapter,
 } from "./BackpackWalletAdapter";
+
+export {
+  createBinanceWalletAdapter,
+  createBinanceMobileAdapter,
+} from "./BinanceWalletAdapter";

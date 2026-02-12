@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import { WalletModalProvider } from "./WalletModal";
 
 interface CustomWalletModalProviderProps {
   children: ReactNode;
