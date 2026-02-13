@@ -159,36 +159,3 @@ pnpm dev
 ```
 
 The application will be available at `http://localhost:5173`
-
-## 🔧 Solana Program Integration
-
-### Program Reading
-
-The DApp demonstrates reading program state using Anchor framework:
-
-```typescript
-// Reading program state
-const state = await program.account.globalState.fetch(statePda);
-
-// Reading user stake information
-const userStakeInfo = await program.account.userStakeInfo.fetch(
-  userStakeInfoPda
-);
-```
-
-### Program Writing
-
-Interactive program operations with proper error handling:
-
-```typescript
-// Staking tokens
-const transaction = await program.methods
-  .stake(new BN(convertToLamports(stakeAmount)))
-  .partialAccounts({
-    user: publicKey,
-    state: statePda,
-    userStakeInfo: userStakeInfoPda,
-    // ... other accounts
-  })
-  .rpc();
-```
