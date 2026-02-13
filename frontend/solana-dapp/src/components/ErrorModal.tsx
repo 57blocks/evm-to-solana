@@ -1,13 +1,17 @@
+import { ErrorLevel } from "@/utils/programErrors";
+
 export type ErrorInfo = {
   message: string;
   title?: string;
+  code?: string | number;
+  level?: ErrorLevel;
 };
 
 export type ErrorModalProps = ErrorInfo & {
   onClose: () => void;
 };
 
-const ErrorModal: React.FC<ErrorModalProps> = ({ message, title, onClose }) => {
+const ErrorModal: React.FC<ErrorModalProps> = ({ message, title, code, level, onClose }) => {
   if (!message) return null;
 
   return (
@@ -54,7 +58,15 @@ const ErrorModal: React.FC<ErrorModalProps> = ({ message, title, onClose }) => {
                 />
               </svg>
             </div>
-            <p className="text-gray-700 leading-relaxed flex-1">{message}</p>
+            <div className="flex-1">
+              <p className="text-gray-700 leading-relaxed">{message}</p>
+              {code && (
+                <p className="text-xs text-gray-400 mt-2">
+                  Error Code: {code}
+                  {level && ` | Type: ${level}`}
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

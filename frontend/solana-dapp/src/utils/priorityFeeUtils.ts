@@ -1,4 +1,4 @@
-import { Connection, PublicKey, ComputeBudgetProgram, TransactionInstruction } from "@solana/web3.js";
+import { Connection, PublicKey, ComputeBudgetProgram, TransactionInstruction, VersionedTransaction } from "@solana/web3.js";
 import { StakeAccountInfo } from "./stakingUtils";
 
 export const DEFAULT_PRIORITY_FEE = 1;
@@ -24,9 +24,44 @@ export const calculateRecommendedFee = (fees: number[]): number => {
   return Math.max(DEFAULT_PRIORITY_FEE, Math.ceil(percentile));
 };
 
-export const addSafetyMargin = (computeUnits: number): number => {
-  const safeUnits = Math.ceil(computeUnits * 1.2);
-  return Math.max(safeUnits, DEFAULT_COMPUTE_UNITS);
+export const addSafetyMargin = (computeUnits: number, marginPercent: number = 0.1): number => {
+  const safetyMargin = Math.ceil(computeUnits * marginPercent);
+  return computeUnits + safetyMargin;
+};
+
+/**
+ * Estimate compute units by simulating the transaction
+ * @param connection - Solana connection
+ * @param transaction - VersionedTransaction to simulate
+ * @returns Estimated compute units with 10% safety margin
+ */
+export const estimateComputeUnits = async (
+  connection: Connection,
+  transaction: VersionedTransaction
+): Promise<number> => {
+  try {
+    const simulation = await connection.simulateTransaction(transaction, {
+      sigVerify: false,
+      replaceRecentBlockhash: true,
+    });
+
+    if (simulation.value.err) {
+      console.warn("Simulation failed:", simulation.value.err);
+      return DEFAULT_COMPUTE_UNITS;
+    }
+
+    const estimatedCU = simulation.value.unitsConsumed || 0;
+
+    if (estimatedCU === 0) {
+      return DEFAULT_COMPUTE_UNITS;
+    }
+
+    // Add 10% safety margin
+    return addSafetyMargin(estimatedCU, 0.1);
+  } catch (error) {
+    console.warn("Failed to estimate compute units:", error);
+    return DEFAULT_COMPUTE_UNITS;
+  }
 };
 
 /**

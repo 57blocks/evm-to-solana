@@ -2,9 +2,8 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import { createStakeInstruction, sendAndConfirmTransaction } from "../utils/stakingUtils";
 import {
-  DEFAULT_COMPUTE_UNITS,
   getRecentPriorityFees,
-  addSafetyMargin,
+  estimateComputeUnits,
   createComputeUnitLimitInstruction,
   createComputeUnitPriceInstruction,
 } from "../utils/priorityFeeUtils";
@@ -49,17 +48,25 @@ export const usePriorityFee = ({
         stakeAmount,
       });
 
+      // Step 1: Create a versioned transaction with just the stake instruction for simulation
+      const simulationTx = await createVersionedTransaction(
+        connection,
+        publicKey!,
+        [instruction]
+      );
+
+      // Step 2: Simulate to estimate compute units (adds 10% safety margin)
+      const estimatedCU = await estimateComputeUnits(connection, simulationTx);
+
+      // Step 3: Get priority fee based on recent network activity
       const priorityFee = await getRecentPriorityFees(
         connection,
         publicKey!,
         accountInfo
       );
-
-      const computeUnits = addSafetyMargin(DEFAULT_COMPUTE_UNITS);
-
       const instructions = [
-        createComputeUnitPriceInstruction(priorityFee * 1000000),
-        createComputeUnitLimitInstruction(computeUnits),
+        createComputeUnitPriceInstruction(priorityFee),
+        createComputeUnitLimitInstruction(estimatedCU),
         instruction,
       ];
 
