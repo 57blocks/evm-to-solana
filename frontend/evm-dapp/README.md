@@ -2,27 +2,33 @@
 
 A comprehensive staking DApp that demonstrates how to interact with Ethereum smart contracts using modern Web3 technologies. This repository serves as a practical guide for developers learning to build decentralized applications with contract reading, writing, and event tracking capabilities.
 
+> **⚠️ TESTNET ONLY (Sepolia)**
+>
+> This application is deployed and runs exclusively on **Ethereum Sepolia Testnet**.
+>
+> **You will need Testnet tokens to use this application:**
+
 ## 🚀 Features
 
 ### Core Functionality
 
-- **🔗 Wallet Integration**: Seamless wallet connection using RainbowKit with support for multiple wallet providers
-- **📖 Contract Reading**: Real-time reading of smart contract state (allowance, balance, stake info) using Viem and Wagmi
-- **✍️ Contract Writing**: Interactive contract interactions including token approval, staking, and unstaking operations
-- **📊 Subgraph Integration**: Real-time event tracking and display of reward history using The Graph's subgraph
-- **💡 Smart Transaction Flow**: Intelligent approval and staking flow with automatic allowance checking
+- **🔗 Multi-Wallet Support**: Connect with MetaMask, WalletConnect, Coinbase Wallet, and more via RainbowKit
+- **💰 Token Staking**: Stake tokens to earn rewards with real-time tracking
+- **📊 Subgraph Integration**: Real-time event tracking and reward history using The Graph
+- **📡 Event Listener**: Track on-chain events (Staked, Unstaked, RewardClaimed) via subgraph
 
-### User Experience
+### Transaction Features
 
-- **Real-time Status Updates**: Live loading states for all blockchain operations
-- **Automatic Transaction Flow**: Smart approval → staking sequence with allowance validation
-- **Error Handling**: Comprehensive error display with user-friendly messages
+- **✅ Smart Approval Flow**: Automatic allowance checking with approve → stake sequence
+- **📖 Contract Reading**: Real-time reading of contract state using Wagmi hooks
+- **✍️ Contract Writing**: Interactive staking and unstaking operations
+- **🛡️ Error Handling**: Comprehensive error display with user-friendly messages
 
 ## 🛠️ Tech Stack
 
 ### Frontend Framework
 
-- **Next.js 15**: React framework with App Router
+- **Vite 5**: Fast build tool and development server
 - **React 19**: Latest React with modern hooks and patterns
 - **TypeScript**: Full type safety throughout the application
 
@@ -62,7 +68,7 @@ evm-dapp/
 │   └── wagmi.ts                     # Wagmi configuration
 ├── package.json                     # Dependencies and scripts
 ├── tsconfig.json                    # TypeScript configuration
-├── next.config.js                   # Next.js configuration
+├── vite.config.ts                   # Vite configuration
 ├── .env.example                     # Environment variables template
 └── README.md                        # Project documentation
 ```
@@ -73,8 +79,9 @@ evm-dapp/
 
 - Node.js v22.10.0 or higher
 - npm, yarn, or pnpm package manager
-- MetaMask or other Web3 wallet
-- Access to Ethereum testnet (Sepolia recommended)
+- MetaMask or other Web3 wallet **configured for Sepolia Testnet**
+
+> **Note**: This DApp runs on **Ethereum Sepolia Testnet** only. Make sure your wallet is connected to Sepolia network.
 
 ### 1. Clone Repository
 
@@ -124,7 +131,7 @@ yarn dev
 pnpm dev
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at `http://localhost:5173`
 
 ## 🔧 Smart Contract Integration
 
@@ -278,3 +285,13 @@ const { data, refetch, isLoading, error, isRefetching } = useQuery<{
 - React Query for server state
 - Local state for UI interactions
 - Proper dependency management in useEffect
+
+## 🚨 Important Notes
+
+1. **⚠️ Testnet Only (Sepolia)**: This application runs exclusively on **Ethereum Sepolia Testnet**. **Do NOT use mainnet tokens or real funds.**
+2. **Testnet Tokens Required**: Get Sepolia ETH from [Sepolia Faucet](https://sepoliafaucet.com/) to pay for gas fees
+3. **Staking Tokens**: Mint test tokens via the deployed contract on Etherscan (owner only) or contact the project maintainer
+4. **Contract Deployment**: The staking contracts are already deployed on Sepolia (see contract addresses in the code)
+5. **Subgraph API Key**: You need a Graph API key to query reward history
+
+**Happy Building on Ethereum! 🚀**

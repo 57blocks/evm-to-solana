@@ -7,7 +7,7 @@ import { mintTo, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
  * Token Minting Script for Solana Staking Program
  *
  * This script mints both staking and reward tokens to a specified target wallet
- * on the Solana devnet. It uses a wallet's private key to perform the minting
+ * on the Solana testnet. It uses a wallet's private key to perform the minting
  * operations and requires sufficient SOL balance for transaction fees.
  *
  * Prerequisites:
@@ -44,7 +44,7 @@ async function main() {
   // Get private key from available sources
   const walletPrivateKey = TEST_WALLET_PRIVATE_KEY;
 
-  // Initialize Solana connection to devnet
+  // Initialize Solana connection to testnet
   const connection = new Connection(
     "https://api.testnet.solana.com",
     "confirmed"

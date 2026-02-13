@@ -10,8 +10,8 @@ evm-to-solana-contract/
 │   ├── evm-staking/      # Solidity + Foundry
 │   └── solana-staking/   # Rust + Anchor
 └── frontend/
-    ├── evm-dapp/        # Next.js + wagmi
-    └── solana-dapp/     # Next.js + Wallet Adapter
+    ├── evm-dapp/        # Vite + wagmi
+    └── solana-dapp/     # Vite + Wallet Adapter
 ```
 
 ## ✨ Features
