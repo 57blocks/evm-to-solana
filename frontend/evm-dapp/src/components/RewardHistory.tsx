@@ -1,9 +1,11 @@
-import React from "react";
+import { forwardRef, useImperativeHandle } from "react";
 import { gql, request } from "graphql-request";
 import { useQuery } from "@tanstack/react-query";
 import { formatTokenAmount } from "../utils/tokenUtils";
 
-interface RewardHistoryProps {}
+export interface RewardHistoryRef {
+  refresh: () => void;
+}
 const query = gql`
   {
     rewardClaimeds(first: 10, orderBy: blockNumber, orderDirection: desc) {
@@ -15,17 +17,8 @@ const query = gql`
   }
 `;
 
-// Validate environment variable
-if (!import.meta.env.VITE_GRAPH_API_KEY) {
-  console.warn("VITE_GRAPH_API_KEY is not set. Graph queries may fail.");
-}
-
-if (!import.meta.env.VITE_GRAPH_URL) {
-  console.warn("VITE_GRAPH_URL is not set. Graph queries will fail.");
-}
-
 const headers = {
-  Authorization: `Bearer ${import.meta.env.VITE_GRAPH_API_KEY || ""}`,
+  Authorization: "Bearer 099ba4084bb01a1926ff1b9ba9e4ff02",
 };
 interface RewardRecord {
   id: string;
@@ -34,14 +27,14 @@ interface RewardRecord {
   blockNumber: string;
 }
 
-const RewardHistory: React.FC<RewardHistoryProps> = () => {
-  const { data, refetch, isLoading, error, isRefetching } = useQuery<{
+const RewardHistory = forwardRef<RewardHistoryRef>((_, ref) => {
+  const { data, refetch, isLoading, error, } = useQuery<{
     rewardClaimeds: RewardRecord[];
   }>({
     queryKey: ["reward-history"],
     async queryFn() {
       return await request(
-        import.meta.env.VITE_GRAPH_URL || "",
+        "https://api.studio.thegraph.com/query/118408/stake/version/latest",
         query,
         {},
         headers
@@ -56,8 +49,9 @@ const RewardHistory: React.FC<RewardHistoryProps> = () => {
     await refetch();
   };
 
-  // Show loading state for both initial load and refresh
-  const isAnyLoading = isLoading || isRefetching;
+  useImperativeHandle(ref, () => ({
+    refresh: handleRefresh,
+  }));
 
   if (error) {
     return (
@@ -91,9 +85,9 @@ const RewardHistory: React.FC<RewardHistoryProps> = () => {
           onClick={handleRefresh}
           className="px-4 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white font-semibold rounded-lg hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
           title="Refresh reward history"
-          disabled={isAnyLoading}
+          disabled={isLoading}
         >
-          {isAnyLoading ? "⏳ Loading..." : "🔄 Refresh"}
+          {isLoading ? "⏳ Loading..." : "🔄 Refresh"}
         </button>
       </div>
       <div className="overflow-x-auto">
@@ -106,7 +100,7 @@ const RewardHistory: React.FC<RewardHistoryProps> = () => {
             </tr>
           </thead>
           <tbody>
-            {isAnyLoading ? (
+            {isLoading ? (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                   <div className="flex items-center justify-center gap-3">
@@ -139,6 +133,8 @@ const RewardHistory: React.FC<RewardHistoryProps> = () => {
       </div>
     </div>
   );
-};
+});
+
+RewardHistory.displayName = "RewardHistory";
 
 export default RewardHistory;

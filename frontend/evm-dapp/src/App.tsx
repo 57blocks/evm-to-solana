@@ -1,17 +1,18 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import StakingActions from "./components/StakingActions";
 import StakeInfo, { StakeInfoRef } from "./components/StakeInfo";
-import RewardHistory from "./components/RewardHistory";
+import RewardHistory, { RewardHistoryRef } from "./components/RewardHistory";
 import ErrorModal from "./components/ErrorModal";
 import GlobalToast, { StakeEventData } from "./components/GlobalToast";
-import { useStakeEvents, StakeEventState } from "./hooks/useStakeEvents";
+import { useStakeEvents } from "./hooks/useStakeEvents";
 
 const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { isConnected, address } = useAccount();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
+  const rewardHistoryRef = useRef<RewardHistoryRef>(null);
   const [currentTransactionHash, setCurrentTransactionHash] = useState<
     string | null
   >(null);
@@ -26,24 +27,25 @@ const App: React.FC = () => {
   // Convert StakeEventState to StakeEventData for GlobalToast
   const toastEvent: StakeEventData | null = latestStakeEvent
     ? {
-        user: latestStakeEvent.user,
-        amount: latestStakeEvent.amount,
-        blockNumber: latestStakeEvent.blockNumber,
-        transactionHash: latestStakeEvent.transactionHash,
-      }
+      user: latestStakeEvent.user,
+      amount: latestStakeEvent.amount,
+      blockNumber: latestStakeEvent.blockNumber,
+      transactionHash: latestStakeEvent.transactionHash,
+    }
     : null;
 
-  const handleOnSuccess = useCallback(() => {
+  const handleOnSuccess = () => {
     stakeInfoRef.current?.refresh();
-  }, []);
+    rewardHistoryRef.current?.refresh();
+  };
 
-  const handleError = useCallback((message: string) => {
+  const handleError = (message: string) => {
     setErrorMessage(message);
-  }, []);
+  };
 
-  const handleStakeTransactionStart = useCallback((transactionHash: string) => {
+  const handleStakeTransactionStart = (transactionHash: string) => {
     setCurrentTransactionHash(transactionHash);
-  }, []);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#667eea] to-[#764ba2] px-4 sm:px-8">
@@ -108,7 +110,7 @@ const App: React.FC = () => {
         {/* Reward History */}
         {isConnected && (
           <div className="w-full max-w-6xl px-4 mt-8">
-            <RewardHistory />
+            <RewardHistory ref={rewardHistoryRef} />
           </div>
         )}
       </main>
