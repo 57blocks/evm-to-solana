@@ -7,8 +7,6 @@ import { formatTokenAmount } from "../utils/tokenUtils";
 
 interface StakeInfoData {
   stakedAmount: bigint;
-  stakingTimestamp: bigint;
-  pendingReward: bigint;
   claimedReward: bigint;
 }
 
@@ -36,19 +34,15 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
       enabled: !!address && isConnected,
     },
   });
-
   useEffect(() => {
     if (
       stakeInfoData &&
-      Array.isArray(stakeInfoData) &&
-      stakeInfoData.length === 4
+      Array.isArray(stakeInfoData)
     ) {
-      const [stakedAmount, stakingTimestamp, pendingReward, claimedReward] =
+      const [stakedAmount, _, claimedReward] =
         stakeInfoData;
       setStakeInfo({
         stakedAmount,
-        stakingTimestamp,
-        pendingReward,
         claimedReward,
       });
       setError(null);
@@ -61,20 +55,13 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
     }
   }, [readError]);
 
-  const formatTimestamp = (timestamp: bigint) => {
-    if (timestamp === BigInt(0)) return "Not staked yet";
-    const date = new Date(Number(timestamp) * 1000);
-    return date.toLocaleString("en-US");
-  };
-
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
       await refetch();
     } catch (error) {
       setError(
-        `Failed to refresh: ${
-          error instanceof Error ? error.message : "Unknown error"
+        `Failed to refresh: ${error instanceof Error ? error.message : "Unknown error"
         }`
       );
     } finally {
@@ -113,32 +100,28 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
         >
           <span className="inline-block w-4 text-center transition-all duration-200 flex-shrink-0 relative">
             <span
-              className={`transition-opacity duration-200 ${
-                isLoading || isReading ? "opacity-0" : "opacity-100"
-              }`}
+              className={`transition-opacity duration-200 ${isLoading || isReading ? "opacity-0" : "opacity-100"
+                }`}
             >
               🔄
             </span>
             <span
-              className={`absolute top-0 left-0 transition-opacity duration-200 animate-spin ${
-                isLoading || isReading ? "opacity-100" : "opacity-0"
-              }`}
+              className={`absolute top-0 left-0 transition-opacity duration-200 animate-spin ${isLoading || isReading ? "opacity-100" : "opacity-0"
+                }`}
             >
               ⟳
             </span>
           </span>
           <span className="transition-all duration-200 flex-shrink-0 whitespace-nowrap relative">
             <span
-              className={`transition-opacity duration-200 ${
-                isLoading || isReading ? "opacity-0" : "opacity-100"
-              }`}
+              className={`transition-opacity duration-200 ${isLoading || isReading ? "opacity-0" : "opacity-100"
+                }`}
             >
               Refresh
             </span>
             <span
-              className={`absolute top-0 left-0 transition-opacity duration-200 ${
-                isLoading || isReading ? "opacity-100" : "opacity-0"
-              }`}
+              className={`absolute top-0 left-0 transition-opacity duration-200 ${isLoading || isReading ? "opacity-100" : "opacity-0"
+                }`}
             >
               Refreshing...
             </span>
@@ -167,27 +150,6 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
                 {formatTokenAmount(stakeInfo.stakedAmount)} Tokens
               </p>
             </div>
-
-            <div className="relative bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/20 rounded-xl p-5 text-center transition-all duration-300 overflow-hidden hover:-translate-y-1 hover:shadow-lg before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-0.5 before:bg-gradient-to-r before:from-[#667eea] before:to-[#764ba2] sm:p-4">
-              <h4 className="m-0 mb-3 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                Staking Date
-              </h4>
-              <p className="m-0 text-2xl font-bold text-gray-800 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent sm:text-xl">
-                {stakeInfo.stakingTimestamp > BigInt(0)
-                  ? formatTimestamp(stakeInfo.stakingTimestamp)
-                  : "Not staked yet"}
-              </p>
-            </div>
-
-            <div className="relative bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/20 rounded-xl p-5 text-center transition-all duration-300 overflow-hidden hover:-translate-y-1 hover:shadow-lg before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-0.5 before:bg-gradient-to-r before:from-[#667eea] before:to-[#764ba2] sm:p-4">
-              <h4 className="m-0 mb-3 text-sm font-medium text-gray-600 uppercase tracking-wider">
-                Pending Rewards
-              </h4>
-              <p className="m-0 text-2xl font-bold text-gray-800 bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent sm:text-xl">
-                {formatTokenAmount(stakeInfo.pendingReward)} Tokens
-              </p>
-            </div>
-
             <div className="relative bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/20 rounded-xl p-5 text-center transition-all duration-300 overflow-hidden hover:-translate-y-1 hover:shadow-lg before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-0.5 before:bg-gradient-to-r before:from-[#667eea] before:to-[#764ba2] sm:p-4">
               <h4 className="m-0 mb-3 text-sm font-medium text-gray-600 uppercase tracking-wider">
                 Claimed Rewards

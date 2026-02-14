@@ -44,7 +44,6 @@ const RewardHistory = forwardRef<RewardHistoryRef>((_, ref) => {
     refetchOnWindowFocus: true, // Refetch when window gains focus
     staleTime: 10000, // Data is considered stale after 10 seconds
   });
-
   const handleRefresh = async () => {
     await refetch();
   };

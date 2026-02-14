@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run mint-tokens:*)",
+      "Bash(pnpm config set:*)",
+      "Bash(pnpm install:*)",
+      "Bash(graph:*)"
+    ]
+  }
+}

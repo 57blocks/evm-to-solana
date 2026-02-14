@@ -214,7 +214,7 @@ A subgraph is a GraphQL API that indexes blockchain data, making it easy to quer
 
 - Visit [Quick Start](https://thegraph.com/docs/it/subgraphs/quick-start/)
 
-### Key Snapshots
+### 1. Key Snapshots
 
 | Step                       | Description                                        | Screenshot                                                  |
 | -------------------------- | -------------------------------------------------- | ----------------------------------------------------------- |
@@ -236,7 +236,7 @@ const query = gql`
   }
 `;
 
-const { data, refetch, isLoading, error, isRefetching } = useQuery<{
+const { data, refetch, isLoading, error } = useQuery<{
   rewardClaimeds: RewardRecord[];
 }>({
   queryKey: ["reward-history"],
