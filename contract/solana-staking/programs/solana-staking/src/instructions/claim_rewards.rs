@@ -13,7 +13,7 @@ pub struct ClaimRewards<'info> {
 
     #[account(
         mut,
-        seeds = [STATE_SEED, state.staking_mint.as_ref()],
+        seeds = [STATE_SEED, state.pool_id.as_ref()],
         bump = state.bump
     )]
     pub state: Box<Account<'info, GlobalState>>,
@@ -71,20 +71,13 @@ pub fn claim_rewards_handler(ctx: Context<ClaimRewards>) -> Result<()> {
     )?;
 
     if rewards > 0 {
-        msg!(
-            "User {} claimed {} rewards",
-            ctx.accounts.user.key(),
-            rewards
-        );
-
         // Emit rewards claimed event
         emit!(RewardsClaimed {
+            pool: ctx.accounts.state.pool_id,
             user: ctx.accounts.user.key(),
             amount: rewards,
             timestamp: clock.unix_timestamp,
         });
-    } else {
-        msg!("No rewards to claim");
     }
 
     Ok(())

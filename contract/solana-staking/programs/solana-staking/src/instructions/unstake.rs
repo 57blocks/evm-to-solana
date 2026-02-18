@@ -13,7 +13,7 @@ pub struct Unstake<'info> {
 
     #[account(
         mut,
-        seeds = [STATE_SEED, state.staking_mint.as_ref()],
+        seeds = [STATE_SEED, state.pool_id.as_ref()],
         bump = state.bump
     )]
     pub state: Box<Account<'info, GlobalState>>,
@@ -87,7 +87,7 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
     // Transfer staking tokens back to user
     let seeds = &[
         STATE_SEED.as_ref(),
-        state.staking_mint.as_ref(),
+        state.pool_id.as_ref(),
         &[state.bump],
     ];
     let signer = &[&seeds[..]];
@@ -102,30 +102,16 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
     token::transfer(cpi_ctx, amount)?;
 
     // Update user stake info
-    user_stake.amount = user_stake
-        .amount
-        .checked_sub(amount)
-        .ok_or(StakingError::ArithmeticOverflow)?;
+    user_stake.amount -= amount;
     let debt_delta = reward_debt_delta(amount, state.acc_reward_per_share)?;
-    user_stake.reward_debt = user_stake
-        .reward_debt
-        .checked_sub(debt_delta)
-        .ok_or(StakingError::ArithmeticOverflow)?;
+    user_stake.reward_debt -= debt_delta;
 
     // Update global state
-    state.total_staked = state
-        .total_staked
-        .checked_sub(amount)
-        .ok_or(StakingError::ArithmeticOverflow)?;
-
-    msg!(
-        "User {} unstaked {} tokens",
-        ctx.accounts.user.key(),
-        amount
-    );
+    state.total_staked -= amount;
 
     // Emit unstaked event
     emit!(Unstaked {
+        pool: state.pool_id,
         user: ctx.accounts.user.key(),
         amount,
         rewards: 0,

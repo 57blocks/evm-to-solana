@@ -39,7 +39,7 @@ bash show-versions.sh
 
 ### Instructions
 
-- `initialize`: Set up the program with vaults and configuration
+- `create_pool`: Set up the program with vaults and configuration
 - `stake`: Stake tokens into the vault
 - `unstake`: Withdraw staked tokens and claim rewards
 - `claim_rewards`: Claim accumulated rewards only
@@ -115,7 +115,7 @@ The verification script will:
 1. Check for existing deployments or create new ones
 2. Create/reuse test tokens
 3. Test all contract methods:
-   - Initialize (if new deployment)
+   - Create pool (if new deployment)
    - Stake tokens
    - Claim rewards
    - Unstake tokens (partial)

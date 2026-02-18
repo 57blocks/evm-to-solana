@@ -34,6 +34,7 @@ describe("solana-staking", () => {
   let rewardMint: PublicKey;
 
   // PDAs
+  let poolId: PublicKey;
   let statePda: PublicKey;
   let stakingVaultPda: PublicKey;
   let rewardVaultPda: PublicKey;
@@ -158,8 +159,11 @@ describe("solana-staking", () => {
     stakingMint = createMint(provider, admin, admin.publicKey, null, 9);
     rewardMint = createMint(provider, admin, admin.publicKey, null, 9);
 
+    // Generate a unique pool ID for each pool
+    poolId = Keypair.generate().publicKey;
+
     [statePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("state"), stakingMint.toBuffer()],
+      [Buffer.from("state"), poolId.toBuffer()],
       programId
     );
 
@@ -174,8 +178,8 @@ describe("solana-staking", () => {
     );
   }
 
-  async function initializePool() {
-    const initializeInstruction = programClient.getInitializeInstruction({
+  async function createPool() {
+    const createPoolInstruction = programClient.getCreatePoolInstruction({
       admin: adminSigner,
       state: address(statePda.toBase58()),
       stakingMint: address(stakingMint.toBase58()),
@@ -183,9 +187,10 @@ describe("solana-staking", () => {
       stakingVault: address(stakingVaultPda.toBase58()),
       rewardVault: address(rewardVaultPda.toBase58()),
       tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
+      poolId: address(poolId.toBase58()),
       rewardPerSecond: REWARD_PER_SECOND,
     });
-    await sendTransaction(provider, initializeInstruction, admin);
+    await sendTransaction(provider, createPoolInstruction, admin);
 
     mintTo(
       provider,
@@ -199,7 +204,7 @@ describe("solana-staking", () => {
 
   async function setupNewPool() {
     await createNewPoolAccounts();
-    await initializePool();
+    await createPool();
   }
 
   before(async () => {
@@ -226,7 +231,7 @@ describe("solana-staking", () => {
     await createNewPoolAccounts();
   });
 
-  describe("Initialize", () => {
+  describe("CreatePool", () => {
     beforeEach(async () => {
       await createNewPoolAccounts();
     });
@@ -234,7 +239,7 @@ describe("solana-staking", () => {
     it("should fail with invalid reward per second", async () => {
       // Test with reward per second = 0
       try {
-        const initializeInstruction = programClient.getInitializeInstruction({
+        const createPoolInstruction = programClient.getCreatePoolInstruction({
           admin: adminSigner,
           state: address(statePda.toBase58()),
           stakingMint: address(stakingMint.toBase58()),
@@ -242,10 +247,11 @@ describe("solana-staking", () => {
           stakingVault: address(stakingVaultPda.toBase58()),
           rewardVault: address(rewardVaultPda.toBase58()),
           tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
+          poolId: address(poolId.toBase58()),
           rewardPerSecond: 0, // Invalid: = 0
         });
 
-        await sendTransaction(provider, initializeInstruction, admin);
+        await sendTransaction(provider, createPoolInstruction, admin);
         expect.fail("Should have thrown an error");
       } catch (error: any) {
         expect(error).to.not.be.null;
@@ -253,9 +259,9 @@ describe("solana-staking", () => {
       }
     });
 
-    it("should initialize the staking program", async () => {
-      // Create initialize instruction
-      const initializeInstruction = programClient.getInitializeInstruction({
+    it("should create the staking pool", async () => {
+      // Create pool instruction
+      const createPoolInstruction = programClient.getCreatePoolInstruction({
         admin: adminSigner,
         state: address(statePda.toBase58()),
         stakingMint: address(stakingMint.toBase58()),
@@ -263,16 +269,17 @@ describe("solana-staking", () => {
         stakingVault: address(stakingVaultPda.toBase58()),
         rewardVault: address(rewardVaultPda.toBase58()),
         tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
+        poolId: address(poolId.toBase58()),
         rewardPerSecond: REWARD_PER_SECOND,
       });
 
       // Create and send transaction
       const txHash = await sendTransaction(
         provider,
-        initializeInstruction,
+        createPoolInstruction,
         admin
       );
-      console.log("Initialize transaction:", txHash);
+      console.log("CreatePool transaction:", txHash);
 
       // Verify initialization
       const stateAccount = provider.client.getAccount(statePda);
@@ -290,16 +297,13 @@ describe("solana-staking", () => {
       expect(globalState!.admin.toString()).to.equal(
         admin.publicKey.toBase58()
       );
+      expect(globalState!.poolId.toString()).to.equal(poolId.toBase58());
       expect(globalState!.stakingMint.toString()).to.equal(
         stakingMint.toBase58()
       );
       expect(globalState!.rewardMint.toString()).to.equal(
         rewardMint.toBase58()
       );
-      expect(globalState!.stakingVault.toString()).to.equal(
-        stakingVaultPda.toBase58()
-      );
-      expect(globalState!.rewardVault.toString(), rewardVaultPda.toBase58());
       expect(globalState!.rewardPerSecond.toString()).to.equal(
         REWARD_PER_SECOND.toString()
       );
@@ -353,7 +357,6 @@ describe("solana-staking", () => {
       expect(userStakeInfo).to.not.be.null;
       expect(userStakeInfo!.amount.toString()).to.equal(stakeAmount.toString());
       expect(userStakeInfo!.rewardDebt.toString()).to.equal("0");
-      expect(userStakeInfo!.claimed.toString()).to.equal("0");
 
       // Verify global state total staked was updated
       const globalState = getGlobalState(provider, statePda);
@@ -540,11 +543,6 @@ describe("solana-staking", () => {
       console.log(`Expected rewards: ${expectedRewards}`);
       expect(rewardsReceived).to.equal(expectedRewards);
 
-      // Verify claimed was updated
-      const updatedStakeInfo = getUserStakeInfo(provider, userStakePda);
-      expect(updatedStakeInfo!.claimed.toString()).to.equal(
-        expectedRewards.toString()
-      );
     });
 
     it("should not reset staking duration when claiming", async () => {
@@ -775,7 +773,6 @@ describe("solana-staking", () => {
       expect(userStakeInfo).to.not.be.null;
       expect(userStakeInfo!.amount.toString()).to.equal(toToken(60).toString());
       expect(userStakeInfo!.rewardDebt.toString()).to.equal("0");
-      expect(userStakeInfo!.claimed.toString()).to.equal("0");
 
       // Verify global state total staked was updated
       const globalStateAfter = getGlobalState(provider, statePda);
@@ -936,9 +933,6 @@ describe("solana-staking", () => {
       const blacklistPda = getBlacklistPda(statePda, blacklistedUser.publicKey);
       const blacklistEntry = getBlacklistEntry(provider, blacklistPda);
       expect(blacklistEntry).to.not.be.null;
-      expect(blacklistEntry!.address.toString()).to.equal(
-        blacklistedUser.publicKey.toBase58()
-      );
     });
 
     it("should fail when adding same address to blacklist twice", async () => {

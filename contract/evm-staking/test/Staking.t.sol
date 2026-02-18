@@ -282,26 +282,4 @@ contract StakingTest is Test {
         assertEq(totalRewardsClaimed, expectedTotalReward, "Total rewards should equal 2 days worth");
     }
 
-    function testEmergencyWithdraw() public {
-        uint256 stakeAmount = 1000 * 10 ** 18;
-
-        // Stake
-        vm.startPrank(user1);
-        myToken.approve(address(staking), stakeAmount);
-        staking.stake(stakeAmount);
-        vm.stopPrank();
-
-        // Generate rewards
-        vm.warp(block.timestamp + 1 days);
-
-        // Emergency withdraw should return principal and forfeit rewards
-        uint256 userBalBefore = myToken.balanceOf(user1);
-        vm.prank(user1);
-        staking.emergencyWithdraw();
-
-        assertEq(myToken.balanceOf(user1) - userBalBefore, stakeAmount);
-        (uint256 staked,,) = staking.getStakeInfo(user1);
-        assertEq(staked, 0);
-        assertEq(rewardToken.balanceOf(user1), 0);
-    }
 }

@@ -5,27 +5,16 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 fn calculate_reward_debt_delta(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
-    let delta = (amount as u128)
-        .checked_mul(acc_reward_per_share)
-        .ok_or(StakingError::ArithmeticOverflow)?
-        .checked_div(ACC_REWARD_PRECISION)
-        .ok_or(StakingError::ArithmeticOverflow)?;
+    let delta = (amount as u128 * acc_reward_per_share) / ACC_REWARD_PRECISION;
     i128::try_from(delta).map_err(|_| error!(StakingError::ArithmeticOverflow))
 }
 
 fn calculate_accumulated_reward(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
-    let accumulated = (amount as u128)
-        .checked_mul(acc_reward_per_share)
-        .ok_or(StakingError::ArithmeticOverflow)?
-        .checked_div(ACC_REWARD_PRECISION)
-        .ok_or(StakingError::ArithmeticOverflow)?;
+    let accumulated = (amount as u128 * acc_reward_per_share) / ACC_REWARD_PRECISION;
     i128::try_from(accumulated).map_err(|_| error!(StakingError::ArithmeticOverflow))
 }
 
-fn calculate_acc_reward_per_share(
-    state: &GlobalState,
-    current_time: i64,
-) -> Result<u128> {
+fn calculate_acc_reward_per_share(state: &GlobalState, current_time: i64) -> Result<u128> {
     if current_time <= state.last_reward_time {
         return Ok(state.acc_reward_per_share);
     }
@@ -36,18 +25,9 @@ fn calculate_acc_reward_per_share(
     }
 
     let time_elapsed = (current_time - state.last_reward_time) as u64;
-    let reward = (time_elapsed as u128)
-        .checked_mul(state.reward_per_second as u128)
-        .ok_or(StakingError::ArithmeticOverflow)?;
-    let acc_increment = reward
-        .checked_mul(ACC_REWARD_PRECISION)
-        .ok_or(StakingError::ArithmeticOverflow)?
-        .checked_div(total_staked as u128)
-        .ok_or(StakingError::ArithmeticOverflow)?;
-    state
-        .acc_reward_per_share
-        .checked_add(acc_increment)
-        .ok_or_else(|| error!(StakingError::ArithmeticOverflow))
+    let reward = time_elapsed as u128 * state.reward_per_second as u128;
+    let acc_increment = (reward * ACC_REWARD_PRECISION) / total_staked as u128;
+    Ok(state.acc_reward_per_share + acc_increment)
 }
 
 pub fn update_pool(state: &mut Account<GlobalState>, clock: &Sysvar<Clock>) -> Result<()> {
@@ -72,9 +52,7 @@ pub fn pending_reward(
 ) -> Result<u64> {
     let acc_reward_per_share = calculate_acc_reward_per_share(state, current_time)?;
     let accumulated = calculate_accumulated_reward(user_stake.amount, acc_reward_per_share)?;
-    let pending = accumulated
-        .checked_sub(user_stake.reward_debt)
-        .ok_or_else(|| error!(StakingError::ArithmeticOverflow))?;
+    let pending = accumulated - user_stake.reward_debt;
     if pending <= 0 {
         return Ok(0);
     }
@@ -92,9 +70,7 @@ pub fn claim_pending_rewards<'info>(
     update_pool(state, clock)?;
 
     let accumulated = calculate_accumulated_reward(user_stake.amount, state.acc_reward_per_share)?;
-    let pending = accumulated
-        .checked_sub(user_stake.reward_debt)
-        .ok_or_else(|| error!(StakingError::ArithmeticOverflow))?;
+    let pending = accumulated - user_stake.reward_debt;
 
     user_stake.reward_debt = accumulated;
 
@@ -102,7 +78,11 @@ pub fn claim_pending_rewards<'info>(
         let rewards =
             u64::try_from(pending).map_err(|_| error!(StakingError::ArithmeticOverflow))?;
 
-        let seeds = &[STATE_SEED.as_ref(), state.staking_mint.as_ref(), &[state.bump]];
+        let seeds = &[
+            STATE_SEED.as_ref(),
+            state.pool_id.as_ref(),
+            &[state.bump],
+        ];
         let signer = &[&seeds[..]];
 
         let cpi_accounts = Transfer {
@@ -113,11 +93,6 @@ pub fn claim_pending_rewards<'info>(
         let cpi_program = token_program.to_account_info();
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
         token::transfer(cpi_ctx, rewards)?;
-
-        user_stake.claimed = user_stake
-            .claimed
-            .checked_add(rewards)
-            .ok_or(StakingError::ArithmeticOverflow)?;
 
         return Ok(rewards);
     }

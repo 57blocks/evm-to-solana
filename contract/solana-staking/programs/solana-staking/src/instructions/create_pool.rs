@@ -1,11 +1,13 @@
 use crate::constants::*;
-use crate::events::Initialized;
+use crate::errors::StakingError;
+use crate::events::PoolCreated;
 use crate::state::GlobalState;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
 #[derive(Accounts)]
-pub struct Initialize<'info> {
+#[instruction(pool_id: Pubkey)]
+pub struct CreatePool<'info> {
     #[account(mut)]
     pub admin: Signer<'info>,
 
@@ -13,7 +15,7 @@ pub struct Initialize<'info> {
         init,
         payer = admin,
         space = 8 + GlobalState::INIT_SPACE,
-        seeds = [STATE_SEED, staking_mint.key().as_ref()],
+        seeds = [STATE_SEED, pool_id.as_ref()],
         bump
     )]
     pub state: Box<Account<'info, GlobalState>>,
@@ -46,17 +48,18 @@ pub struct Initialize<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn initialize_handler(ctx: Context<Initialize>, reward_per_second: u64) -> Result<()> {
+pub fn create_pool_handler(ctx: Context<CreatePool>, pool_id: Pubkey, reward_per_second: u64) -> Result<()> {
+    require!(pool_id != Pubkey::default(), StakingError::InvalidPoolId);
+
     let state = &mut ctx.accounts.state;
 
     state.admin = ctx.accounts.admin.key();
+    state.pool_id = pool_id;
     state.staking_mint = ctx.accounts.staking_mint.key();
     state.reward_mint = ctx.accounts.reward_mint.key();
-    state.staking_vault = ctx.accounts.staking_vault.key();
-    state.reward_vault = ctx.accounts.reward_vault.key();
     require!(
         reward_per_second > 0,
-        crate::errors::StakingError::InvalidRewardPerSecond
+        StakingError::InvalidRewardPerSecond
     );
     state.reward_per_second = reward_per_second;
     state.acc_reward_per_share = 0;
@@ -64,13 +67,9 @@ pub fn initialize_handler(ctx: Context<Initialize>, reward_per_second: u64) -> R
     state.total_staked = 0;
     state.bump = ctx.bumps.state;
 
-    msg!(
-        "Staking program initialized with reward per second: {}",
-        reward_per_second
-    );
-
-    // Emit initialized event
-    emit!(Initialized {
+    // Emit pool created event
+    emit!(PoolCreated {
+        pool: pool_id,
         authority: ctx.accounts.admin.key(),
         staking_mint: ctx.accounts.staking_mint.key(),
         reward_mint: ctx.accounts.reward_mint.key(),

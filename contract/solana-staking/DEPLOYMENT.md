@@ -214,7 +214,7 @@ solana program set-upgrade-authority <PROGRAM_ID> --final
 
 After successful deployment:
 
-1. Initialize the program (if required by your business logic)
+1. Create the staking pool (if required by your business logic)
 2. Set up monitoring for program usage
 3. Document the deployed program ID and share with your team
 4. Consider setting up a CI/CD pipeline for future deployments

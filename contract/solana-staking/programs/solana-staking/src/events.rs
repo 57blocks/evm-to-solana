@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 #[event]
 pub struct Staked {
+    pub pool: Pubkey,
     pub user: Pubkey,
     pub amount: u64,
     pub timestamp: i64,
@@ -9,6 +10,7 @@ pub struct Staked {
 
 #[event]
 pub struct Unstaked {
+    pub pool: Pubkey,
     pub user: Pubkey,
     pub amount: u64,
     pub rewards: u64,
@@ -17,13 +19,15 @@ pub struct Unstaked {
 
 #[event]
 pub struct RewardsClaimed {
+    pub pool: Pubkey,
     pub user: Pubkey,
     pub amount: u64,
     pub timestamp: i64,
 }
 
 #[event]
-pub struct Initialized {
+pub struct PoolCreated {
+    pub pool: Pubkey,
     pub authority: Pubkey,
     pub staking_mint: Pubkey,
     pub reward_mint: Pubkey,
@@ -33,20 +37,15 @@ pub struct Initialized {
 
 #[event]
 pub struct RewardsFunded {
+    pub pool: Pubkey,
     pub funder: Pubkey,
     pub amount: u64,
     pub timestamp: i64,
 }
 
 #[event]
-pub struct EmergencyWithdraw {
-    pub user: Pubkey,
-    pub amount: u64,
-    pub timestamp: i64,
-}
-
-#[event]
 pub struct AddedToBlacklist {
+    pub pool: Pubkey,
     pub address: Pubkey,
     pub admin: Pubkey,
     pub timestamp: i64,
@@ -54,6 +53,7 @@ pub struct AddedToBlacklist {
 
 #[event]
 pub struct RemovedFromBlacklist {
+    pub pool: Pubkey,
     pub address: Pubkey,
     pub admin: Pubkey,
     pub timestamp: i64,

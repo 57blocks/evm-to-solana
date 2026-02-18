@@ -12,7 +12,7 @@ pub struct FundRewards<'info> {
 
     #[account(
         mut,
-        seeds = [STATE_SEED, state.staking_mint.as_ref()],
+        seeds = [STATE_SEED, state.pool_id.as_ref()],
         bump = state.bump,
         has_one = admin
     )]
@@ -49,6 +49,7 @@ pub fn fund_rewards_handler(ctx: Context<FundRewards>, amount: u64) -> Result<()
     token::transfer(cpi_ctx, amount)?;
 
     emit!(RewardsFunded {
+        pool: ctx.accounts.state.pool_id,
         funder: ctx.accounts.admin.key(),
         amount,
         timestamp: ctx.accounts.clock.unix_timestamp,

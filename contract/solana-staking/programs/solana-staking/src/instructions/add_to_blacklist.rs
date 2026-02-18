@@ -11,7 +11,7 @@ pub struct AddToBlacklist<'info> {
     pub admin: Signer<'info>,
 
     #[account(
-        seeds = [STATE_SEED, state.staking_mint.as_ref()],
+        seeds = [STATE_SEED, state.pool_id.as_ref()],
         bump = state.bump,
         has_one = admin
     )]
@@ -20,7 +20,7 @@ pub struct AddToBlacklist<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + BlacklistEntry::INIT_SPACE,
+        space = 8,
         seeds = [BLACKLIST_SEED, state.key().as_ref(), address.as_ref()],
         bump
     )]
@@ -35,18 +35,11 @@ pub fn add_to_blacklist_handler(ctx: Context<AddToBlacklist>, address: Pubkey) -
         StakingError::CannotBlacklistZeroAddress
     );
 
-    let blacklist_entry = &mut ctx.accounts.blacklist_entry;
-
-    // Set data for the entry (init constraint ensures this is a new account)
     let clock = Clock::get()?;
-    blacklist_entry.address = address;
-    blacklist_entry.added_at = clock.unix_timestamp;
-    blacklist_entry.bump = ctx.bumps.blacklist_entry;
-
-    msg!("Added {} to blacklist", address);
 
     // Emit event
     emit!(AddedToBlacklist {
+        pool: ctx.accounts.state.pool_id,
         address,
         admin: ctx.accounts.admin.key(),
         timestamp: clock.unix_timestamp,

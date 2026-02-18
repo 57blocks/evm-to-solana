@@ -53,6 +53,7 @@ async function main() {
       console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
       console.log("📍 State PDA:", state.publicKey.toString());
       console.log("👤 Admin:", account.admin.toString());
+      console.log("🔑 Pool ID:", account.poolId.toString());
       console.log("🪙  Staking Token:", account.stakingMint.toString());
       console.log("🎁 Reward Token:", account.rewardMint.toString());
       console.log(
@@ -66,11 +67,22 @@ async function main() {
         "(raw units)"
       );
 
+      // Derive vault PDAs from state PDA
+      const [stakingVaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("staking_vault"), state.publicKey.toBuffer()],
+        program.programId
+      );
+
+      const [rewardVaultPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("reward_vault"), state.publicKey.toBuffer()],
+        program.programId
+      );
+
       // Get vault balances
       try {
         const stakingVaultInfo = await getAccount(
           provider.connection,
-          account.stakingVault
+          stakingVaultPda
         );
         console.log(
           "🏦 Staking Vault Balance:",
@@ -84,7 +96,7 @@ async function main() {
       try {
         const rewardVaultInfo = await getAccount(
           provider.connection,
-          account.rewardVault
+          rewardVaultPda
         );
         console.log(
           "🏦 Reward Vault Balance:",

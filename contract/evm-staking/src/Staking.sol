@@ -40,7 +40,6 @@ contract Staking is ReentrancyGuard, Ownable {
     event Unstaked(address indexed user, uint256 amount);
     event RewardClaimed(address indexed user, uint256 reward);
     event RewardsFunded(address indexed funder, uint256 amount);
-    event EmergencyWithdraw(address indexed user, uint256 amount);
 
     /// @param _stakingToken The token to be staked
     /// @param _rewardToken The reward token to distribute
@@ -160,31 +159,6 @@ contract Staking is ReentrancyGuard, Ownable {
         require(amount > 0, "Invalid amount");
         rewardToken.safeTransferFrom(msg.sender, address(this), amount);
         emit RewardsFunded(msg.sender, amount);
-    }
-
-    /// @notice Emergency withdraw staked tokens without rewards
-    function emergencyWithdraw() external nonReentrant {
-        // Blacklist check
-        RestrictedStakingToken restrictedToken = RestrictedStakingToken(
-            address(stakingToken)
-        );
-        require(
-            !restrictedToken.isBlacklisted(msg.sender),
-            "Address is blacklisted"
-        );
-
-        StakeInfo storage user = stakes[msg.sender];
-        uint256 amount = user.amount;
-        require(amount > 0, "Nothing to withdraw");
-
-        // Effects: forfeit rewards
-        user.amount = 0;
-        user.rewardDebt = 0;
-        totalStaked -= amount;
-
-        // Interactions
-        stakingToken.safeTransfer(msg.sender, amount);
-        emit EmergencyWithdraw(msg.sender, amount);
     }
 
     /// @notice View function to get pending rewards for a user
