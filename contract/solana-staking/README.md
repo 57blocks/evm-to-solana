@@ -32,7 +32,8 @@ bash show-versions.sh
 
 ### Accounts
 
-- **GlobalState**: Stores program configuration and admin settings
+- **PoolConfig** (PDA): Per-pool immutable/semi-static config (`admin`, `pool_id`, token mints, reward rate)
+- **PoolState** (PDA): Per-pool runtime state (`acc_reward_per_share`, `last_reward_time`, `total_staked`)
 - **UserStakeInfo** (PDA): Individual user's staking information
 - **Staking Vault** (PDA): Holds all staked tokens
 - **Reward Vault** (PDA): Holds reward tokens for distribution

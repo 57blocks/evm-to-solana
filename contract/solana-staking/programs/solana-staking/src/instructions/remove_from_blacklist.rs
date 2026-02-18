@@ -1,6 +1,6 @@
 use crate::constants::*;
 use crate::events::RemovedFromBlacklist;
-use crate::state::{BlacklistEntry, GlobalState};
+use crate::state::{BlacklistEntry, PoolConfig};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -10,16 +10,16 @@ pub struct RemoveFromBlacklist<'info> {
     pub admin: Signer<'info>,
 
     #[account(
-        seeds = [STATE_SEED, state.pool_id.as_ref()],
-        bump = state.bump,
+        seeds = [POOL_CONFIG_SEED, pool_config.pool_id.as_ref()],
+        bump = pool_config.bump,
         has_one = admin
     )]
-    pub state: Box<Account<'info, GlobalState>>,
+    pub pool_config: Box<Account<'info, PoolConfig>>,
 
     #[account(
         mut,
         close = admin,
-        seeds = [BLACKLIST_SEED, state.key().as_ref(), address.as_ref()],
+        seeds = [BLACKLIST_SEED, pool_config.key().as_ref(), address.as_ref()],
         bump
     )]
     pub blacklist_entry: Box<Account<'info, BlacklistEntry>>,
@@ -33,7 +33,7 @@ pub fn remove_from_blacklist_handler(
 
     // Emit event
     emit!(RemovedFromBlacklist {
-        pool: ctx.accounts.state.pool_id,
+        pool: ctx.accounts.pool_config.pool_id,
         address,
         admin: ctx.accounts.admin.key(),
         timestamp: clock.unix_timestamp,

@@ -21,14 +21,15 @@ import {
 import { createKeyPairSignerFromBytes, address, lamports } from "@solana/kit";
 import * as programClient from "../dist/js-client";
 import {
-  decodeGlobalState,
+  decodePoolConfig,
+  decodePoolState,
   decodeUserStakeInfo,
   decodeBlacklistEntry,
 } from "../dist/js-client";
 
 // Program ID
 export const programId = new PublicKey(
-  programClient.SOLANA_STAKING_PROGRAM_ADDRESS.toString()
+  programClient.SOLANA_STAKING_PROGRAM_ADDRESS.toString(),
 );
 
 export const toToken = (amount: number): bigint =>
@@ -36,7 +37,7 @@ export const toToken = (amount: number): bigint =>
 
 // Helper function to convert instruction
 export function toTransactionInstruction(
-  instruction: any
+  instruction: any,
 ): TransactionInstruction {
   return new TransactionInstruction({
     keys: instruction.accounts.map((acc: any) => {
@@ -69,7 +70,7 @@ export function createMint(
   payer: Keypair,
   mintAuthority: PublicKey,
   freezeAuthority: PublicKey | null,
-  decimals: number
+  decimals: number,
 ): PublicKey {
   provider.client.expireBlockhash();
   const mint = Keypair.generate();
@@ -90,7 +91,7 @@ export function createMint(
     decimals,
     mintAuthority,
     freezeAuthority,
-    TOKEN_PROGRAM_ID
+    TOKEN_PROGRAM_ID,
   );
 
   const tx = new Transaction().add(createAccountIx, initMintIx);
@@ -105,7 +106,7 @@ export function createAssociatedTokenAccount(
   provider: LiteSVMProvider,
   payer: Keypair,
   mint: PublicKey,
-  owner: PublicKey
+  owner: PublicKey,
 ): PublicKey {
   provider.client.expireBlockhash();
   const ata = getAssociatedTokenAddressSync(mint, owner);
@@ -115,7 +116,7 @@ export function createAssociatedTokenAccount(
     ata,
     owner,
     mint,
-    TOKEN_PROGRAM_ID
+    TOKEN_PROGRAM_ID,
   );
 
   const tx = new Transaction().add(createAtaIx);
@@ -132,7 +133,7 @@ export function mintTo(
   mint: PublicKey,
   destination: PublicKey,
   authority: Keypair,
-  amount: bigint
+  amount: bigint,
 ): void {
   provider.client.expireBlockhash();
   const mintToIx = createMintToCheckedInstruction(
@@ -142,7 +143,7 @@ export function mintTo(
     amount,
     9, // decimals
     [],
-    TOKEN_PROGRAM_ID
+    TOKEN_PROGRAM_ID,
   );
 
   const tx = new Transaction().add(mintToIx);
@@ -158,7 +159,7 @@ export function transfer(
   mint: PublicKey,
   destination: PublicKey,
   owner: Keypair,
-  amount: bigint
+  amount: bigint,
 ): void {
   provider.client.expireBlockhash();
   const transferIx = createTransferCheckedInstruction(
@@ -169,7 +170,7 @@ export function transfer(
     amount,
     9, // decimals
     [],
-    TOKEN_PROGRAM_ID
+    TOKEN_PROGRAM_ID,
   );
 
   const tx = new Transaction().add(transferIx);
@@ -190,7 +191,7 @@ export function getAccount(provider: LiteSVMProvider, address: PublicKey): any {
   const account = unpackAccount(
     address,
     accountInfoWithBuffer,
-    TOKEN_PROGRAM_ID
+    TOKEN_PROGRAM_ID,
   );
   return account;
 }
@@ -199,7 +200,7 @@ export function getAccount(provider: LiteSVMProvider, address: PublicKey): any {
 function getAndDecodeAccount<T>(
   provider: LiteSVMProvider,
   accountPda: PublicKey,
-  decoder: (encodedAccount: any) => { data: T }
+  decoder: (encodedAccount: any) => { data: T },
 ): T | null {
   const accountInfo = provider.client.getAccount(accountPda);
   if (!accountInfo) return null;
@@ -220,40 +221,95 @@ function getAndDecodeAccount<T>(
   return decodedAccount.data;
 }
 
+export function getPoolStatePda(poolConfigPda: PublicKey): PublicKey {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("pool_state"), poolConfigPda.toBuffer()],
+    programId,
+  );
+  return pda;
+}
+
+export function getPoolConfig(
+  provider: LiteSVMProvider,
+  poolConfigPda: PublicKey,
+): programClient.PoolConfig | null {
+  return getAndDecodeAccount(provider, poolConfigPda, decodePoolConfig);
+}
+
+export function getPoolState(
+  provider: LiteSVMProvider,
+  poolStatePda: PublicKey,
+): programClient.PoolState | null {
+  return getAndDecodeAccount(provider, poolStatePda, decodePoolState);
+}
+
+export type GlobalStateView = {
+  admin: any;
+  poolId: any;
+  stakingMint: any;
+  rewardMint: any;
+  rewardPerSecond: any;
+  accRewardPerShare: any;
+  lastRewardTime: any;
+  totalStaked: any;
+};
+
 export function getGlobalState(
   provider: LiteSVMProvider,
-  statePda: PublicKey
-): programClient.GlobalState | null {
-  return getAndDecodeAccount(provider, statePda, decodeGlobalState);
+  poolConfigPda: PublicKey,
+): GlobalStateView | null {
+  const poolConfig = getPoolConfig(provider, poolConfigPda);
+  if (!poolConfig) return null;
+
+  const poolStatePda = getPoolStatePda(poolConfigPda);
+  const poolState = getPoolState(provider, poolStatePda);
+  if (!poolState) return null;
+
+  return {
+    admin: poolConfig.admin,
+    poolId: poolConfig.poolId,
+    stakingMint: poolConfig.stakingMint,
+    rewardMint: poolConfig.rewardMint,
+    rewardPerSecond: poolConfig.rewardPerSecond,
+    accRewardPerShare: poolState.accRewardPerShare,
+    lastRewardTime: poolState.lastRewardTime,
+    totalStaked: poolState.totalStaked,
+  };
 }
 
 export function getUserStakeInfo(
   provider: LiteSVMProvider,
-  userStakeInfoPda: PublicKey
+  userStakeInfoPda: PublicKey,
 ): programClient.UserStakeInfo | null {
   return getAndDecodeAccount(provider, userStakeInfoPda, decodeUserStakeInfo);
 }
 
 export function getBlacklistEntry(
   provider: LiteSVMProvider,
-  blacklistPda: PublicKey
+  blacklistPda: PublicKey,
 ): programClient.BlacklistEntry | null {
   return getAndDecodeAccount(provider, blacklistPda, decodeBlacklistEntry);
 }
 
 // PDA helper functions
-export function getUserStakePda(statePda: PublicKey, userPubkey: PublicKey): PublicKey {
+export function getUserStakePda(
+  statePda: PublicKey,
+  userPubkey: PublicKey,
+): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from("stake"), statePda.toBuffer(), userPubkey.toBuffer()],
-    programId
+    programId,
   );
   return pda;
 }
 
-export function getBlacklistPda(statePda: PublicKey, userPubkey: PublicKey): PublicKey {
+export function getBlacklistPda(
+  statePda: PublicKey,
+  userPubkey: PublicKey,
+): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from("blacklist"), statePda.toBuffer(), userPubkey.toBuffer()],
-    programId
+    programId,
   );
   return pda;
 }
@@ -262,7 +318,7 @@ export function getBlacklistPda(statePda: PublicKey, userPubkey: PublicKey): Pub
 export async function sendTransaction(
   provider: LiteSVMProvider,
   instruction: any,
-  signer: Keypair
+  signer: Keypair,
 ): Promise<any> {
   // Expire the blockhash to ensure each transaction has a unique blockhash
   provider.client.expireBlockhash();
@@ -287,7 +343,7 @@ export async function sendTransaction(
 export function getUserTokenAccounts(
   userPubkey: PublicKey,
   stakingMint: PublicKey,
-  rewardMint: PublicKey
+  rewardMint: PublicKey,
 ) {
   return {
     stakingToken: getAssociatedTokenAddressSync(stakingMint, userPubkey),
@@ -310,12 +366,12 @@ export async function setupUserWithTokens(
   user: Keypair,
   stakingMint: PublicKey,
   rewardMint: PublicKey,
-  stakingAmount: bigint = toToken(1000)
+  stakingAmount: bigint = toToken(1000),
 ) {
   const { stakingToken, rewardToken } = getUserTokenAccounts(
     user.publicKey,
     stakingMint,
-    rewardMint
+    rewardMint,
   );
 
   createAssociatedTokenAccount(provider, admin, stakingMint, user.publicKey);

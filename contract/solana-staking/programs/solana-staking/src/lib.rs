@@ -15,7 +15,11 @@ declare_id!("EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX");
 pub mod solana_staking {
     use super::*;
 
-    pub fn create_pool(ctx: Context<CreatePool>, pool_id: Pubkey, reward_per_second: u64) -> Result<()> {
+    pub fn create_pool(
+        ctx: Context<CreatePool>,
+        pool_id: Pubkey,
+        reward_per_second: u64,
+    ) -> Result<()> {
         instructions::create_pool::create_pool_handler(ctx, pool_id, reward_per_second)
     }
 

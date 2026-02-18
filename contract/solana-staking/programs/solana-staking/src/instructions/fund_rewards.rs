@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::errors::StakingError;
 use crate::events::RewardsFunded;
-use crate::state::GlobalState;
+use crate::state::PoolConfig;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
@@ -11,23 +11,22 @@ pub struct FundRewards<'info> {
     pub admin: Signer<'info>,
 
     #[account(
-        mut,
-        seeds = [STATE_SEED, state.pool_id.as_ref()],
-        bump = state.bump,
+        seeds = [POOL_CONFIG_SEED, pool_config.pool_id.as_ref()],
+        bump = pool_config.bump,
         has_one = admin
     )]
-    pub state: Box<Account<'info, GlobalState>>,
+    pub pool_config: Box<Account<'info, PoolConfig>>,
 
     #[account(
         mut,
-        token::mint = state.reward_mint,
+        token::mint = pool_config.reward_mint,
         token::authority = admin
     )]
     pub admin_reward_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        seeds = [REWARD_VAULT_SEED, state.key().as_ref()],
+        seeds = [REWARD_VAULT_SEED, pool_config.key().as_ref()],
         bump
     )]
     pub reward_vault: Account<'info, TokenAccount>,
@@ -49,7 +48,7 @@ pub fn fund_rewards_handler(ctx: Context<FundRewards>, amount: u64) -> Result<()
     token::transfer(cpi_ctx, amount)?;
 
     emit!(RewardsFunded {
-        pool: ctx.accounts.state.pool_id,
+        pool: ctx.accounts.pool_config.pool_id,
         funder: ctx.accounts.admin.key(),
         amount,
         timestamp: ctx.accounts.clock.unix_timestamp,

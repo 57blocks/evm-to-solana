@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::errors::StakingError;
 use crate::events::Unstaked;
-use crate::state::{GlobalState, UserStakeInfo};
+use crate::state::{PoolConfig, PoolState, UserStakeInfo};
 use crate::utils::{reward_debt_delta, update_pool};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
@@ -12,50 +12,57 @@ pub struct Unstake<'info> {
     pub user: Signer<'info>,
 
     #[account(
-        mut,
-        seeds = [STATE_SEED, state.pool_id.as_ref()],
-        bump = state.bump
+        seeds = [POOL_CONFIG_SEED, pool_config.pool_id.as_ref()],
+        bump = pool_config.bump
     )]
-    pub state: Box<Account<'info, GlobalState>>,
+    pub pool_config: Box<Account<'info, PoolConfig>>,
 
     #[account(
         mut,
-        seeds = [STAKE_SEED, state.key().as_ref(), user.key().as_ref()],
+        seeds = [POOL_STATE_SEED, pool_config.key().as_ref()],
+        bump = pool_state.bump,
+        has_one = pool_config
+    )]
+    pub pool_state: Box<Account<'info, PoolState>>,
+
+    #[account(
+        mut,
+        seeds = [STAKE_SEED, pool_config.key().as_ref(), user.key().as_ref()],
         bump = user_stake_info.bump
     )]
     pub user_stake_info: Box<Account<'info, UserStakeInfo>>,
 
     #[account(
         mut,
-        token::mint = state.staking_mint,
+        token::mint = pool_config.staking_mint,
         token::authority = user
     )]
     pub user_token_account: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        seeds = [STAKING_VAULT_SEED, state.key().as_ref()],
+        seeds = [STAKING_VAULT_SEED, pool_config.key().as_ref()],
         bump
     )]
     pub staking_vault: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        seeds = [REWARD_VAULT_SEED, state.key().as_ref()],
+        seeds = [REWARD_VAULT_SEED, pool_config.key().as_ref()],
         bump
     )]
     pub reward_vault: Account<'info, TokenAccount>,
 
     #[account(
         mut,
-        token::mint = state.reward_mint,
+        token::mint = pool_config.reward_mint,
         token::authority = user
     )]
     pub user_reward_account: Account<'info, TokenAccount>,
 
     /// CHECK: This account may or may not exist - we check if it exists to determine blacklist status
     #[account(
-        seeds = [BLACKLIST_SEED, state.key().as_ref(), user.key().as_ref()],
+        seeds = [BLACKLIST_SEED, pool_config.key().as_ref(), user.key().as_ref()],
         bump,
     )]
     pub blacklist_entry: UncheckedAccount<'info>,
@@ -73,7 +80,8 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
         StakingError::AddressBlacklisted
     );
 
-    let state = &mut ctx.accounts.state;
+    let pool_config = &ctx.accounts.pool_config;
+    let pool_state = &mut ctx.accounts.pool_state;
     let user_stake = &mut ctx.accounts.user_stake_info;
     let clock = &ctx.accounts.clock;
 
@@ -82,20 +90,20 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
         StakingError::InsufficientStakedAmount
     );
 
-    update_pool(state, clock)?;
+    update_pool(pool_config, pool_state, clock)?;
 
     // Transfer staking tokens back to user
     let seeds = &[
-        STATE_SEED.as_ref(),
-        state.pool_id.as_ref(),
-        &[state.bump],
+        POOL_CONFIG_SEED.as_ref(),
+        pool_config.pool_id.as_ref(),
+        &[pool_config.bump],
     ];
     let signer = &[&seeds[..]];
 
     let cpi_accounts = Transfer {
         from: ctx.accounts.staking_vault.to_account_info(),
         to: ctx.accounts.user_token_account.to_account_info(),
-        authority: state.to_account_info(),
+        authority: pool_config.to_account_info(),
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer);
@@ -103,15 +111,15 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
 
     // Update user stake info
     user_stake.amount -= amount;
-    let debt_delta = reward_debt_delta(amount, state.acc_reward_per_share)?;
+    let debt_delta = reward_debt_delta(amount, pool_state.acc_reward_per_share)?;
     user_stake.reward_debt -= debt_delta;
 
-    // Update global state
-    state.total_staked -= amount;
+    // Update pool state
+    pool_state.total_staked -= amount;
 
     // Emit unstaked event
     emit!(Unstaked {
-        pool: state.pool_id,
+        pool: pool_config.pool_id,
         user: ctx.accounts.user.key(),
         amount,
         rewards: 0,

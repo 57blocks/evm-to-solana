@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::errors::StakingError;
 use crate::events::PoolCreated;
-use crate::state::GlobalState;
+use crate::state::{PoolConfig, PoolState};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
@@ -14,11 +14,20 @@ pub struct CreatePool<'info> {
     #[account(
         init,
         payer = admin,
-        space = 8 + GlobalState::INIT_SPACE,
-        seeds = [STATE_SEED, pool_id.as_ref()],
+        space = 8 + PoolConfig::INIT_SPACE,
+        seeds = [POOL_CONFIG_SEED, pool_id.as_ref()],
         bump
     )]
-    pub state: Box<Account<'info, GlobalState>>,
+    pub pool_config: Box<Account<'info, PoolConfig>>,
+
+    #[account(
+        init,
+        payer = admin,
+        space = 8 + PoolState::INIT_SPACE,
+        seeds = [POOL_STATE_SEED, pool_config.key().as_ref()],
+        bump
+    )]
+    pub pool_state: Box<Account<'info, PoolState>>,
 
     pub staking_mint: Account<'info, Mint>,
     pub reward_mint: Account<'info, Mint>,
@@ -27,8 +36,8 @@ pub struct CreatePool<'info> {
         init,
         payer = admin,
         token::mint = staking_mint,
-        token::authority = state,
-        seeds = [STAKING_VAULT_SEED, state.key().as_ref()],
+        token::authority = pool_config,
+        seeds = [STAKING_VAULT_SEED, pool_config.key().as_ref()],
         bump
     )]
     pub staking_vault: Account<'info, TokenAccount>,
@@ -37,8 +46,8 @@ pub struct CreatePool<'info> {
         init,
         payer = admin,
         token::mint = reward_mint,
-        token::authority = state,
-        seeds = [REWARD_VAULT_SEED, state.key().as_ref()],
+        token::authority = pool_config,
+        seeds = [REWARD_VAULT_SEED, pool_config.key().as_ref()],
         bump
     )]
     pub reward_vault: Account<'info, TokenAccount>,
@@ -48,24 +57,29 @@ pub struct CreatePool<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
-pub fn create_pool_handler(ctx: Context<CreatePool>, pool_id: Pubkey, reward_per_second: u64) -> Result<()> {
+pub fn create_pool_handler(
+    ctx: Context<CreatePool>,
+    pool_id: Pubkey,
+    reward_per_second: u64,
+) -> Result<()> {
     require!(pool_id != Pubkey::default(), StakingError::InvalidPoolId);
+    require!(reward_per_second > 0, StakingError::InvalidRewardPerSecond);
 
-    let state = &mut ctx.accounts.state;
+    let pool_config = &mut ctx.accounts.pool_config;
+    let pool_state = &mut ctx.accounts.pool_state;
 
-    state.admin = ctx.accounts.admin.key();
-    state.pool_id = pool_id;
-    state.staking_mint = ctx.accounts.staking_mint.key();
-    state.reward_mint = ctx.accounts.reward_mint.key();
-    require!(
-        reward_per_second > 0,
-        StakingError::InvalidRewardPerSecond
-    );
-    state.reward_per_second = reward_per_second;
-    state.acc_reward_per_share = 0;
-    state.last_reward_time = ctx.accounts.clock.unix_timestamp;
-    state.total_staked = 0;
-    state.bump = ctx.bumps.state;
+    pool_config.admin = ctx.accounts.admin.key();
+    pool_config.pool_id = pool_id;
+    pool_config.staking_mint = ctx.accounts.staking_mint.key();
+    pool_config.reward_mint = ctx.accounts.reward_mint.key();
+    pool_config.reward_per_second = reward_per_second;
+    pool_config.bump = ctx.bumps.pool_config;
+
+    pool_state.pool_config = pool_config.key();
+    pool_state.acc_reward_per_share = 0;
+    pool_state.last_reward_time = ctx.accounts.clock.unix_timestamp;
+    pool_state.total_staked = 0;
+    pool_state.bump = ctx.bumps.pool_state;
 
     // Emit pool created event
     emit!(PoolCreated {

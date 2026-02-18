@@ -1,7 +1,7 @@
 use crate::constants::*;
 use crate::errors::StakingError;
 use crate::events::AddedToBlacklist;
-use crate::state::{BlacklistEntry, GlobalState};
+use crate::state::{BlacklistEntry, PoolConfig};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -11,17 +11,17 @@ pub struct AddToBlacklist<'info> {
     pub admin: Signer<'info>,
 
     #[account(
-        seeds = [STATE_SEED, state.pool_id.as_ref()],
-        bump = state.bump,
+        seeds = [POOL_CONFIG_SEED, pool_config.pool_id.as_ref()],
+        bump = pool_config.bump,
         has_one = admin
     )]
-    pub state: Box<Account<'info, GlobalState>>,
+    pub pool_config: Box<Account<'info, PoolConfig>>,
 
     #[account(
         init,
         payer = admin,
         space = 8,
-        seeds = [BLACKLIST_SEED, state.key().as_ref(), address.as_ref()],
+        seeds = [BLACKLIST_SEED, pool_config.key().as_ref(), address.as_ref()],
         bump
     )]
     pub blacklist_entry: Box<Account<'info, BlacklistEntry>>,
@@ -39,7 +39,7 @@ pub fn add_to_blacklist_handler(ctx: Context<AddToBlacklist>, address: Pubkey) -
 
     // Emit event
     emit!(AddedToBlacklist {
-        pool: ctx.accounts.state.pool_id,
+        pool: ctx.accounts.pool_config.pool_id,
         address,
         admin: ctx.accounts.admin.key(),
         timestamp: clock.unix_timestamp,
