@@ -1,15 +1,21 @@
 pub mod add_to_blacklist;
 pub mod claim_rewards;
+pub mod close_pool;
+pub mod close_user_stake_account;
 pub mod create_pool;
 pub mod fund_rewards;
 pub mod remove_from_blacklist;
 pub mod stake;
 pub mod unstake;
+pub mod withdraw_remaining_rewards;
 
 pub use add_to_blacklist::*;
 pub use claim_rewards::*;
+pub use close_pool::*;
+pub use close_user_stake_account::*;
 pub use create_pool::*;
 pub use fund_rewards::*;
 pub use remove_from_blacklist::*;
 pub use stake::*;
 pub use unstake::*;
+pub use withdraw_remaining_rewards::*;

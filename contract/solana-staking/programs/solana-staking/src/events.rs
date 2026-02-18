@@ -58,3 +58,25 @@ pub struct RemovedFromBlacklist {
     pub admin: Pubkey,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct UserStakeAccountClosed {
+    pub pool: Pubkey,
+    pub user: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct RemainingRewardsWithdrawn {
+    pub pool: Pubkey,
+    pub admin: Pubkey,
+    pub amount: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct PoolClosed {
+    pub pool: Pubkey,
+    pub admin: Pubkey,
+    pub timestamp: i64,
+}

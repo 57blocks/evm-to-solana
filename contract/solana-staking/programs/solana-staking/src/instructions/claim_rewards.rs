@@ -1,5 +1,4 @@
 use crate::constants::*;
-use crate::errors::StakingError;
 use crate::events::RewardsClaimed;
 use crate::state::{PoolConfig, PoolState, UserStakeInfo};
 use crate::utils::claim_pending_rewards;
@@ -46,24 +45,11 @@ pub struct ClaimRewards<'info> {
     )]
     pub reward_vault: Account<'info, TokenAccount>,
 
-    /// CHECK: This account may or may not exist - we check if it exists to determine blacklist status
-    #[account(
-        seeds = [BLACKLIST_SEED, pool_config.key().as_ref(), user.key().as_ref()],
-        bump,
-    )]
-    pub blacklist_entry: UncheckedAccount<'info>,
-
     pub token_program: Program<'info, Token>,
     pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn claim_rewards_handler(ctx: Context<ClaimRewards>) -> Result<()> {
-    let blacklist_info = &ctx.accounts.blacklist_entry.to_account_info();
-    require!(
-        blacklist_info.data_is_empty() || blacklist_info.lamports() == 0,
-        StakingError::AddressBlacklisted
-    );
-
     let pool_config = &ctx.accounts.pool_config;
     let pool_state = &mut ctx.accounts.pool_state;
     let user_stake = &mut ctx.accounts.user_stake_info;

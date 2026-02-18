@@ -26,9 +26,24 @@ pub enum StakingError {
     #[msg("Invalid fund amount")]
     InvalidFundAmount,
 
+    #[msg("Invalid withdraw amount")]
+    InvalidWithdrawAmount,
+
     #[msg("Nothing to withdraw")]
     NothingToWithdraw,
 
     #[msg("Invalid pool ID")]
     InvalidPoolId,
+
+    #[msg("User stake amount must be 0 to close account")]
+    UserStakeAmountNotZero,
+
+    #[msg("User reward debt must be 0 to close account")]
+    UserRewardDebtNotZero,
+
+    #[msg("Pool has active stakers")]
+    PoolHasActiveStakes,
+
+    #[msg("Vault must be empty")]
+    VaultNotEmpty,
 }

@@ -544,7 +544,6 @@ async function main() {
           userStakeInfo: userStakeInfoPda,
           userRewardAccount,
           rewardVault: rewardVaultPda,
-          blacklistEntry: blacklistPda,
           tokenProgram: TOKEN_PROGRAM_ID,
           clock: SYSVAR_CLOCK_PUBKEY,
         })
@@ -582,7 +581,6 @@ async function main() {
           stakingVault: stakingVaultPda,
           rewardVault: rewardVaultPda,
           userRewardAccount,
-          blacklistEntry: blacklistPda,
           tokenProgram: TOKEN_PROGRAM_ID,
           clock: SYSVAR_CLOCK_PUBKEY,
         })

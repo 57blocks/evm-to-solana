@@ -60,25 +60,12 @@ pub struct Unstake<'info> {
     )]
     pub user_reward_account: Account<'info, TokenAccount>,
 
-    /// CHECK: This account may or may not exist - we check if it exists to determine blacklist status
-    #[account(
-        seeds = [BLACKLIST_SEED, pool_config.key().as_ref(), user.key().as_ref()],
-        bump,
-    )]
-    pub blacklist_entry: UncheckedAccount<'info>,
-
     pub token_program: Program<'info, Token>,
     pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
     require!(amount > 0, StakingError::InvalidUnstakeAmount);
-
-    let blacklist_info = &ctx.accounts.blacklist_entry.to_account_info();
-    require!(
-        blacklist_info.data_is_empty() || blacklist_info.lamports() == 0,
-        StakingError::AddressBlacklisted
-    );
 
     let pool_config = &ctx.accounts.pool_config;
     let pool_state = &mut ctx.accounts.pool_state;

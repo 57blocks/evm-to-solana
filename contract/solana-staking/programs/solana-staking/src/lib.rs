@@ -35,8 +35,23 @@ pub mod solana_staking {
         instructions::claim_rewards::claim_rewards_handler(ctx)
     }
 
+    pub fn close_user_stake_account(ctx: Context<CloseUserStakeAccount>) -> Result<()> {
+        instructions::close_user_stake_account::close_user_stake_account_handler(ctx)
+    }
+
     pub fn fund_rewards(ctx: Context<FundRewards>, amount: u64) -> Result<()> {
         instructions::fund_rewards::fund_rewards_handler(ctx, amount)
+    }
+
+    pub fn withdraw_remaining_rewards(
+        ctx: Context<WithdrawRemainingRewards>,
+        amount: u64,
+    ) -> Result<()> {
+        instructions::withdraw_remaining_rewards::withdraw_remaining_rewards_handler(ctx, amount)
+    }
+
+    pub fn close_pool(ctx: Context<ClosePool>) -> Result<()> {
+        instructions::close_pool::close_pool_handler(ctx)
     }
 
     pub fn add_to_blacklist(ctx: Context<AddToBlacklist>, address: Pubkey) -> Result<()> {
