@@ -80,12 +80,23 @@ For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 The following contracts have been deployed to the Devnet network:
 
 - Program ID: [`EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX`](https://explorer.solana.com/address/EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX?cluster=devnet)
-- Staking Token: [`AUtJrxJALb2qE1DbqJG12oxvM13XXmvxA99YeBJDgT2q`](https://explorer.solana.com/address/AUtJrxJALb2qE1DbqJG12oxvM13XXmvxA99YeBJDgT2q?cluster=devnet)
-- Reward Token: [`4WpSGVUqeHmJeYK3PmbRqDYFXy9sWbFCGBxrXGqsy3nm`](https://explorer.solana.com/address/4WpSGVUqeHmJeYK3PmbRqDYFXy9sWbFCGBxrXGqsy3nm?cluster=devnet)
+- Staking Token: [`5JjY1oa8c3GmHctWBRroXcAQZRkL7waws9MjHo41zh42`](https://explorer.solana.com/address/5JjY1oa8c3GmHctWBRroXcAQZRkL7waws9MjHo41zh42?cluster=devnet)
+- Reward Token: [`9apfB2rWpGYQfjsX8xW2koq5XEw6jaj97D5xtgW1As4C`](https://explorer.solana.com/address/9apfB2rWpGYQfjsX8xW2koq5XEw6jaj97D5xtgW1As4C?cluster=devnet)
 
 ## Verification and Testing
 
 After deployment, you can verify your contract functionality using the provided scripts:
+
+### Required Environment Variables
+
+Before running `npm run list` or `npm run verify`, you must set:
+
+```bash
+export ANCHOR_PROVIDER_URL=https://api.devnet.solana.com
+export ANCHOR_WALLET=~/.config/solana/id.json
+```
+
+If these variables are not set, both commands will fail because `AnchorProvider.env()` cannot resolve the required RPC URL and wallet path.
 
 ### List All Deployments
 

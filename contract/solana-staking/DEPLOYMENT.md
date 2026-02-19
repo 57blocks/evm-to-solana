@@ -49,24 +49,30 @@ solana airdrop 2
 
 ## Initial Deployment
 
-### 1. Build the Program
+### 1. Get Program ID
 
 ```bash
 cd solana-staking
-anchor build
-```
-
-### 2. Get Program ID
-
-After building, retrieve your program ID:
-
-```bash
 solana address -k target/deploy/solana_staking-keypair.json
 ```
 
-### 3. Update Configuration
+If `target/deploy/solana_staking-keypair.json` does not exist yet, run `anchor build` once to generate it, then run the command above again.
+
+### 2. Update Configuration
 
 Update the program ID in `Anchor.toml` and `programs/solana-staking/src/lib.rs` if it differs from the generated one.
+
+You can also use:
+
+```bash
+anchor keys sync
+```
+
+### 3. Build the Program (final build after Program ID is synced)
+
+```bash
+anchor build
+```
 
 ### 4. Deploy the Program
 
@@ -88,7 +94,7 @@ The IDL (Interface Definition Language) file enables explorers and clients to un
 anchor idl init -f target/idl/solana_staking.json <PROGRAM_ID> --provider.cluster devnet
 ```
 
-Replace `<PROGRAM_ID>` with your actual program ID from step 2.
+Replace `<PROGRAM_ID>` with your actual program ID from step 1.
 
 ## Program Upgrade Process
 
