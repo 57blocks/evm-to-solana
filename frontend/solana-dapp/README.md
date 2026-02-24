@@ -47,7 +47,6 @@ A comprehensive staking DApp built for the Solana blockchain that demonstrates h
 
 ### Development Tools
 
-- **Node.js**: v22.12.0+ required (see .nvmrc)
 - **Package Manager**: npm, yarn, or pnpm supported
 
 ## 🏗️ Project Structure

@@ -44,7 +44,6 @@ A comprehensive staking DApp that demonstrates how to interact with Ethereum sma
 
 ### Development Tools
 
-- **Node.js**: v22.10.0+ required
 - **Package Manager**: npm, yarn, or pnpm supported
 
 ## 🏗️ Project Structure
