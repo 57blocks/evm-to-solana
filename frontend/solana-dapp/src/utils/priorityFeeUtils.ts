@@ -76,13 +76,13 @@ export const getRecentPriorityFees = async (
     const response = await connection.getRecentPrioritizationFees({
       lockedWritableAccounts: [
         publicKey,
-        accountInfo.statePda,
+        accountInfo.poolState,
         accountInfo.userStakeInfoPda,
         accountInfo.userTokenAccount,
         accountInfo.stakingVault,
         accountInfo.rewardVault,
         accountInfo.userRewardAccount,
-        accountInfo.blacklistPda,
+        accountInfo.blacklistEntry,
       ],
     });
 

@@ -1,14 +1,20 @@
-{
+/**
+ * Program IDL in camelCase format in order to be used in JS/TS.
+ *
+ * Note that this is only a type helper and is not the actual IDL. The original
+ * IDL can be found at `target/idl/solana_staking.json`.
+ */
+export type SolanaStaking = {
   "address": "3qjRAH6gdr55QgxwmZdVYJYxqKiNY5qBdeye67q9yUh7",
   "metadata": {
-    "name": "solana_staking",
+    "name": "solanaStaking",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Created with Anchor"
   },
   "instructions": [
     {
-      "name": "add_to_blacklist",
+      "name": "addToBlacklist",
       "discriminator": [
         90,
         115,
@@ -25,11 +31,11 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "pool_config"
+            "poolConfig"
           ]
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "pda": {
             "seeds": [
               {
@@ -51,13 +57,13 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "blacklist_entry",
+          "name": "blacklistEntry",
           "writable": true,
           "pda": {
             "seeds": [
@@ -77,7 +83,7 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               },
               {
                 "kind": "arg",
@@ -87,7 +93,7 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -99,7 +105,7 @@
       ]
     },
     {
-      "name": "claim_rewards",
+      "name": "claimRewards",
       "discriminator": [
         4,
         144,
@@ -117,7 +123,7 @@
           "signer": true
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "pda": {
             "seeds": [
               {
@@ -139,16 +145,16 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           },
           "relations": [
-            "pool_state"
+            "poolState"
           ]
         },
         {
-          "name": "pool_state",
+          "name": "poolState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -169,13 +175,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "user_stake_info",
+          "name": "userStakeInfo",
           "writable": true,
           "pda": {
             "seeds": [
@@ -191,7 +197,7 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               },
               {
                 "kind": "account",
@@ -201,11 +207,11 @@
           }
         },
         {
-          "name": "user_reward_account",
+          "name": "userRewardAccount",
           "writable": true
         },
         {
-          "name": "reward_vault",
+          "name": "rewardVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -228,13 +234,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -245,7 +251,7 @@
       "args": []
     },
     {
-      "name": "close_pool",
+      "name": "closePool",
       "discriminator": [
         140,
         189,
@@ -262,11 +268,11 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "pool_config"
+            "poolConfig"
           ]
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "writable": true,
           "pda": {
             "seeds": [
@@ -289,16 +295,16 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           },
           "relations": [
-            "pool_state"
+            "poolState"
           ]
         },
         {
-          "name": "pool_state",
+          "name": "poolState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -319,13 +325,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "staking_vault",
+          "name": "stakingVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -349,13 +355,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "reward_vault",
+          "name": "rewardVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -378,13 +384,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -395,7 +401,7 @@
       "args": []
     },
     {
-      "name": "close_user_stake_account",
+      "name": "closeUserStakeAccount",
       "discriminator": [
         147,
         64,
@@ -413,7 +419,7 @@
           "signer": true
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "pda": {
             "seeds": [
               {
@@ -435,13 +441,13 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "user_stake_info",
+          "name": "userStakeInfo",
           "writable": true,
           "pda": {
             "seeds": [
@@ -457,7 +463,7 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               },
               {
                 "kind": "account",
@@ -474,7 +480,7 @@
       "args": []
     },
     {
-      "name": "create_pool",
+      "name": "createPool",
       "discriminator": [
         233,
         146,
@@ -492,7 +498,7 @@
           "signer": true
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "writable": true,
           "pda": {
             "seeds": [
@@ -514,13 +520,13 @@
               },
               {
                 "kind": "arg",
-                "path": "pool_id"
+                "path": "poolId"
               }
             ]
           }
         },
         {
-          "name": "pool_state",
+          "name": "poolState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -541,19 +547,19 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "staking_mint"
+          "name": "stakingMint"
         },
         {
-          "name": "reward_mint"
+          "name": "rewardMint"
         },
         {
-          "name": "staking_vault",
+          "name": "stakingVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -577,13 +583,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "reward_vault",
+          "name": "rewardVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -606,17 +612,17 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -626,17 +632,17 @@
       ],
       "args": [
         {
-          "name": "pool_id",
+          "name": "poolId",
           "type": "pubkey"
         },
         {
-          "name": "reward_per_second",
+          "name": "rewardPerSecond",
           "type": "u64"
         }
       ]
     },
     {
-      "name": "fund_rewards",
+      "name": "fundRewards",
       "discriminator": [
         114,
         64,
@@ -653,11 +659,11 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "pool_config"
+            "poolConfig"
           ]
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "pda": {
             "seeds": [
               {
@@ -679,17 +685,17 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "admin_reward_account",
+          "name": "adminRewardAccount",
           "writable": true
         },
         {
-          "name": "reward_vault",
+          "name": "rewardVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -712,13 +718,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -734,7 +740,7 @@
       ]
     },
     {
-      "name": "remove_from_blacklist",
+      "name": "removeFromBlacklist",
       "discriminator": [
         47,
         105,
@@ -751,11 +757,11 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "pool_config"
+            "poolConfig"
           ]
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "pda": {
             "seeds": [
               {
@@ -777,13 +783,13 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "blacklist_entry",
+          "name": "blacklistEntry",
           "writable": true,
           "pda": {
             "seeds": [
@@ -803,7 +809,7 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               },
               {
                 "kind": "arg",
@@ -839,7 +845,7 @@
           "signer": true
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "pda": {
             "seeds": [
               {
@@ -861,16 +867,16 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           },
           "relations": [
-            "pool_state"
+            "poolState"
           ]
         },
         {
-          "name": "pool_state",
+          "name": "poolState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -891,13 +897,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "user_stake_info",
+          "name": "userStakeInfo",
           "writable": true,
           "pda": {
             "seeds": [
@@ -913,7 +919,7 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               },
               {
                 "kind": "account",
@@ -923,11 +929,11 @@
           }
         },
         {
-          "name": "user_token_account",
+          "name": "userTokenAccount",
           "writable": true
         },
         {
-          "name": "staking_vault",
+          "name": "stakingVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -951,13 +957,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "reward_vault",
+          "name": "rewardVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -980,17 +986,17 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "user_reward_account",
+          "name": "userRewardAccount",
           "writable": true
         },
         {
-          "name": "blacklist_entry",
+          "name": "blacklistEntry",
           "pda": {
             "seeds": [
               {
@@ -1009,7 +1015,7 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               },
               {
                 "kind": "account",
@@ -1019,11 +1025,11 @@
           }
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
@@ -1057,7 +1063,7 @@
           "signer": true
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "pda": {
             "seeds": [
               {
@@ -1079,16 +1085,16 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           },
           "relations": [
-            "pool_state"
+            "poolState"
           ]
         },
         {
-          "name": "pool_state",
+          "name": "poolState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1109,13 +1115,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "user_stake_info",
+          "name": "userStakeInfo",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1131,7 +1137,7 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               },
               {
                 "kind": "account",
@@ -1141,11 +1147,11 @@
           }
         },
         {
-          "name": "user_token_account",
+          "name": "userTokenAccount",
           "writable": true
         },
         {
-          "name": "staking_vault",
+          "name": "stakingVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1169,13 +1175,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "reward_vault",
+          "name": "rewardVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1198,17 +1204,17 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "user_reward_account",
+          "name": "userRewardAccount",
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -1224,7 +1230,7 @@
       ]
     },
     {
-      "name": "withdraw_remaining_rewards",
+      "name": "withdrawRemainingRewards",
       "discriminator": [
         239,
         62,
@@ -1241,11 +1247,11 @@
           "writable": true,
           "signer": true,
           "relations": [
-            "pool_config"
+            "poolConfig"
           ]
         },
         {
-          "name": "pool_config",
+          "name": "poolConfig",
           "pda": {
             "seeds": [
               {
@@ -1267,16 +1273,16 @@
               {
                 "kind": "account",
                 "path": "pool_config.pool_id",
-                "account": "PoolConfig"
+                "account": "poolConfig"
               }
             ]
           },
           "relations": [
-            "pool_state"
+            "poolState"
           ]
         },
         {
-          "name": "pool_state",
+          "name": "poolState",
           "pda": {
             "seeds": [
               {
@@ -1296,17 +1302,17 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "admin_reward_account",
+          "name": "adminRewardAccount",
           "writable": true
         },
         {
-          "name": "reward_vault",
+          "name": "rewardVault",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1329,13 +1335,13 @@
               },
               {
                 "kind": "account",
-                "path": "pool_config"
+                "path": "poolConfig"
               }
             ]
           }
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -1353,7 +1359,7 @@
   ],
   "accounts": [
     {
-      "name": "BlacklistEntry",
+      "name": "blacklistEntry",
       "discriminator": [
         218,
         179,
@@ -1366,7 +1372,7 @@
       ]
     },
     {
-      "name": "PoolConfig",
+      "name": "poolConfig",
       "discriminator": [
         26,
         108,
@@ -1379,7 +1385,7 @@
       ]
     },
     {
-      "name": "PoolState",
+      "name": "poolState",
       "discriminator": [
         247,
         237,
@@ -1392,7 +1398,7 @@
       ]
     },
     {
-      "name": "UserStakeInfo",
+      "name": "userStakeInfo",
       "discriminator": [
         219,
         233,
@@ -1407,7 +1413,7 @@
   ],
   "events": [
     {
-      "name": "AddedToBlacklist",
+      "name": "addedToBlacklist",
       "discriminator": [
         3,
         196,
@@ -1420,7 +1426,7 @@
       ]
     },
     {
-      "name": "PoolClosed",
+      "name": "poolClosed",
       "discriminator": [
         106,
         46,
@@ -1433,7 +1439,7 @@
       ]
     },
     {
-      "name": "PoolCreated",
+      "name": "poolCreated",
       "discriminator": [
         202,
         44,
@@ -1446,7 +1452,7 @@
       ]
     },
     {
-      "name": "RemainingRewardsWithdrawn",
+      "name": "remainingRewardsWithdrawn",
       "discriminator": [
         25,
         185,
@@ -1459,7 +1465,7 @@
       ]
     },
     {
-      "name": "RemovedFromBlacklist",
+      "name": "removedFromBlacklist",
       "discriminator": [
         55,
         136,
@@ -1472,7 +1478,7 @@
       ]
     },
     {
-      "name": "RewardsClaimed",
+      "name": "rewardsClaimed",
       "discriminator": [
         75,
         98,
@@ -1485,7 +1491,7 @@
       ]
     },
     {
-      "name": "RewardsFunded",
+      "name": "rewardsFunded",
       "discriminator": [
         84,
         233,
@@ -1498,7 +1504,7 @@
       ]
     },
     {
-      "name": "Staked",
+      "name": "staked",
       "discriminator": [
         11,
         146,
@@ -1511,7 +1517,7 @@
       ]
     },
     {
-      "name": "Unstaked",
+      "name": "unstaked",
       "discriminator": [
         27,
         179,
@@ -1524,7 +1530,7 @@
       ]
     },
     {
-      "name": "UserStakeAccountClosed",
+      "name": "userStakeAccountClosed",
       "discriminator": [
         11,
         170,
@@ -1540,83 +1546,83 @@
   "errors": [
     {
       "code": 6000,
-      "name": "InvalidStakeAmount",
+      "name": "invalidStakeAmount",
       "msg": "Cannot stake 0 tokens"
     },
     {
       "code": 6001,
-      "name": "InvalidUnstakeAmount",
+      "name": "invalidUnstakeAmount",
       "msg": "Cannot unstake 0 tokens"
     },
     {
       "code": 6002,
-      "name": "InsufficientStakedAmount",
+      "name": "insufficientStakedAmount",
       "msg": "Insufficient staked amount"
     },
     {
       "code": 6003,
-      "name": "InvalidRewardPerSecond",
+      "name": "invalidRewardPerSecond",
       "msg": "Invalid reward per second"
     },
     {
       "code": 6004,
-      "name": "ArithmeticOverflow",
+      "name": "arithmeticOverflow",
       "msg": "Arithmetic overflow"
     },
     {
       "code": 6005,
-      "name": "AddressBlacklisted",
+      "name": "addressBlacklisted",
       "msg": "Address is blacklisted"
     },
     {
       "code": 6006,
-      "name": "CannotBlacklistZeroAddress",
+      "name": "cannotBlacklistZeroAddress",
       "msg": "Cannot blacklist zero address"
     },
     {
       "code": 6007,
-      "name": "InvalidFundAmount",
+      "name": "invalidFundAmount",
       "msg": "Invalid fund amount"
     },
     {
       "code": 6008,
-      "name": "InvalidWithdrawAmount",
+      "name": "invalidWithdrawAmount",
       "msg": "Invalid withdraw amount"
     },
     {
       "code": 6009,
-      "name": "NothingToWithdraw",
+      "name": "nothingToWithdraw",
       "msg": "Nothing to withdraw"
     },
     {
       "code": 6010,
-      "name": "InvalidPoolId",
+      "name": "invalidPoolId",
       "msg": "Invalid pool ID"
     },
     {
       "code": 6011,
-      "name": "UserStakeAmountNotZero",
+      "name": "userStakeAmountNotZero",
       "msg": "User stake amount must be 0 to close account"
     },
     {
       "code": 6012,
-      "name": "UserRewardDebtNotZero",
+      "name": "userRewardDebtNotZero",
       "msg": "User reward debt must be 0 to close account"
     },
     {
       "code": 6013,
-      "name": "PoolHasActiveStakes",
+      "name": "poolHasActiveStakes",
       "msg": "Pool has active stakers"
     },
     {
       "code": 6014,
-      "name": "VaultNotEmpty",
+      "name": "vaultNotEmpty",
       "msg": "Vault must be empty"
     }
   ],
   "types": [
     {
-      "name": "AddedToBlacklist",
+      "name": "addedToBlacklist",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1640,13 +1646,13 @@
       }
     },
     {
-      "name": "BlacklistEntry",
+      "name": "blacklistEntry",
       "type": {
         "kind": "struct"
       }
     },
     {
-      "name": "PoolClosed",
+      "name": "poolClosed",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1666,7 +1672,7 @@
       }
     },
     {
-      "name": "PoolConfig",
+      "name": "poolConfig",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1675,19 +1681,19 @@
             "type": "pubkey"
           },
           {
-            "name": "pool_id",
+            "name": "poolId",
             "type": "pubkey"
           },
           {
-            "name": "staking_mint",
+            "name": "stakingMint",
             "type": "pubkey"
           },
           {
-            "name": "reward_mint",
+            "name": "rewardMint",
             "type": "pubkey"
           },
           {
-            "name": "reward_per_second",
+            "name": "rewardPerSecond",
             "type": "u64"
           },
           {
@@ -1698,7 +1704,7 @@
       }
     },
     {
-      "name": "PoolCreated",
+      "name": "poolCreated",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1711,15 +1717,15 @@
             "type": "pubkey"
           },
           {
-            "name": "staking_mint",
+            "name": "stakingMint",
             "type": "pubkey"
           },
           {
-            "name": "reward_mint",
+            "name": "rewardMint",
             "type": "pubkey"
           },
           {
-            "name": "reward_per_second",
+            "name": "rewardPerSecond",
             "type": "u64"
           },
           {
@@ -1730,24 +1736,24 @@
       }
     },
     {
-      "name": "PoolState",
+      "name": "poolState",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "pool_config",
+            "name": "poolConfig",
             "type": "pubkey"
           },
           {
-            "name": "acc_reward_per_share",
+            "name": "accRewardPerShare",
             "type": "u128"
           },
           {
-            "name": "last_reward_time",
+            "name": "lastRewardTime",
             "type": "i64"
           },
           {
-            "name": "total_staked",
+            "name": "totalStaked",
             "type": "u64"
           },
           {
@@ -1758,7 +1764,7 @@
       }
     },
     {
-      "name": "RemainingRewardsWithdrawn",
+      "name": "remainingRewardsWithdrawn",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1782,7 +1788,7 @@
       }
     },
     {
-      "name": "RemovedFromBlacklist",
+      "name": "removedFromBlacklist",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1806,7 +1812,7 @@
       }
     },
     {
-      "name": "RewardsClaimed",
+      "name": "rewardsClaimed",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1830,7 +1836,7 @@
       }
     },
     {
-      "name": "RewardsFunded",
+      "name": "rewardsFunded",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1854,7 +1860,7 @@
       }
     },
     {
-      "name": "Staked",
+      "name": "staked",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1878,7 +1884,7 @@
       }
     },
     {
-      "name": "Unstaked",
+      "name": "unstaked",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1906,7 +1912,7 @@
       }
     },
     {
-      "name": "UserStakeAccountClosed",
+      "name": "userStakeAccountClosed",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1926,7 +1932,7 @@
       }
     },
     {
-      "name": "UserStakeInfo",
+      "name": "userStakeInfo",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1935,7 +1941,7 @@
             "type": "u64"
           },
           {
-            "name": "reward_debt",
+            "name": "rewardDebt",
             "type": "i128"
           },
           {
@@ -1946,4 +1952,4 @@
       }
     }
   ]
-}
+};

@@ -2,7 +2,7 @@ import { PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
 import { Program } from "@coral-xyz/anchor";
 import { ERROR_MESSAGES } from "@/utils/tokenUtils";
 import { ErrorInfo } from "@/components/ErrorModal";
-import { SolanaStaking } from "@/idl/type";
+import { SolanaStaking } from "@/idl/solana_staking.ts";
 
 export interface StakeValidationParams {
   publicKey: PublicKey | null;

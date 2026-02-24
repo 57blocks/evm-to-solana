@@ -2,18 +2,19 @@ import { PublicKey } from "@solana/web3.js";
 
 /**
  * Address Lookup Table (ALT) Account Information
+ * Matches the return type of createStakingAccount
  */
 export interface AltAccountInfo {
-  state: PublicKey;
-  userStakeInfo: PublicKey;
+  userStakeInfoPda: PublicKey;
+  poolId: PublicKey;
   userTokenAccount: PublicKey;
+  userRewardAccount: PublicKey;
+  poolConfig: PublicKey;
+  poolState: PublicKey;
+  userStakeInfo: PublicKey;
   stakingVault: PublicKey;
   rewardVault: PublicKey;
-  userRewardAccount: PublicKey;
-  tokenProgram: PublicKey;
   blacklistEntry: PublicKey;
-  systemProgram: PublicKey;
-  clock: PublicKey;
 }
 
 /**

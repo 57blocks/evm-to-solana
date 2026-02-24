@@ -7,9 +7,12 @@ import {
   TransactionMessage,
   VersionedTransaction,
   TransactionInstruction,
+  SystemProgram,
+  SYSVAR_CLOCK_PUBKEY,
 } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Program } from "@coral-xyz/anchor";
-import { SolanaStaking } from "../idl/type";
+import { SolanaStaking } from "../idl/solana_staking.ts";
 import { createStakeInstruction, sendAndConfirmTransaction } from "./stakingUtils";
 import { AltAccountInfo } from "../types/lookupTable";
 
@@ -40,16 +43,17 @@ export const createLookupTable = async (
     authority: payer,
     lookupTable: lookupTableAddress,
     addresses: [
-      accounts.state,
+      accounts.poolConfig,
+      accounts.poolState,
       accounts.userStakeInfo,
       accounts.userTokenAccount,
       accounts.stakingVault,
       accounts.rewardVault,
       accounts.userRewardAccount,
-      accounts.tokenProgram,
       accounts.blacklistEntry,
-      accounts.systemProgram,
-      accounts.clock,
+      TOKEN_PROGRAM_ID,
+      SystemProgram.programId,
+      SYSVAR_CLOCK_PUBKEY,
     ],
   });
 

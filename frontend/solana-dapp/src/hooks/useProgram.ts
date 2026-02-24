@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Program, AnchorProvider, setProvider } from "@coral-xyz/anchor";
-import { SolanaStaking } from "@/idl/type";
+import { SolanaStaking } from "@/idl/solana_staking.ts";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import idl from "@/idl/idl.json";

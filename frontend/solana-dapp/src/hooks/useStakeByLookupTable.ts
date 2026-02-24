@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import {
-  createStakeAccountInfo,
   sendAndConfirmTransaction,
 } from "../utils/stakingUtils";
 import {
@@ -10,14 +9,13 @@ import {
   createVersionedStakeTransaction,
   AltAccountInfo,
 } from "../utils/lookupTableUtils";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import * as anchor from "@coral-xyz/anchor";
 import { ERROR_MESSAGES } from "@/utils/tokenUtils";
 import { AddressLookupTableAccount } from "@solana/web3.js";
 import { formatErrorForDisplay } from "@/utils/programErrors";
 import { ErrorInfo } from "@/components/ErrorModal";
 import { UseStakeByAltReturn } from "@/types/lookupTable";
 import { validateStakeParams } from "./useStakeValidation";
+import { createStakingAccount } from "@/utils/account";
 
 export type UseStakeByLookupTableOptions = {
   stakeAmount: number;
@@ -83,22 +81,9 @@ export const useStakeByLookupTable = ({
     setIsStaking(true);
 
     try {
-      const accountInfo = await createStakeAccountInfo(publicKey!, program!);
+      const accountInfo = await createStakingAccount(publicKey!, program!);
 
-      const accounts: AltAccountInfo = {
-        state: accountInfo.statePda,
-        userStakeInfo: accountInfo.userStakeInfoPda,
-        userTokenAccount: accountInfo.userTokenAccount,
-        stakingVault: accountInfo.stakingVault,
-        rewardVault: accountInfo.rewardVault,
-        userRewardAccount: accountInfo.userRewardAccount,
-        tokenProgram: TOKEN_PROGRAM_ID,
-        blacklistEntry: accountInfo.blacklistPda,
-        systemProgram: anchor.web3.SystemProgram.programId,
-        clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-      };
-
-      const lookupTable = await getOrCreateLookupTable(accounts);
+      const lookupTable = await getOrCreateLookupTable(accountInfo);
       if (!lookupTable) {
         onError({ message: ERROR_MESSAGES.FAILED_TO_LOAD_LOOKUP_TABLE });
         return;

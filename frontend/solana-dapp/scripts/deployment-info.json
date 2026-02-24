@@ -1,12 +1,10 @@
 {
   "programId": "3qjRAH6gdr55QgxwmZdVYJYxqKiNY5qBdeye67q9yUh7",
-  "stakingMint": "GHpr1Ry8HF1zUpRPp9juQWK9yXyGPXaVmgGuA2UMokV1",
-  "rewardMint": "BAHDWzvohjo3cj8HDXJ397SL4pcRhABQkGYZxA1sNrqS",
-  "statePda": "3S9Q3BJLoXUxrA1JmLuLMVG2fXH1UQZeSxWjBDtTLZMx",
-  "stakingVaultPda": "5McDJ9EdUjddZAMUrcf9c9KzMYZYX5JTQdWQMusCCA7z",
-  "rewardVaultPda": "GLQsTietmHpjwwKoduxGKRPGgL2Yg1QsyeYTz2NKzxcZ",
   "admin": "44fgvGQjJuwiuw4fofNPsmwDFqZsBJBGjHH8V2Td6HdY",
-  "rewardRate": 1000000,
-  "network": "testnet",
-  "timestamp": "2026-02-12T03:09:18.770Z"
+  "poolConfigPda": "HnK5Hb3ey4PdnmSQpzzWNtya7Z7R58TKo4XM2zdMNCZF",
+  "poolStatePda": "8qY29QwwWbkbbN9YFtnz8uMSKq3GEg7ajBN7WsKzkpKK",
+  "poolId": "H9YAfNzHSP6gG1GfMcp1uitiqrjwJxtSR57WAHrkN6RA",
+  "stakingMint": "5Z2sfCoravLNraT3zxn7RUSpRnkqbJwAwh7HatupK7gW",
+  "rewardMint": "6qRoX2BTtz5wZSokX2rBwcfv6PMiTdXB7v9sK8vBsp3r",
+  "network": "testnet"
 }

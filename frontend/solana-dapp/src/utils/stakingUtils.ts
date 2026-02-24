@@ -3,7 +3,7 @@ import { Program } from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { createStakingAccount } from "./account";
 import { convertToLamports, convertFromLamports } from "./tokenUtils";
-import { SolanaStaking } from "../idl/type";
+import { SolanaStaking } from "../idl/solana_staking.ts";
 
 export interface StakeTransactionParams {
   publicKey: PublicKey;
@@ -17,11 +17,6 @@ export interface UnstakeTransactionParams {
   unstakeAmount: number;
 }
 
-export interface ClaimRewardsParams {
-  publicKey: PublicKey;
-  program: Program<SolanaStaking>;
-}
-
 /**
  * Sleep utility for delays
  */
@@ -30,44 +25,17 @@ export const sleep = (ms: number): Promise<void> => {
 };
 
 export interface StakeAccountInfo {
-  statePda: PublicKey;
   userStakeInfoPda: PublicKey;
-  blacklistPda: PublicKey;
+  poolId: PublicKey;
   userTokenAccount: PublicKey;
   userRewardAccount: PublicKey;
+  poolConfig: PublicKey;
+  poolState: PublicKey;
+  userStakeInfo: PublicKey;
   stakingVault: PublicKey;
   rewardVault: PublicKey;
+  blacklistEntry: PublicKey;
 }
-
-/**
- * Create staking accounts and fetch state information
- */
-export const createStakeAccountInfo = async (
-  publicKey: PublicKey,
-  program: Program<SolanaStaking>
-): Promise<StakeAccountInfo> => {
-  // Create staking accounts
-  const {
-    statePda,
-    userStakeInfoPda,
-    blacklistPda,
-    userTokenAccount,
-    userRewardAccount,
-  } = await createStakingAccount(publicKey);
-
-  // Fetch current state
-  const state = await program.account.globalState.fetch(statePda);
-
-  return {
-    statePda,
-    userStakeInfoPda,
-    blacklistPda,
-    userTokenAccount,
-    userRewardAccount,
-    stakingVault: state.stakingVault,
-    rewardVault: state.rewardVault,
-  };
-};
 
 /**
  * Execute a basic stake transaction using RPC
@@ -77,17 +45,20 @@ export const executeStakeTransaction = async ({
   program,
   stakeAmount,
 }: StakeTransactionParams): Promise<string> => {
-  const accountInfo = await createStakeAccountInfo(publicKey, program);
+  const accountInfo = await createStakingAccount(publicKey, program);
 
   const txSignature = await program.methods
     .stake(new BN(convertToLamports(stakeAmount).toString()))
     .accountsPartial({
       user: publicKey,
-      state: accountInfo.statePda,
-      userStakeInfo: accountInfo.userStakeInfoPda,
       userTokenAccount: accountInfo.userTokenAccount,
       userRewardAccount: accountInfo.userRewardAccount,
-      blacklistEntry: accountInfo.blacklistPda,
+      poolConfig: accountInfo.poolConfig,
+      poolState: accountInfo.poolState,
+      userStakeInfo: accountInfo.userStakeInfo,
+      stakingVault: accountInfo.stakingVault,
+      rewardVault: accountInfo.rewardVault,
+      blacklistEntry: accountInfo.blacklistEntry,
     })
     .rpc();
 
@@ -102,17 +73,13 @@ export const createStakeInstruction = async ({
   program,
   stakeAmount,
 }: StakeTransactionParams) => {
-  const accountInfo = await createStakeAccountInfo(publicKey, program);
+  const accountInfo = await createStakingAccount(publicKey, program);
 
   const instruction = await program.methods
     .stake(new BN(convertToLamports(stakeAmount).toString()))
     .accountsPartial({
       user: publicKey,
-      state: accountInfo.statePda,
-      userStakeInfo: accountInfo.userStakeInfoPda,
-      userTokenAccount: accountInfo.userTokenAccount,
-      userRewardAccount: accountInfo.userRewardAccount,
-      blacklistEntry: accountInfo.blacklistPda,
+      ...accountInfo,
     })
     .instruction();
 
@@ -166,7 +133,7 @@ export const fetchUserStakeInfo = async (
   program: Program<SolanaStaking>
 ): Promise<UserStakeInfo | null> => {
   try {
-    const { userStakeInfoPda } = await createStakingAccount(publicKey);
+    const { userStakeInfoPda } = await createStakingAccount(publicKey, program);
     const userStakeInfo = await program.account.userStakeInfo.fetch(
       userStakeInfoPda
     );
@@ -176,7 +143,7 @@ export const fetchUserStakeInfo = async (
     }
 
     return {
-      owner: userStakeInfo.owner,
+      owner: publicKey,
       amount: convertFromLamports(userStakeInfo.amount ?? BigInt(0)),
       rewardDebt: convertFromLamports(userStakeInfo.rewardDebt ?? BigInt(0)),
     };
@@ -194,17 +161,13 @@ export const executeUnstakeTransaction = async ({
   program,
   unstakeAmount,
 }: UnstakeTransactionParams): Promise<string> => {
-  const accountInfo = await createStakeAccountInfo(publicKey, program);
+  const accountInfo = await createStakingAccount(publicKey, program);
 
   const txSignature = await program.methods
     .unstake(new BN(convertToLamports(unstakeAmount).toString()))
     .accountsPartial({
       user: publicKey,
-      state: accountInfo.statePda,
-      userStakeInfo: accountInfo.userStakeInfoPda,
-      userTokenAccount: accountInfo.userTokenAccount,
-      userRewardAccount: accountInfo.userRewardAccount,
-      blacklistEntry: accountInfo.blacklistPda,
+      ...accountInfo,
     })
     .rpc();
 
@@ -219,66 +182,13 @@ export const createUnstakeInstruction = async ({
   program,
   unstakeAmount,
 }: UnstakeTransactionParams) => {
-  const accountInfo = await createStakeAccountInfo(publicKey, program);
+  const accountInfo = await createStakingAccount(publicKey, program);
 
   const instruction = await program.methods
     .unstake(new BN(convertToLamports(unstakeAmount).toString()))
     .accountsPartial({
       user: publicKey,
-      state: accountInfo.statePda,
-      userStakeInfo: accountInfo.userStakeInfoPda,
-      userTokenAccount: accountInfo.userTokenAccount,
-      userRewardAccount: accountInfo.userRewardAccount,
-      blacklistEntry: accountInfo.blacklistPda,
-    })
-    .instruction();
-
-  return {
-    instruction,
-    accountInfo,
-  };
-};
-
-/**
- * Execute claim rewards transaction using RPC
- */
-export const executeClaimRewardsTransaction = async ({
-  publicKey,
-  program,
-}: ClaimRewardsParams): Promise<string> => {
-  const accountInfo = await createStakeAccountInfo(publicKey, program);
-
-  const txSignature = await program.methods
-    .claimRewards()
-    .accountsPartial({
-      user: publicKey,
-      state: accountInfo.statePda,
-      userStakeInfo: accountInfo.userStakeInfoPda,
-      userRewardAccount: accountInfo.userRewardAccount,
-      blacklistEntry: accountInfo.blacklistPda,
-    })
-    .rpc();
-
-  return txSignature;
-};
-
-/**
- * Create claim rewards instruction (for use in custom transactions)
- */
-export const createClaimRewardsInstruction = async ({
-  publicKey,
-  program,
-}: ClaimRewardsParams) => {
-  const accountInfo = await createStakeAccountInfo(publicKey, program);
-
-  const instruction = await program.methods
-    .claimRewards()
-    .accountsPartial({
-      user: publicKey,
-      state: accountInfo.statePda,
-      userStakeInfo: accountInfo.userStakeInfoPda,
-      userRewardAccount: accountInfo.userRewardAccount,
-      blacklistEntry: accountInfo.blacklistPda,
+      ...accountInfo,
     })
     .instruction();
 

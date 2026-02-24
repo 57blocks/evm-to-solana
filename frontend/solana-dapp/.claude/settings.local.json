@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:docs.jito.wtf)",
+      "WebFetch(domain:explorer.solana.com)",
+      "Bash(npm run lint:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
