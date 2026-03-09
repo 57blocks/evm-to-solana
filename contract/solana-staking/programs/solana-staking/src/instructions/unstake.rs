@@ -2,7 +2,7 @@ use crate::constants::*;
 use crate::errors::StakingError;
 use crate::events::Unstaked;
 use crate::state::{PoolConfig, PoolState, UserStakeInfo};
-use crate::utils::{reward_debt_delta, update_pool};
+use crate::utils::{pending_reward, reward_debt_delta, update_pool};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
@@ -78,6 +78,14 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
     );
 
     update_pool(pool_config, pool_state, clock)?;
+
+    if user_stake.amount == amount {
+        let pending_rewards = pending_reward(pool_config, pool_state, user_stake, clock.unix_timestamp)?;
+        require!(
+            pending_rewards == 0,
+            StakingError::MustClaimRewardsBeforeFullUnstake
+        );
+    }
 
     // Transfer staking tokens back to user
     let seeds = &[

@@ -12,7 +12,6 @@ pub struct ClosePool<'info> {
 
     #[account(
         mut,
-        close = admin,
         seeds = [POOL_CONFIG_SEED, pool_config.pool_id.as_ref()],
         bump = pool_config.bump,
         has_one = admin
@@ -21,7 +20,6 @@ pub struct ClosePool<'info> {
 
     #[account(
         mut,
-        close = admin,
         seeds = [POOL_STATE_SEED, pool_config.key().as_ref()],
         bump = pool_state.bump,
         has_one = pool_config

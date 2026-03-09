@@ -41,6 +41,9 @@ pub enum StakingError {
     #[msg("User reward debt must be 0 to close account")]
     UserRewardDebtNotZero,
 
+    #[msg("Claim rewards before fully unstaking")]
+    MustClaimRewardsBeforeFullUnstake,
+
     #[msg("Pool has active stakers")]
     PoolHasActiveStakes,
 

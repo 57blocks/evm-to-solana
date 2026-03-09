@@ -1045,19 +1045,22 @@ describe("solana-staking", () => {
       const oneDayLater =
         Number(stateAfterStake!.lastRewardTime.toString()) + SECONDS_IN_A_DAY;
       setNextBlockTimestamp(oneDayLater);
-      await unstakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
-
-      const userStakePda = getUserStakePda(statePda, user.publicKey);
-      const userStakeInfo = getUserStakeInfo(provider, userStakePda);
-      expect(userStakeInfo!.rewardDebt.toString()).to.not.equal("0");
 
       try {
-        await closeUserStakeAccount(user, userSigner);
+        await unstakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
         expect.fail("Should have thrown an error");
       } catch (error: any) {
         expect(error).to.not.be.null;
-        expect(error.toString()).to.include("UserRewardDebtNotZero");
+        expect(error.toString()).to.include("MustClaimRewardsBeforeFullUnstake");
       }
+
+      await claimUserRewards(user, userSigner, rewardToken);
+      await unstakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
+      await closeUserStakeAccount(user, userSigner);
+
+      const userStakePda = getUserStakePda(statePda, user.publicKey);
+      const closedUserStake = provider.client.getAccount(userStakePda);
+      expectClosedOrDrainedAccount(closedUserStake);
     });
   });
 
@@ -1161,10 +1164,39 @@ describe("solana-staking", () => {
       const stakingVaultAccount = provider.client.getAccount(stakingVaultPda);
       const rewardVaultAccount = provider.client.getAccount(rewardVaultPda);
 
-      expectClosedOrDrainedAccount(poolConfigAccount);
-      expectClosedOrDrainedAccount(poolStateAccount);
+      expect(poolConfigAccount).to.not.be.null;
+      expect(poolStateAccount).to.not.be.null;
       expectClosedOrDrainedAccount(stakingVaultAccount);
       expectClosedOrDrainedAccount(rewardVaultAccount);
+    });
+
+    it("should keep cleanup paths available after close_pool", async () => {
+      const { user, userSigner } = await createTestUser(svm);
+      const { stakingToken, rewardToken } = await setupUserWithTokens(
+        provider,
+        admin,
+        user,
+        stakingMint,
+        rewardMint,
+      );
+
+      await stakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
+      await unstakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
+      await addUserToBlacklist(user.publicKey);
+
+      await withdrawRemainingRewards(toToken(5000));
+      await closePool();
+
+      await closeUserStakeAccount(user, userSigner);
+      await removeUserFromBlacklist(user.publicKey);
+
+      const userStakePda = getUserStakePda(statePda, user.publicKey);
+      const blacklistPda = getBlacklistPda(statePda, user.publicKey);
+      const closedUserStake = provider.client.getAccount(userStakePda);
+      const closedBlacklist = provider.client.getAccount(blacklistPda);
+
+      expectClosedOrDrainedAccount(closedUserStake);
+      expectClosedOrDrainedAccount(closedBlacklist);
     });
   });
 
