@@ -26,6 +26,9 @@ contract DeployScript is Script {
         Staking staking = new Staking(address(stakingToken), address(rewardToken), rewardPerSecond);
         console.log("Staking contract deployed at:", address(staking));
 
+        stakingToken.setBlacklistRecipientExemptSender(address(staking), true);
+        console.log("Enabled safe-exit recipient exemption for staking contract");
+
         // Mint initial staking tokens to deployer (optional - for testing)
         uint256 stakingSupply = 1000000 * 10 ** 18; // 1M tokens
         stakingToken.mint(msg.sender, stakingSupply);

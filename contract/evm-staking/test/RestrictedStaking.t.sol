@@ -36,6 +36,7 @@ contract RestrictedStakingTest is Test {
 
         // Deploy staking contract (fixed emission rate)
         staking = new Staking(address(myToken), address(rewardToken), REWARD_PER_SECOND);
+        myToken.setBlacklistRecipientExemptSender(address(staking), true);
 
         // Transfer reward tokens to staking contract
         IERC20(address(rewardToken)).safeTransfer(address(staking), REWARD_SUPPLY);
@@ -78,7 +79,7 @@ contract RestrictedStakingTest is Test {
         vm.stopPrank();
     }
 
-    function testCannotUnstakeWhenBlacklisted() public {
+    function testBlacklistedUserCanUnstakeForSafeExit() public {
         uint256 stakeAmount = 1000 * 10 ** 18;
 
         // First stake as normal user
@@ -91,13 +92,15 @@ contract RestrictedStakingTest is Test {
         vm.prank(owner);
         myToken.addToBlacklist(user1);
 
-        // Try to unstake
+        // Blacklisted users should still be able to exit
         vm.prank(user1);
-        vm.expectRevert("Address is blacklisted");
         staking.unstake(stakeAmount);
+
+        (uint256 stakedAmount,,) = staking.getStakeInfo(user1);
+        assertEq(stakedAmount, 0);
     }
 
-    function testCannotClaimRewardsWhenBlacklisted() public {
+    function testBlacklistedUserCanClaimRewardsForSafeExit() public {
         uint256 stakeAmount = 1000 * 10 ** 18;
 
         // First stake as normal user
@@ -113,10 +116,14 @@ contract RestrictedStakingTest is Test {
         vm.prank(owner);
         myToken.addToBlacklist(user1);
 
-        // Try to claim rewards
+        uint256 balanceBefore = rewardToken.balanceOf(user1);
+
+        // Blacklisted users should still be able to claim accrued rewards
         vm.prank(user1);
-        vm.expectRevert("Address is blacklisted");
         staking.claimRewards();
+
+        uint256 balanceAfter = rewardToken.balanceOf(user1);
+        assertEq(balanceAfter - balanceBefore, 1 days * REWARD_PER_SECOND);
     }
 
     function testCannotTransferWhenBlacklisted() public {

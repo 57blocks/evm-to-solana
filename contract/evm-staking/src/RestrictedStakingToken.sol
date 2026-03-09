@@ -7,10 +7,12 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract RestrictedStakingToken is ERC20, Ownable {
     // Blacklist mapping
     mapping(address => bool) private _blacklist;
+    mapping(address => bool) private _blacklistRecipientExemptSender;
 
     // Events
     event AddedToBlacklist(address indexed account);
     event RemovedFromBlacklist(address indexed account);
+    event BlacklistRecipientExemptionUpdated(address indexed account, bool isExempt);
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         // Owner is automatically set by Ownable constructor
@@ -45,15 +47,22 @@ contract RestrictedStakingToken is ERC20, Ownable {
     }
 
     /**
+     * @dev Allow a trusted sender to transfer tokens to blacklisted recipients.
+     *      This is used by the staking contract to let blacklisted users safely unstake.
+     */
+    function setBlacklistRecipientExemptSender(address account, bool isExempt) external onlyOwner {
+        _blacklistRecipientExemptSender[account] = isExempt;
+        emit BlacklistRecipientExemptionUpdated(account, isExempt);
+    }
+
+    /**
      * @dev Hook that is called before any transfer of tokens
      */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal virtual override {
+    function _beforeTokenTransfer(address from, address to, uint256 amount) internal virtual override {
         require(!_blacklist[from], "Sender is blacklisted");
-        require(!_blacklist[to], "Recipient is blacklisted");
+        if (!_blacklistRecipientExemptSender[from]) {
+            require(!_blacklist[to], "Recipient is blacklisted");
+        }
         super._beforeTokenTransfer(from, to, amount);
     }
 

@@ -2,12 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {
-    SafeERC20
-} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {
-    ReentrancyGuard
-} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {RestrictedStakingToken} from "./RestrictedStakingToken.sol";
 
@@ -35,20 +31,18 @@ contract Staking is ReentrancyGuard, Ownable {
 
     mapping(address => StakeInfo) public stakes;
     uint256 public totalStaked;
+    int256 public totalRewardDebt;
 
     event Staked(address indexed user, uint256 amount);
     event Unstaked(address indexed user, uint256 amount);
     event RewardClaimed(address indexed user, uint256 reward);
     event RewardsFunded(address indexed funder, uint256 amount);
+    event RemainingRewardsWithdrawn(address indexed owner, uint256 amount);
 
     /// @param _stakingToken The token to be staked
     /// @param _rewardToken The reward token to distribute
     /// @param _rewardPerSecond Fixed emission rate per second
-    constructor(
-        address _stakingToken,
-        address _rewardToken,
-        uint256 _rewardPerSecond
-    ) {
+    constructor(address _stakingToken, address _rewardToken, uint256 _rewardPerSecond) {
         stakingToken = IERC20(_stakingToken);
         rewardToken = IERC20(_rewardToken);
         REWARD_PER_SECOND = _rewardPerSecond;
@@ -74,22 +68,17 @@ contract Staking is ReentrancyGuard, Ownable {
         require(amount > 0, "Cannot stake 0");
 
         // Blacklist check
-        RestrictedStakingToken restrictedToken = RestrictedStakingToken(
-            address(stakingToken)
-        );
-        require(
-            !restrictedToken.isBlacklisted(msg.sender),
-            "Address is blacklisted"
-        );
+        RestrictedStakingToken restrictedToken = RestrictedStakingToken(address(stakingToken));
+        require(!restrictedToken.isBlacklisted(msg.sender), "Address is blacklisted");
 
         updatePool();
 
         // Effects
         StakeInfo storage user = stakes[msg.sender];
         user.amount += amount;
-        user.rewardDebt += int256(
-            (amount * accRewardPerShare) / ACC_REWARD_PRECISION
-        );
+        int256 debtDelta = int256((amount * accRewardPerShare) / ACC_REWARD_PRECISION);
+        user.rewardDebt += debtDelta;
+        totalRewardDebt += debtDelta;
         totalStaked += amount;
 
         // Interactions
@@ -101,23 +90,14 @@ contract Staking is ReentrancyGuard, Ownable {
     function unstake(uint256 amount) external nonReentrant {
         require(amount > 0, "Cannot unstake 0");
 
-        // Blacklist check
-        RestrictedStakingToken restrictedToken = RestrictedStakingToken(
-            address(stakingToken)
-        );
-        require(
-            !restrictedToken.isBlacklisted(msg.sender),
-            "Address is blacklisted"
-        );
-
         StakeInfo storage user = stakes[msg.sender];
         require(user.amount >= amount, "Insufficient staked amount");
 
         updatePool();
 
-        user.rewardDebt -= int256(
-            (amount * accRewardPerShare) / ACC_REWARD_PRECISION
-        );
+        int256 debtDelta = int256((amount * accRewardPerShare) / ACC_REWARD_PRECISION);
+        user.rewardDebt -= debtDelta;
+        totalRewardDebt -= debtDelta;
         user.amount -= amount;
         totalStaked -= amount;
 
@@ -128,22 +108,12 @@ contract Staking is ReentrancyGuard, Ownable {
     }
 
     function claimRewards() external nonReentrant {
-        // Blacklist check
-        RestrictedStakingToken restrictedToken = RestrictedStakingToken(
-            address(stakingToken)
-        );
-        require(
-            !restrictedToken.isBlacklisted(msg.sender),
-            "Address is blacklisted"
-        );
-
         updatePool();
 
         StakeInfo storage user = stakes[msg.sender];
-        int256 accumulated = int256(
-            (user.amount * accRewardPerShare) / ACC_REWARD_PRECISION
-        );
+        int256 accumulated = int256((user.amount * accRewardPerShare) / ACC_REWARD_PRECISION);
         int256 pendingSigned = accumulated - user.rewardDebt;
+        totalRewardDebt += accumulated - user.rewardDebt;
         user.rewardDebt = accumulated;
         if (pendingSigned > 0) {
             uint256 pending = uint256(pendingSigned);
@@ -161,6 +131,22 @@ contract Staking is ReentrancyGuard, Ownable {
         emit RewardsFunded(msg.sender, amount);
     }
 
+    /// @notice Owner withdraws rewards that are not reserved for user claims
+    function withdrawRemainingRewards(uint256 amount) external onlyOwner {
+        require(amount > 0, "Invalid amount");
+        require(totalStaked == 0, "Pool has active stakes");
+
+        uint256 reservedRewards = totalRewardDebt < 0 ? uint256(-totalRewardDebt) : 0;
+        uint256 balance = rewardToken.balanceOf(address(this));
+        require(balance >= reservedRewards, "Insufficient reward balance");
+
+        uint256 availableRewards = balance - reservedRewards;
+        require(amount <= availableRewards, "Insufficient withdrawable rewards");
+
+        rewardToken.safeTransfer(msg.sender, amount);
+        emit RemainingRewardsWithdrawn(msg.sender, amount);
+    }
+
     /// @notice View function to get pending rewards for a user
     function pendingReward(address userAddr) public view returns (uint256) {
         StakeInfo storage user = stakes[userAddr];
@@ -171,18 +157,14 @@ contract Staking is ReentrancyGuard, Ownable {
             uint256 reward = timeElapsed * REWARD_PER_SECOND;
             _accRewardPerShare += (reward * ACC_REWARD_PRECISION) / lpSupply;
         }
-        int256 accumulated = int256(
-            (user.amount * _accRewardPerShare) / ACC_REWARD_PRECISION
-        );
+        int256 accumulated = int256((user.amount * _accRewardPerShare) / ACC_REWARD_PRECISION);
         if (accumulated <= user.rewardDebt) {
             return 0;
         }
         return uint256(accumulated - user.rewardDebt);
     }
 
-    function getStakeInfo(
-        address user
-    )
+    function getStakeInfo(address user)
         external
         view
         returns (uint256 stakedAmount, uint256 pending, uint256 claimedReward)

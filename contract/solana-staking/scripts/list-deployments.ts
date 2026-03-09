@@ -9,7 +9,7 @@ import type { SolanaStaking } from "../target/types/solana_staking";
 
 // Program ID
 const PROGRAM_ID = new PublicKey(
-  "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX",
+  "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX"
 );
 
 async function main() {
@@ -21,7 +21,7 @@ async function main() {
 
   // Load IDL
   const idl = JSON.parse(
-    fs.readFileSync("./target/idl/solana_staking.json", "utf8"),
+    fs.readFileSync("./target/idl/solana_staking.json", "utf8")
   );
 
   // Create program instance
@@ -38,7 +38,7 @@ async function main() {
     if (poolConfigs.length === 0) {
       console.log("❌ No deployments found on this network");
       console.log(
-        "\nRun 'npm run verify -- --new-tokens' to create a new deployment",
+        "\nRun 'npm run verify -- --new-tokens' to create a new deployment"
       );
       return;
     }
@@ -50,7 +50,7 @@ async function main() {
       const account = poolConfig.account;
       const [poolStatePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("pool_state"), poolConfig.publicKey.toBuffer()],
-        program.programId,
+        program.programId
       );
 
       console.log(`Deployment #${i + 1}:`);
@@ -64,7 +64,7 @@ async function main() {
       console.log(
         "💰 Reward Per Second:",
         account.rewardPerSecond.toString(),
-        "(raw units)",
+        "(raw units)"
       );
 
       // Get pool state for mutable fields
@@ -79,30 +79,30 @@ async function main() {
         "📊 Total Staked:",
         totalStaked === "Unable to fetch"
           ? totalStaked
-          : `${totalStaked} tokens`,
+          : `${totalStaked} tokens`
       );
 
       // Derive vault PDAs from pool config PDA
       const [stakingVaultPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("staking_vault"), poolConfig.publicKey.toBuffer()],
-        program.programId,
+        program.programId
       );
 
       const [rewardVaultPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("reward_vault"), poolConfig.publicKey.toBuffer()],
-        program.programId,
+        program.programId
       );
 
       // Get vault balances
       try {
         const stakingVaultInfo = await getAccount(
           provider.connection,
-          stakingVaultPda,
+          stakingVaultPda
         );
         console.log(
           "🏦 Staking Vault Balance:",
           Number(stakingVaultInfo.amount) / 10 ** 9,
-          "tokens",
+          "tokens"
         );
       } catch (e) {
         console.log("🏦 Staking Vault Balance: Unable to fetch");
@@ -111,12 +111,12 @@ async function main() {
       try {
         const rewardVaultInfo = await getAccount(
           provider.connection,
-          rewardVaultPda,
+          rewardVaultPda
         );
         console.log(
           "🏦 Reward Vault Balance:",
           Number(rewardVaultInfo.amount) / 10 ** 9,
-          "tokens",
+          "tokens"
         );
       } catch (e) {
         console.log("🏦 Reward Vault Balance: Unable to fetch");
@@ -128,10 +128,10 @@ async function main() {
     console.log("\n💡 Tips:");
     console.log("- The verify script will use the first deployment by default");
     console.log(
-      "- Use 'npm run verify -- --new-tokens' to create a new deployment",
+      "- Use 'npm run verify -- --new-tokens' to create a new deployment"
     );
     console.log(
-      "- Save the token addresses if you need to use them in other scripts",
+      "- Save the token addresses if you need to use them in other scripts"
     );
   } catch (error) {
     console.error("❌ Error listing deployments:", error);

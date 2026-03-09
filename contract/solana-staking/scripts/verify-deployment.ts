@@ -18,11 +18,11 @@ import type { SolanaStaking } from "../target/types/solana_staking";
 
 // Program ID
 const PROGRAM_ID = new PublicKey(
-  "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX",
+  "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX"
 );
 const REWARD_PER_SECOND = new BN(1_000_000); // 0.001 token/sec (9 decimals)
 const SYSVAR_CLOCK_PUBKEY = new PublicKey(
-  "SysvarC1ock11111111111111111111111111111111",
+  "SysvarC1ock11111111111111111111111111111111"
 );
 
 // Parse command line arguments
@@ -74,7 +74,7 @@ async function main() {
   } else if (providedStakingToken) {
     log(
       "📝 Mode: Use specified staking token:",
-      providedStakingToken.toString(),
+      providedStakingToken.toString()
     );
   } else {
     log("📝 Mode: Reuse existing tokens (if available)");
@@ -92,7 +92,7 @@ async function main() {
 
   // Load IDL
   const idl = JSON.parse(
-    fs.readFileSync("./target/idl/solana_staking.json", "utf8"),
+    fs.readFileSync("./target/idl/solana_staking.json", "utf8")
   );
 
   // Create program instance
@@ -109,7 +109,7 @@ async function main() {
 
   try {
     const printAvailableDeployments = (
-      states: Array<{ publicKey: PublicKey; account: any }>,
+      states: Array<{ publicKey: PublicKey; account: any }>
     ) => {
       if (states.length === 0) {
         log("  (none)");
@@ -123,7 +123,7 @@ async function main() {
           "| State:",
           state.publicKey.toString(),
           "| Staking Mint:",
-          state.account.stakingMint.toString(),
+          state.account.stakingMint.toString()
         );
       }
     };
@@ -138,7 +138,7 @@ async function main() {
     const derivePoolStatePda = (poolConfigPda: PublicKey): PublicKey => {
       const [pda] = PublicKey.findProgramAddressSync(
         [Buffer.from("pool_state"), poolConfigPda.toBuffer()],
-        program.programId,
+        program.programId
       );
       return pda;
     };
@@ -151,7 +151,7 @@ async function main() {
 
     const setSelectedDeployment = async (
       selectedState: (typeof poolConfigs)[number],
-      title: string,
+      title: string
     ) => {
       statePda = selectedState.publicKey;
       poolStatePda = derivePoolStatePda(statePda);
@@ -181,7 +181,7 @@ async function main() {
     // If specific pool ID provided, use exact match.
     if (providedPoolId && !createNewTokens) {
       const matchingState = poolConfigs.find((state) =>
-        state.account.poolId.equals(providedPoolId),
+        state.account.poolId.equals(providedPoolId)
       );
 
       if (matchingState) {
@@ -190,20 +190,20 @@ async function main() {
           !matchingState.account.stakingMint.equals(providedStakingToken)
         ) {
           log(
-            "❌ The provided --pool-id does not belong to the provided --staking-token",
+            "❌ The provided --pool-id does not belong to the provided --staking-token"
           );
           log("  - Pool ID:", providedPoolId.toString());
           log("  - Expected staking token:", providedStakingToken.toString());
           log(
             "  - Actual staking token:",
-            matchingState.account.stakingMint.toString(),
+            matchingState.account.stakingMint.toString()
           );
           process.exit(1);
         }
 
         await setSelectedDeployment(
           matchingState,
-          "✅ Found deployment with specified pool ID:",
+          "✅ Found deployment with specified pool ID:"
         );
       } else {
         log("❌ No deployment found with pool ID:", providedPoolId.toString());
@@ -214,18 +214,18 @@ async function main() {
       // If specific token provided, require unambiguous match.
     } else if (providedStakingToken && !createNewTokens) {
       const matchingStates = poolConfigs.filter((state) =>
-        state.account.stakingMint.equals(providedStakingToken),
+        state.account.stakingMint.equals(providedStakingToken)
       );
 
       if (matchingStates.length === 1) {
         await setSelectedDeployment(
           matchingStates[0],
-          "✅ Found deployment with specified staking token:",
+          "✅ Found deployment with specified staking token:"
         );
       } else if (matchingStates.length > 1) {
         log(
           "❌ Multiple deployments found for staking token:",
-          providedStakingToken.toString(),
+          providedStakingToken.toString()
         );
         log("Please specify --pool-id to select the exact pool.");
         log("\nMatching deployments:");
@@ -234,7 +234,7 @@ async function main() {
       } else {
         log(
           "❌ No deployment found with staking token:",
-          providedStakingToken.toString(),
+          providedStakingToken.toString()
         );
         log("\nAvailable deployments:");
         printAvailableDeployments(poolConfigs);
@@ -244,12 +244,12 @@ async function main() {
       if (poolConfigs.length === 1) {
         await setSelectedDeployment(
           poolConfigs[0],
-          "✅ Found existing deployment:",
+          "✅ Found existing deployment:"
         );
       } else {
         log("❌ Multiple deployments found. Selection is ambiguous.");
         log(
-          "Please specify --pool-id (recommended) or --staking-token to choose a deployment.",
+          "Please specify --pool-id (recommended) or --staking-token to choose a deployment."
         );
         log("\nAvailable deployments:");
         printAvailableDeployments(poolConfigs);
@@ -266,7 +266,7 @@ async function main() {
         wallet.payer,
         wallet.publicKey,
         null,
-        9,
+        9
       );
       log("✅ Staking Token:", stakingMint.toString());
 
@@ -276,7 +276,7 @@ async function main() {
         wallet.payer,
         wallet.publicKey,
         null,
-        9,
+        9
       );
       log("✅ Reward Token:", rewardMint.toString());
 
@@ -287,22 +287,22 @@ async function main() {
       // Calculate PDAs
       [statePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("pool_config"), poolId.toBuffer()],
-        program.programId,
+        program.programId
       );
 
       [poolStatePda] = PublicKey.findProgramAddressSync(
         [Buffer.from("pool_state"), statePda.toBuffer()],
-        program.programId,
+        program.programId
       );
 
       const [stakingVaultPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("staking_vault"), statePda.toBuffer()],
-        program.programId,
+        program.programId
       );
 
       const [rewardVaultPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("reward_vault"), statePda.toBuffer()],
-        program.programId,
+        program.programId
       );
 
       // Initialize contract
@@ -335,12 +335,12 @@ async function main() {
     // Get vault PDAs
     const [stakingVaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("staking_vault"), statePda.toBuffer()],
-      program.programId,
+      program.programId
     );
 
     const [rewardVaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("reward_vault"), statePda.toBuffer()],
-      program.programId,
+      program.programId
     );
 
     // Prepare test accounts
@@ -353,12 +353,12 @@ async function main() {
     try {
       const associatedStakingAddress = await getAssociatedTokenAddress(
         stakingMint,
-        wallet.publicKey,
+        wallet.publicKey
       );
 
       // Check if account exists
       const accountInfo = await provider.connection.getAccountInfo(
-        associatedStakingAddress,
+        associatedStakingAddress
       );
 
       if (accountInfo) {
@@ -369,7 +369,7 @@ async function main() {
           provider.connection,
           wallet.payer,
           stakingMint,
-          wallet.publicKey,
+          wallet.publicKey
         );
         debug("Created new staking token account");
       }
@@ -381,12 +381,12 @@ async function main() {
     try {
       const associatedRewardAddress = await getAssociatedTokenAddress(
         rewardMint,
-        wallet.publicKey,
+        wallet.publicKey
       );
 
       // Check if account exists
       const accountInfo = await provider.connection.getAccountInfo(
-        associatedRewardAddress,
+        associatedRewardAddress
       );
 
       if (accountInfo) {
@@ -397,7 +397,7 @@ async function main() {
           provider.connection,
           wallet.payer,
           rewardMint,
-          wallet.publicKey,
+          wallet.publicKey
         );
         debug("Created new reward token account");
       }
@@ -409,7 +409,7 @@ async function main() {
     // Check balances and mint if needed
     const stakingAccountInfo = await getAccount(
       provider.connection,
-      userStakingAccount,
+      userStakingAccount
     );
     const currentStakingBalance = Number(stakingAccountInfo.amount) / 10 ** 9;
 
@@ -423,7 +423,7 @@ async function main() {
         stakingMint,
         userStakingAccount,
         wallet.payer,
-        mintAmount,
+        mintAmount
       );
       log("✅ Minted 1000 staking tokens to user");
     }
@@ -431,7 +431,7 @@ async function main() {
     // Check reward vault balance and mint if needed
     const rewardVaultAccountInfo = await getAccount(
       provider.connection,
-      rewardVaultPda,
+      rewardVaultPda
     );
     const currentRewardVaultBalance =
       Number(rewardVaultAccountInfo.amount) / 10 ** 9;
@@ -446,7 +446,7 @@ async function main() {
         rewardMint,
         userRewardAccount,
         wallet.payer,
-        mintAmount,
+        mintAmount
       );
 
       const tx = await program.methods
@@ -469,7 +469,7 @@ async function main() {
 
     const [userStakeInfoPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("stake"), statePda.toBuffer(), wallet.publicKey.toBuffer()],
-      program.programId,
+      program.programId
     );
 
     const [blacklistPda] = PublicKey.findProgramAddressSync(
@@ -478,7 +478,7 @@ async function main() {
         statePda.toBuffer(),
         wallet.publicKey.toBuffer(),
       ],
-      program.programId,
+      program.programId
     );
 
     // Check current stake
@@ -531,7 +531,7 @@ async function main() {
     try {
       const beforeBalance = await getAccount(
         provider.connection,
-        userRewardAccount,
+        userRewardAccount
       );
       const beforeAmount = Number(beforeBalance.amount) / 10 ** 9;
 
@@ -554,7 +554,7 @@ async function main() {
       // Check reward balance
       const afterBalance = await getAccount(
         provider.connection,
-        userRewardAccount,
+        userRewardAccount
       );
       const afterAmount = Number(afterBalance.amount) / 10 ** 9;
       const rewardsEarned = afterAmount - beforeAmount;
@@ -608,7 +608,7 @@ async function main() {
           statePda.toBuffer(),
           testUser.publicKey.toBuffer(),
         ],
-        program.programId,
+        program.programId
       );
 
       try {
@@ -651,7 +651,7 @@ async function main() {
     log(
       "  - Total Staked:",
       Number(finalState.totalStaked) / 10 ** 9,
-      "tokens",
+      "tokens"
     );
 
     try {
@@ -664,22 +664,22 @@ async function main() {
 
     const stakingBalance = await getAccount(
       provider.connection,
-      userStakingAccount,
+      userStakingAccount
     );
     log(
       "  - Your Staking Token Balance:",
       Number(stakingBalance.amount) / 10 ** 9,
-      "tokens",
+      "tokens"
     );
 
     const rewardBalance = await getAccount(
       provider.connection,
-      userRewardAccount,
+      userRewardAccount
     );
     log(
       "  - Your Reward Token Balance:",
       Number(rewardBalance.amount) / 10 ** 9,
-      "tokens",
+      "tokens"
     );
 
     log("\n✨ Verification complete! All methods have been tested.");
