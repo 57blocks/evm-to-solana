@@ -49,4 +49,10 @@ pub enum StakingError {
 
     #[msg("Vault must be empty")]
     VaultNotEmpty,
+
+    #[msg("Insufficient reward vault balance")]
+    InsufficientRewardVaultBalance,
+
+    #[msg("No active stake to claim rewards")]
+    NoActiveStake,
 }

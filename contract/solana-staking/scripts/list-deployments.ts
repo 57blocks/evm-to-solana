@@ -83,8 +83,8 @@ async function main() {
       );
 
       // Derive vault PDAs from pool config PDA
-      const [stakingVaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("staking_vault"), poolConfig.publicKey.toBuffer()],
+      const [stakingTokenPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("staking_token"), poolConfig.publicKey.toBuffer()],
         program.programId
       );
 
@@ -95,13 +95,13 @@ async function main() {
 
       // Get vault balances
       try {
-        const stakingVaultInfo = await getAccount(
+        const stakingTokenInfo = await getAccount(
           provider.connection,
-          stakingVaultPda
+          stakingTokenPda
         );
         console.log(
           "🏦 Staking Vault Balance:",
-          Number(stakingVaultInfo.amount) / 10 ** 9,
+          Number(stakingTokenInfo.amount) / 10 ** 9,
           "tokens"
         );
       } catch (e) {

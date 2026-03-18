@@ -51,6 +51,10 @@ pub fn withdraw_remaining_rewards_handler(
         ctx.accounts.pool_state.total_staked == 0,
         StakingError::PoolHasActiveStakes
     );
+    require!(
+        amount <= ctx.accounts.reward_vault.amount,
+        StakingError::InsufficientRewardVaultBalance
+    );
 
     let pool_config = &ctx.accounts.pool_config;
     let seeds = &[

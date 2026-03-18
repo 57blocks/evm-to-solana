@@ -41,10 +41,10 @@ pub struct Unstake<'info> {
 
     #[account(
         mut,
-        seeds = [STAKING_VAULT_SEED, pool_config.key().as_ref()],
+        seeds = [STAKING_TOKEN_SEED, pool_config.key().as_ref()],
         bump
     )]
-    pub staking_vault: Account<'info, TokenAccount>,
+    pub staking_token: Account<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -96,7 +96,7 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
     let signer = &[&seeds[..]];
 
     let cpi_accounts = Transfer {
-        from: ctx.accounts.staking_vault.to_account_info(),
+        from: ctx.accounts.staking_token.to_account_info(),
         to: ctx.accounts.user_token_account.to_account_info(),
         authority: pool_config.to_account_info(),
     };
@@ -117,7 +117,6 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
         pool: pool_config.pool_id,
         user: ctx.accounts.user.key(),
         amount,
-        rewards: 0,
         timestamp: clock.unix_timestamp,
     });
 

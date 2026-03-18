@@ -37,10 +37,10 @@ pub struct CreatePool<'info> {
         payer = admin,
         token::mint = staking_mint,
         token::authority = pool_config,
-        seeds = [STAKING_VAULT_SEED, pool_config.key().as_ref()],
+        seeds = [STAKING_TOKEN_SEED, pool_config.key().as_ref()],
         bump
     )]
-    pub staking_vault: Account<'info, TokenAccount>,
+    pub staking_token: Account<'info, TokenAccount>,
 
     #[account(
         init,

@@ -43,24 +43,10 @@ pub struct Stake<'info> {
 
     #[account(
         mut,
-        seeds = [STAKING_VAULT_SEED, pool_config.key().as_ref()],
+        seeds = [STAKING_TOKEN_SEED, pool_config.key().as_ref()],
         bump
     )]
-    pub staking_vault: Account<'info, TokenAccount>,
-
-    #[account(
-        mut,
-        seeds = [REWARD_VAULT_SEED, pool_config.key().as_ref()],
-        bump
-    )]
-    pub reward_vault: Account<'info, TokenAccount>,
-
-    #[account(
-        mut,
-        token::mint = pool_config.reward_mint,
-        token::authority = user
-    )]
-    pub user_reward_account: Account<'info, TokenAccount>,
+    pub staking_token: Account<'info, TokenAccount>,
 
     /// CHECK: This account may or may not exist - we check if it exists to determine blacklist status
     #[account(
@@ -93,7 +79,7 @@ pub fn stake_handler(ctx: Context<Stake>, amount: u64) -> Result<()> {
     // Transfer staking tokens from user to vault
     let cpi_accounts = Transfer {
         from: ctx.accounts.user_token_account.to_account_info(),
-        to: ctx.accounts.staking_vault.to_account_info(),
+        to: ctx.accounts.staking_token.to_account_info(),
         authority: ctx.accounts.user.to_account_info(),
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();

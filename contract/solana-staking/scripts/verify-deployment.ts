@@ -295,8 +295,8 @@ async function main() {
         program.programId
       );
 
-      const [stakingVaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("staking_vault"), statePda.toBuffer()],
+      const [stakingTokenPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("staking_token"), statePda.toBuffer()],
         program.programId
       );
 
@@ -317,7 +317,7 @@ async function main() {
             poolState: poolStatePda,
             stakingMint,
             rewardMint,
-            stakingVault: stakingVaultPda,
+            stakingToken: stakingTokenPda,
             rewardVault: rewardVaultPda,
             systemProgram: SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
@@ -333,8 +333,8 @@ async function main() {
     }
 
     // Get vault PDAs
-    const [stakingVaultPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("staking_vault"), statePda.toBuffer()],
+    const [stakingTokenPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("staking_token"), statePda.toBuffer()],
       program.programId
     );
 
@@ -503,9 +503,7 @@ async function main() {
           poolState: poolStatePda,
           userStakeInfo: userStakeInfoPda,
           userTokenAccount: userStakingAccount,
-          stakingVault: stakingVaultPda,
-          rewardVault: rewardVaultPda,
-          userRewardAccount,
+          stakingToken: stakingTokenPda,
           blacklistEntry: blacklistPda,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
@@ -578,7 +576,7 @@ async function main() {
           poolState: poolStatePda,
           userStakeInfo: userStakeInfoPda,
           userTokenAccount: userStakingAccount,
-          stakingVault: stakingVaultPda,
+          stakingToken: stakingTokenPda,
           rewardVault: rewardVaultPda,
           userRewardAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
