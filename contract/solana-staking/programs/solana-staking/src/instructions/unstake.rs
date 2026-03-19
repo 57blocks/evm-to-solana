@@ -2,13 +2,12 @@ use crate::constants::*;
 use crate::errors::StakingError;
 use crate::events::Unstaked;
 use crate::state::{PoolConfig, PoolState, UserStakeInfo};
-use crate::utils::{pending_reward, reward_debt_delta, update_pool};
+use crate::utils::{calculate_share_value, update_pool};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 #[derive(Accounts)]
 pub struct Unstake<'info> {
-    #[account(mut)]
     pub user: Signer<'info>,
 
     #[account(
@@ -46,22 +45,7 @@ pub struct Unstake<'info> {
     )]
     pub staking_token: Account<'info, TokenAccount>,
 
-    #[account(
-        mut,
-        seeds = [REWARD_VAULT_SEED, pool_config.key().as_ref()],
-        bump
-    )]
-    pub reward_vault: Account<'info, TokenAccount>,
-
-    #[account(
-        mut,
-        token::mint = pool_config.reward_mint,
-        token::authority = user
-    )]
-    pub user_reward_account: Account<'info, TokenAccount>,
-
     pub token_program: Program<'info, Token>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
@@ -70,22 +54,14 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
     let pool_config = &ctx.accounts.pool_config;
     let pool_state = &mut ctx.accounts.pool_state;
     let user_stake = &mut ctx.accounts.user_stake_info;
-    let clock = &ctx.accounts.clock;
+    let clock = Clock::get()?;
 
     require!(
         user_stake.amount >= amount,
         StakingError::InsufficientStakedAmount
     );
 
-    update_pool(pool_config, pool_state, clock)?;
-
-    if user_stake.amount == amount {
-        let pending_rewards = pending_reward(pool_config, pool_state, user_stake, clock.unix_timestamp)?;
-        require!(
-            pending_rewards == 0,
-            StakingError::MustClaimRewardsBeforeFullUnstake
-        );
-    }
+    update_pool(pool_config, pool_state, &clock)?;
 
     // Transfer staking tokens back to user
     let seeds = &[
@@ -106,11 +82,12 @@ pub fn unstake_handler(ctx: Context<Unstake>, amount: u64) -> Result<()> {
 
     // Update user stake info
     user_stake.amount -= amount;
-    let debt_delta = reward_debt_delta(amount, pool_state.acc_reward_per_share)?;
+    let debt_delta = calculate_share_value(amount, pool_state.acc_reward_per_share)?;
     user_stake.reward_debt -= debt_delta;
 
     // Update pool state
     pool_state.total_staked -= amount;
+    pool_state.total_reward_debt -= debt_delta;
 
     // Emit unstaked event
     emit!(Unstaked {

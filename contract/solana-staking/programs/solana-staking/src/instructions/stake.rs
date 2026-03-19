@@ -2,7 +2,7 @@ use crate::constants::*;
 use crate::errors::StakingError;
 use crate::events::Staked;
 use crate::state::{PoolConfig, PoolState, UserStakeInfo};
-use crate::utils::{reward_debt_delta, update_pool};
+use crate::utils::{calculate_share_value, update_pool};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
@@ -57,7 +57,6 @@ pub struct Stake<'info> {
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn stake_handler(ctx: Context<Stake>, amount: u64) -> Result<()> {
@@ -72,9 +71,9 @@ pub fn stake_handler(ctx: Context<Stake>, amount: u64) -> Result<()> {
     let pool_config = &ctx.accounts.pool_config;
     let pool_state = &mut ctx.accounts.pool_state;
     let user_stake = &mut ctx.accounts.user_stake_info;
-    let clock = &ctx.accounts.clock;
+    let clock = Clock::get()?;
 
-    update_pool(pool_config, pool_state, clock)?;
+    update_pool(pool_config, pool_state, &clock)?;
 
     // Transfer staking tokens from user to vault
     let cpi_accounts = Transfer {
@@ -88,12 +87,13 @@ pub fn stake_handler(ctx: Context<Stake>, amount: u64) -> Result<()> {
 
     // Update user stake info
     user_stake.amount += amount;
-    let debt_delta = reward_debt_delta(amount, pool_state.acc_reward_per_share)?;
+    let debt_delta = calculate_share_value(amount, pool_state.acc_reward_per_share)?;
     user_stake.reward_debt += debt_delta;
     user_stake.bump = ctx.bumps.user_stake_info;
 
     // Update pool state
     pool_state.total_staked += amount;
+    pool_state.total_reward_debt += debt_delta;
 
     // Emit staked event
     emit!(Staked {

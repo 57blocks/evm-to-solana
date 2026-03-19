@@ -54,7 +54,6 @@ pub struct CreatePool<'info> {
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn create_pool_handler(
@@ -67,6 +66,7 @@ pub fn create_pool_handler(
 
     let pool_config = &mut ctx.accounts.pool_config;
     let pool_state = &mut ctx.accounts.pool_state;
+    let clock = Clock::get()?;
 
     pool_config.admin = ctx.accounts.admin.key();
     pool_config.pool_id = pool_id;
@@ -77,8 +77,9 @@ pub fn create_pool_handler(
 
     pool_state.pool_config = pool_config.key();
     pool_state.acc_reward_per_share = 0;
-    pool_state.last_reward_time = ctx.accounts.clock.unix_timestamp;
+    pool_state.last_reward_time = clock.unix_timestamp;
     pool_state.total_staked = 0;
+    pool_state.total_reward_debt = 0;
     pool_state.bump = ctx.bumps.pool_state;
 
     // Emit pool created event
@@ -88,7 +89,7 @@ pub fn create_pool_handler(
         staking_mint: ctx.accounts.staking_mint.key(),
         reward_mint: ctx.accounts.reward_mint.key(),
         reward_per_second,
-        timestamp: ctx.accounts.clock.unix_timestamp,
+        timestamp: clock.unix_timestamp,
     });
 
     Ok(())

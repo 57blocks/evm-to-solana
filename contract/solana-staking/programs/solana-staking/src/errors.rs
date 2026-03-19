@@ -29,9 +29,6 @@ pub enum StakingError {
     #[msg("Invalid withdraw amount")]
     InvalidWithdrawAmount,
 
-    #[msg("Nothing to withdraw")]
-    NothingToWithdraw,
-
     #[msg("Invalid pool ID")]
     InvalidPoolId,
 
@@ -41,9 +38,6 @@ pub enum StakingError {
     #[msg("User reward debt must be 0 to close account")]
     UserRewardDebtNotZero,
 
-    #[msg("Claim rewards before fully unstaking")]
-    MustClaimRewardsBeforeFullUnstake,
-
     #[msg("Pool has active stakers")]
     PoolHasActiveStakes,
 
@@ -52,7 +46,4 @@ pub enum StakingError {
 
     #[msg("Insufficient reward vault balance")]
     InsufficientRewardVaultBalance,
-
-    #[msg("No active stake to claim rewards")]
-    NoActiveStake,
 }

@@ -32,11 +32,11 @@ pub struct FundRewards<'info> {
     pub reward_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn fund_rewards_handler(ctx: Context<FundRewards>, amount: u64) -> Result<()> {
     require!(amount > 0, StakingError::InvalidFundAmount);
+    let clock = Clock::get()?;
 
     let cpi_accounts = Transfer {
         from: ctx.accounts.admin_reward_account.to_account_info(),
@@ -51,7 +51,7 @@ pub fn fund_rewards_handler(ctx: Context<FundRewards>, amount: u64) -> Result<()
         pool: ctx.accounts.pool_config.pool_id,
         funder: ctx.accounts.admin.key(),
         amount,
-        timestamp: ctx.accounts.clock.unix_timestamp,
+        timestamp: clock.unix_timestamp,
     });
 
     Ok(())

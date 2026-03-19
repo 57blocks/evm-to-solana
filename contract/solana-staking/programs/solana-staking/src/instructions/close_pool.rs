@@ -43,12 +43,12 @@ pub struct ClosePool<'info> {
     pub reward_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn close_pool_handler(ctx: Context<ClosePool>) -> Result<()> {
     let pool_config = &ctx.accounts.pool_config;
     let pool_state = &ctx.accounts.pool_state;
+    let clock = Clock::get()?;
 
     require!(
         pool_state.total_staked == 0,
@@ -95,7 +95,7 @@ pub fn close_pool_handler(ctx: Context<ClosePool>) -> Result<()> {
     emit!(PoolClosed {
         pool: pool_config.pool_id,
         admin: ctx.accounts.admin.key(),
-        timestamp: ctx.accounts.clock.unix_timestamp,
+        timestamp: clock.unix_timestamp,
     });
 
     Ok(())

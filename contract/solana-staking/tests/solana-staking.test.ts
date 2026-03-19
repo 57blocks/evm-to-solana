@@ -69,7 +69,6 @@ describe("solana-staking", () => {
     user: Keypair,
     userSigner: any,
     stakingToken: PublicKey,
-    rewardToken: PublicKey,
     amount: bigint
   ) {
     const userStakePda = getUserStakePda(statePda, user.publicKey);
@@ -80,8 +79,6 @@ describe("solana-staking", () => {
       userStakeInfo: address(userStakePda.toBase58()),
       userTokenAccount: address(stakingToken.toBase58()),
       stakingToken: address(stakingTokenPda.toBase58()),
-      rewardVault: address(rewardVaultPda.toBase58()),
-      userRewardAccount: address(rewardToken.toBase58()),
       tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
       amount: amount,
     });
@@ -826,7 +823,6 @@ describe("solana-staking", () => {
         user,
         userSigner,
         stakingToken,
-        rewardToken,
         unstakeAmount
       );
 
@@ -869,7 +865,6 @@ describe("solana-staking", () => {
           user,
           userSigner,
           stakingToken,
-          rewardToken,
           tooMuchAmount
         );
         expect.fail("Transaction should have failed");
@@ -911,7 +906,6 @@ describe("solana-staking", () => {
           user,
           userSigner,
           stakingToken,
-          rewardToken,
           BigInt(0) // Try to unstake 0 tokens
         );
         expect.fail("Should have thrown an error");
@@ -969,7 +963,6 @@ describe("solana-staking", () => {
         blacklistedUser,
         blacklistedUserSigner,
         blacklistedUserStakingToken,
-        blacklistedUserRewardToken,
         toToken(50)
       );
 
@@ -1005,9 +998,9 @@ describe("solana-staking", () => {
         user,
         userSigner,
         stakingToken,
-        rewardToken,
         toToken(100)
       );
+      await claimUserRewards(user, userSigner, rewardToken);
 
       await closeUserStakeAccount(user, userSigner);
 
@@ -1043,7 +1036,7 @@ describe("solana-staking", () => {
       }
     });
 
-    it("should fail to close user stake account when reward debt is not zero", async () => {
+    it("should not auto-claim rewards on full unstake — must claim separately", async () => {
       const { user, userSigner } = await createTestUser(svm);
       const { stakingToken, rewardToken } = await setupUserWithTokens(
         provider,
@@ -1065,33 +1058,51 @@ describe("solana-staking", () => {
         Number(stateAfterStake!.lastRewardTime.toString()) + SECONDS_IN_A_DAY;
       setNextBlockTimestamp(oneDayLater);
 
-      try {
-        await unstakeTokens(
-          user,
-          userSigner,
-          stakingToken,
-          rewardToken,
-          toToken(10)
-        );
-        expect.fail("Should have thrown an error");
-      } catch (error: any) {
-        expect(error).to.not.be.null;
-        expect(error.toString()).to.include(
-          "MustClaimRewardsBeforeFullUnstake"
-        );
-      }
-
-      await claimUserRewards(user, userSigner, rewardToken);
+      // Full unstake — should NOT transfer rewards
+      const rewardBalanceBefore = BigInt(
+        getAccount(provider, rewardToken).amount
+      );
       await unstakeTokens(
         user,
         userSigner,
         stakingToken,
-        rewardToken,
         toToken(10)
       );
+      const rewardBalanceAfter = BigInt(
+        getAccount(provider, rewardToken).amount
+      );
+      expect(rewardBalanceAfter - rewardBalanceBefore).to.equal(BigInt(0));
+
+      // Verify amount=0, reward_debt < 0 (unclaimed rewards preserved)
+      const userStakePda = getUserStakePda(statePda, user.publicKey);
+      const userStakeInfo = getUserStakeInfo(provider, userStakePda);
+      expect(userStakeInfo).to.not.be.null;
+      expect(userStakeInfo!.amount.toString()).to.equal("0");
+      expect(BigInt(userStakeInfo!.rewardDebt.toString()) < BigInt(0)).to.be
+        .true;
+
+      // Cannot close account yet — reward_debt != 0
+      try {
+        await closeUserStakeAccount(user, userSigner);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.include("UserRewardDebtNotZero");
+      }
+
+      // Claim rewards separately
+      await claimUserRewards(user, userSigner, rewardToken);
+      const rewardBalanceFinal = BigInt(
+        getAccount(provider, rewardToken).amount
+      );
+      expect(rewardBalanceFinal - rewardBalanceBefore).to.equal(
+        BigInt(SECONDS_IN_A_DAY) * REWARD_PER_SECOND
+      );
+
+      // Now reward_debt is 0, can close
+      const stakeInfoAfterClaim = getUserStakeInfo(provider, userStakePda);
+      expect(stakeInfoAfterClaim!.rewardDebt.toString()).to.equal("0");
       await closeUserStakeAccount(user, userSigner);
 
-      const userStakePda = getUserStakePda(statePda, user.publicKey);
       const closedUserStake = provider.client.getAccount(userStakePda);
       expectClosedOrDrainedAccount(closedUserStake);
     });
@@ -1188,6 +1199,54 @@ describe("solana-staking", () => {
       }
     });
 
+    it("should protect reserved rewards from admin withdrawal after full unstake", async () => {
+      const { user, userSigner } = await createTestUser(svm);
+      const { stakingToken, rewardToken } = await setupUserWithTokens(
+        provider,
+        admin,
+        user,
+        stakingMint,
+        rewardMint
+      );
+
+      await stakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        rewardToken,
+        toToken(10)
+      );
+
+      const stateAfterStake = getGlobalState(provider, statePda);
+      const oneDayLater =
+        Number(stateAfterStake!.lastRewardTime.toString()) + SECONDS_IN_A_DAY;
+      setNextBlockTimestamp(oneDayLater);
+
+      // Full unstake — rewards preserved in negative reward_debt
+      await unstakeTokens(user, userSigner, stakingToken, toToken(10));
+
+      const expectedRewards = BigInt(SECONDS_IN_A_DAY) * REWARD_PER_SECOND;
+      const vaultBalance = BigInt(getAccount(provider, rewardVaultPda).amount);
+
+      // Admin should NOT be able to withdraw the full vault — reserved rewards must be protected
+      try {
+        await withdrawRemainingRewards(vaultBalance);
+        expect.fail("Should have thrown an error");
+      } catch (error: any) {
+        expect(error).to.not.be.null;
+        expect(error.toString()).to.include("InsufficientRewardVaultBalance");
+      }
+
+      // Admin CAN withdraw the non-reserved portion
+      const availableToWithdraw = vaultBalance - expectedRewards;
+      await withdrawRemainingRewards(availableToWithdraw);
+
+      // User can still claim their rewards
+      await claimUserRewards(user, userSigner, rewardToken);
+      const rewardBalance = BigInt(getAccount(provider, rewardToken).amount);
+      expect(rewardBalance).to.equal(expectedRewards);
+    });
+
     it("should fail close_pool when reward vault is not empty", async () => {
       try {
         await closePool();
@@ -1234,9 +1293,9 @@ describe("solana-staking", () => {
         user,
         userSigner,
         stakingToken,
-        rewardToken,
         toToken(10)
       );
+      await claimUserRewards(user, userSigner, rewardToken);
       await addUserToBlacklist(user.publicKey);
 
       // Cleanup must happen before close_pool since it closes pool_config/pool_state PDAs

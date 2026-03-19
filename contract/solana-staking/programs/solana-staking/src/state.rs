@@ -18,6 +18,7 @@ pub struct PoolState {
     pub acc_reward_per_share: u128,
     pub last_reward_time: i64,
     pub total_staked: u64,
+    pub total_reward_debt: i128,
     pub bump: u8,
 }
 

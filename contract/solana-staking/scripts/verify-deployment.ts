@@ -21,9 +21,6 @@ const PROGRAM_ID = new PublicKey(
   "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX"
 );
 const REWARD_PER_SECOND = new BN(1_000_000); // 0.001 token/sec (9 decimals)
-const SYSVAR_CLOCK_PUBKEY = new PublicKey(
-  "SysvarC1ock11111111111111111111111111111111"
-);
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -321,7 +318,6 @@ async function main() {
             rewardVault: rewardVaultPda,
             systemProgram: SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
-            clock: SYSVAR_CLOCK_PUBKEY,
           })
           .rpc();
 
@@ -457,7 +453,6 @@ async function main() {
           adminRewardAccount: userRewardAccount,
           rewardVault: rewardVaultPda,
           tokenProgram: TOKEN_PROGRAM_ID,
-          clock: SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
 
@@ -507,7 +502,6 @@ async function main() {
           blacklistEntry: blacklistPda,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
-          clock: SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
 
@@ -543,7 +537,6 @@ async function main() {
           userRewardAccount,
           rewardVault: rewardVaultPda,
           tokenProgram: TOKEN_PROGRAM_ID,
-          clock: SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
 
@@ -577,10 +570,7 @@ async function main() {
           userStakeInfo: userStakeInfoPda,
           userTokenAccount: userStakingAccount,
           stakingToken: stakingTokenPda,
-          rewardVault: rewardVaultPda,
-          userRewardAccount,
           tokenProgram: TOKEN_PROGRAM_ID,
-          clock: SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
 
