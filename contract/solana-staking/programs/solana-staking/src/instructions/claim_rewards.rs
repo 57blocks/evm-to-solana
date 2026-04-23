@@ -7,7 +7,6 @@ use anchor_spl::token::{Token, TokenAccount};
 
 #[derive(Accounts)]
 pub struct ClaimRewards<'info> {
-    #[account(mut)]
     pub user: Signer<'info>,
 
     #[account(
@@ -46,14 +45,13 @@ pub struct ClaimRewards<'info> {
     pub reward_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn claim_rewards_handler(ctx: Context<ClaimRewards>) -> Result<()> {
     let pool_config = &ctx.accounts.pool_config;
     let pool_state = &mut ctx.accounts.pool_state;
     let user_stake = &mut ctx.accounts.user_stake_info;
-    let clock = &ctx.accounts.clock;
+    let clock = Clock::get()?;
 
     let rewards = claim_pending_rewards(
         pool_config,
@@ -62,7 +60,7 @@ pub fn claim_rewards_handler(ctx: Context<ClaimRewards>) -> Result<()> {
         &ctx.accounts.reward_vault,
         &ctx.accounts.user_reward_account,
         &ctx.accounts.token_program,
-        clock,
+        &clock,
     )?;
 
     if rewards > 0 {

@@ -12,6 +12,7 @@ pub struct ClosePool<'info> {
 
     #[account(
         mut,
+        close = admin,
         seeds = [POOL_CONFIG_SEED, pool_config.pool_id.as_ref()],
         bump = pool_config.bump,
         has_one = admin
@@ -20,6 +21,7 @@ pub struct ClosePool<'info> {
 
     #[account(
         mut,
+        close = admin,
         seeds = [POOL_STATE_SEED, pool_config.key().as_ref()],
         bump = pool_state.bump,
         has_one = pool_config
@@ -28,10 +30,10 @@ pub struct ClosePool<'info> {
 
     #[account(
         mut,
-        seeds = [STAKING_VAULT_SEED, pool_config.key().as_ref()],
+        seeds = [STAKING_TOKEN_SEED, pool_config.key().as_ref()],
         bump
     )]
-    pub staking_vault: Account<'info, TokenAccount>,
+    pub staking_token: Account<'info, TokenAccount>,
 
     #[account(
         mut,
@@ -41,19 +43,19 @@ pub struct ClosePool<'info> {
     pub reward_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn close_pool_handler(ctx: Context<ClosePool>) -> Result<()> {
     let pool_config = &ctx.accounts.pool_config;
     let pool_state = &ctx.accounts.pool_state;
+    let clock = Clock::get()?;
 
     require!(
         pool_state.total_staked == 0,
         StakingError::PoolHasActiveStakes
     );
     require!(
-        ctx.accounts.staking_vault.amount == 0,
+        ctx.accounts.staking_token.amount == 0,
         StakingError::VaultNotEmpty
     );
     require!(
@@ -71,7 +73,7 @@ pub fn close_pool_handler(ctx: Context<ClosePool>) -> Result<()> {
     let close_staking_ctx = CpiContext::new_with_signer(
         ctx.accounts.token_program.to_account_info(),
         CloseAccount {
-            account: ctx.accounts.staking_vault.to_account_info(),
+            account: ctx.accounts.staking_token.to_account_info(),
             destination: ctx.accounts.admin.to_account_info(),
             authority: pool_config.to_account_info(),
         },
@@ -93,7 +95,7 @@ pub fn close_pool_handler(ctx: Context<ClosePool>) -> Result<()> {
     emit!(PoolClosed {
         pool: pool_config.pool_id,
         admin: ctx.accounts.admin.key(),
-        timestamp: ctx.accounts.clock.unix_timestamp,
+        timestamp: clock.unix_timestamp,
     });
 
     Ok(())

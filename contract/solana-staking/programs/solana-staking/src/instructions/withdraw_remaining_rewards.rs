@@ -39,7 +39,6 @@ pub struct WithdrawRemainingRewards<'info> {
     pub reward_vault: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn withdraw_remaining_rewards_handler(
@@ -52,7 +51,24 @@ pub fn withdraw_remaining_rewards_handler(
         StakingError::PoolHasActiveStakes
     );
 
+    let reserved_rewards = if ctx.accounts.pool_state.total_reward_debt < 0 {
+        u64::try_from(-ctx.accounts.pool_state.total_reward_debt)
+            .map_err(|_| error!(StakingError::ArithmeticOverflow))?
+    } else {
+        0
+    };
+    let available = ctx
+        .accounts
+        .reward_vault
+        .amount
+        .saturating_sub(reserved_rewards);
+    require!(
+        amount <= available,
+        StakingError::InsufficientRewardVaultBalance
+    );
+
     let pool_config = &ctx.accounts.pool_config;
+    let clock = Clock::get()?;
     let seeds = &[
         POOL_CONFIG_SEED.as_ref(),
         pool_config.pool_id.as_ref(),
@@ -73,7 +89,7 @@ pub fn withdraw_remaining_rewards_handler(
         pool: pool_config.pool_id,
         admin: ctx.accounts.admin.key(),
         amount,
-        timestamp: ctx.accounts.clock.unix_timestamp,
+        timestamp: clock.unix_timestamp,
     });
 
     Ok(())

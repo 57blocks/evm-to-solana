@@ -37,7 +37,7 @@ describe("solana-staking", () => {
   let poolId: PublicKey;
   let statePda: PublicKey;
   let poolStatePda: PublicKey;
-  let stakingVaultPda: PublicKey;
+  let stakingTokenPda: PublicKey;
   let rewardVaultPda: PublicKey;
 
   // Helper functions that can access outer scope variables
@@ -46,7 +46,7 @@ describe("solana-staking", () => {
     userSigner: any,
     stakingToken: PublicKey,
     rewardToken: PublicKey,
-    amount: bigint,
+    amount: bigint
   ) {
     const userStakePda = getUserStakePda(statePda, user.publicKey);
     // Always use the user's blacklist PDA, whether it exists or not
@@ -57,9 +57,7 @@ describe("solana-staking", () => {
       poolState: address(poolStatePda.toBase58()),
       userStakeInfo: address(userStakePda.toBase58()),
       userTokenAccount: address(stakingToken.toBase58()),
-      stakingVault: address(stakingVaultPda.toBase58()),
-      rewardVault: address(rewardVaultPda.toBase58()),
-      userRewardAccount: address(rewardToken.toBase58()),
+      stakingToken: address(stakingTokenPda.toBase58()),
       tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
       blacklistEntry: address(userBlacklistPda.toBase58()),
       amount: amount,
@@ -71,8 +69,7 @@ describe("solana-staking", () => {
     user: Keypair,
     userSigner: any,
     stakingToken: PublicKey,
-    rewardToken: PublicKey,
-    amount: bigint,
+    amount: bigint
   ) {
     const userStakePda = getUserStakePda(statePda, user.publicKey);
     const unstakeInstruction = programClient.getUnstakeInstruction({
@@ -81,9 +78,7 @@ describe("solana-staking", () => {
       poolState: address(poolStatePda.toBase58()),
       userStakeInfo: address(userStakePda.toBase58()),
       userTokenAccount: address(stakingToken.toBase58()),
-      stakingVault: address(stakingVaultPda.toBase58()),
-      rewardVault: address(rewardVaultPda.toBase58()),
-      userRewardAccount: address(rewardToken.toBase58()),
+      stakingToken: address(stakingTokenPda.toBase58()),
       tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
       amount: amount,
     });
@@ -93,7 +88,7 @@ describe("solana-staking", () => {
   async function claimUserRewards(
     user: Keypair,
     userSigner: any,
-    rewardToken: PublicKey,
+    rewardToken: PublicKey
   ) {
     const userStakePda = getUserStakePda(statePda, user.publicKey);
     const claimInstruction = programClient.getClaimRewardsInstruction({
@@ -125,7 +120,7 @@ describe("solana-staking", () => {
       admin,
       stakingMint,
       rewardMint,
-      BigInt(0),
+      BigInt(0)
     );
     const withdrawInstruction =
       programClient.getWithdrawRemainingRewardsInstruction({
@@ -145,7 +140,7 @@ describe("solana-staking", () => {
       admin: adminSigner,
       poolConfig: address(statePda.toBase58()),
       poolState: address(poolStatePda.toBase58()),
-      stakingVault: address(stakingVaultPda.toBase58()),
+      stakingToken: address(stakingTokenPda.toBase58()),
       rewardVault: address(rewardVaultPda.toBase58()),
       tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
     });
@@ -177,7 +172,7 @@ describe("solana-staking", () => {
     return await sendTransaction(
       provider,
       removeFromBlacklistInstruction,
-      admin,
+      admin
     );
   }
 
@@ -189,8 +184,8 @@ describe("solana-staking", () => {
         clock.epochStartTimestamp,
         clock.epoch,
         clock.leaderScheduleEpoch,
-        BigInt(timestamp),
-      ),
+        BigInt(timestamp)
+      )
     );
   }
 
@@ -199,7 +194,9 @@ describe("solana-staking", () => {
       return;
     }
     expect(account.lamports).to.equal(0);
-    expect(account.owner.toBase58()).to.equal(SystemProgram.programId.toBase58());
+    expect(account.owner.toBase58()).to.equal(
+      SystemProgram.programId.toBase58()
+    );
     expect(account.data.length).to.equal(0);
   }
 
@@ -212,22 +209,22 @@ describe("solana-staking", () => {
 
     [statePda] = PublicKey.findProgramAddressSync(
       [Buffer.from("pool_config"), poolId.toBuffer()],
-      programId,
+      programId
     );
 
     [poolStatePda] = PublicKey.findProgramAddressSync(
       [Buffer.from("pool_state"), statePda.toBuffer()],
-      programId,
+      programId
     );
 
-    [stakingVaultPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("staking_vault"), statePda.toBuffer()],
-      programId,
+    [stakingTokenPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("staking_token"), statePda.toBuffer()],
+      programId
     );
 
     [rewardVaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("reward_vault"), statePda.toBuffer()],
-      programId,
+      programId
     );
   }
 
@@ -238,7 +235,7 @@ describe("solana-staking", () => {
       poolState: address(poolStatePda.toBase58()),
       stakingMint: address(stakingMint.toBase58()),
       rewardMint: address(rewardMint.toBase58()),
-      stakingVault: address(stakingVaultPda.toBase58()),
+      stakingToken: address(stakingTokenPda.toBase58()),
       rewardVault: address(rewardVaultPda.toBase58()),
       tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
       poolId: address(poolId.toBase58()),
@@ -252,7 +249,7 @@ describe("solana-staking", () => {
       rewardMint,
       rewardVaultPda,
       admin, // mint authority
-      toToken(5000), // 5000 tokens for rewards
+      toToken(5000) // 5000 tokens for rewards
     );
   }
 
@@ -299,7 +296,7 @@ describe("solana-staking", () => {
           poolState: address(poolStatePda.toBase58()),
           stakingMint: address(stakingMint.toBase58()),
           rewardMint: address(rewardMint.toBase58()),
-          stakingVault: address(stakingVaultPda.toBase58()),
+          stakingToken: address(stakingTokenPda.toBase58()),
           rewardVault: address(rewardVaultPda.toBase58()),
           tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
           poolId: address(poolId.toBase58()),
@@ -322,7 +319,7 @@ describe("solana-staking", () => {
         poolState: address(poolStatePda.toBase58()),
         stakingMint: address(stakingMint.toBase58()),
         rewardMint: address(rewardMint.toBase58()),
-        stakingVault: address(stakingVaultPda.toBase58()),
+        stakingToken: address(stakingTokenPda.toBase58()),
         rewardVault: address(rewardVaultPda.toBase58()),
         tokenProgram: address(TOKEN_PROGRAM_ID.toBase58()),
         poolId: address(poolId.toBase58()),
@@ -333,7 +330,7 @@ describe("solana-staking", () => {
       const txHash = await sendTransaction(
         provider,
         createPoolInstruction,
-        admin,
+        admin
       );
       console.log("CreatePool transaction:", txHash);
 
@@ -342,26 +339,26 @@ describe("solana-staking", () => {
       expect(stateAccount).to.not.be.null;
 
       // Verify vaults are created
-      const stakingVaultAccount = provider.client.getAccount(stakingVaultPda);
+      const stakingTokenAccount = provider.client.getAccount(stakingTokenPda);
       const rewardVaultAccount = provider.client.getAccount(rewardVaultPda);
-      expect(stakingVaultAccount).to.not.be.null;
+      expect(stakingTokenAccount).to.not.be.null;
       expect(rewardVaultAccount).to.not.be.null;
 
       // Verify global state data
       const globalState = getGlobalState(provider, statePda);
       expect(globalState).to.not.be.null;
       expect(globalState!.admin.toString()).to.equal(
-        admin.publicKey.toBase58(),
+        admin.publicKey.toBase58()
       );
       expect(globalState!.poolId.toString()).to.equal(poolId.toBase58());
       expect(globalState!.stakingMint.toString()).to.equal(
-        stakingMint.toBase58(),
+        stakingMint.toBase58()
       );
       expect(globalState!.rewardMint.toString()).to.equal(
-        rewardMint.toBase58(),
+        rewardMint.toBase58()
       );
       expect(globalState!.rewardPerSecond.toString()).to.equal(
-        REWARD_PER_SECOND.toString(),
+        REWARD_PER_SECOND.toString()
       );
       expect(globalState!.accRewardPerShare.toString()).to.equal("0");
       expect(Number(globalState!.lastRewardTime.toString())).to.be.above(0);
@@ -373,7 +370,7 @@ describe("solana-staking", () => {
         rewardMint,
         rewardVaultPda,
         admin, // mint authority
-        toToken(5000), // 5000 tokens for rewards
+        toToken(5000) // 5000 tokens for rewards
       );
       const rewardVaultBalance = getAccount(provider, rewardVaultPda);
       expect(Number(rewardVaultBalance.amount)).to.equal(Number(toToken(5000)));
@@ -392,7 +389,7 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
       const stakeAmount = toToken(100);
       await stakeTokens(
@@ -400,12 +397,12 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        stakeAmount,
+        stakeAmount
       );
 
       // Verify stake
-      const stakingVaultAccount = getAccount(provider, stakingVaultPda);
-      expect(Number(stakingVaultAccount.amount)).to.equal(Number(stakeAmount));
+      const stakingTokenAccount = getAccount(provider, stakingTokenPda);
+      expect(Number(stakingTokenAccount.amount)).to.equal(Number(stakeAmount));
 
       // Verify user stake info data
       const userStakePda = getUserStakePda(statePda, user.publicKey);
@@ -417,7 +414,7 @@ describe("solana-staking", () => {
       // Verify global state total staked was updated
       const globalState = getGlobalState(provider, statePda);
       expect(globalState!.totalStaked.toString()).to.equal(
-        stakeAmount.toString(),
+        stakeAmount.toString()
       );
     });
 
@@ -428,7 +425,7 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       try {
@@ -437,7 +434,7 @@ describe("solana-staking", () => {
           userSigner,
           stakingToken,
           rewardToken,
-          BigInt(0), // Try to stake 0 tokens
+          BigInt(0) // Try to stake 0 tokens
         );
         expect.fail("Should have thrown an error");
       } catch (error: any) {
@@ -453,7 +450,7 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       // First stake
@@ -463,14 +460,14 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        firstStakeAmount,
+        firstStakeAmount
       );
 
       // Verify first stake
       const userStakePda = getUserStakePda(statePda, user.publicKey);
       let userStakeInfo = getUserStakeInfo(provider, userStakePda);
       expect(userStakeInfo!.amount.toString()).to.equal(
-        firstStakeAmount.toString(),
+        firstStakeAmount.toString()
       );
 
       // Second stake
@@ -480,14 +477,14 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        secondStakeAmount,
+        secondStakeAmount
       );
 
       // Verify accumulated stake
       userStakeInfo = getUserStakeInfo(provider, userStakePda);
       let totalExpected = firstStakeAmount + secondStakeAmount;
       expect(userStakeInfo!.amount.toString()).to.equal(
-        totalExpected.toString(),
+        totalExpected.toString()
       );
 
       // Third stake
@@ -497,14 +494,14 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        thirdStakeAmount,
+        thirdStakeAmount
       );
 
       // Verify final accumulated stake
       userStakeInfo = getUserStakeInfo(provider, userStakePda);
       totalExpected += thirdStakeAmount;
       expect(userStakeInfo!.amount.toString()).to.equal(
-        totalExpected.toString(),
+        totalExpected.toString()
       );
     });
 
@@ -519,7 +516,7 @@ describe("solana-staking", () => {
         admin,
         blacklistedUser,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       // First add to blacklist
@@ -532,7 +529,7 @@ describe("solana-staking", () => {
           blacklistedUserSigner,
           blacklistedUserStakingToken,
           blacklistedUserRewardToken,
-          toToken(100),
+          toToken(100)
         );
         expect.fail("Should have thrown an error");
       } catch (error: any) {
@@ -554,7 +551,7 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       await stakeTokens(
@@ -562,7 +559,7 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        toToken(100),
+        toToken(100)
       );
 
       // Get initial state
@@ -580,7 +577,7 @@ describe("solana-staking", () => {
       const fiveDaysLater = stakeTime + 5 * SECONDS_IN_A_DAY;
       setNextBlockTimestamp(fiveDaysLater);
       console.log(
-        `Time advanced from ${stakeTime} to ${fiveDaysLater} (5 days)`,
+        `Time advanced from ${stakeTime} to ${fiveDaysLater} (5 days)`
       );
 
       await claimUserRewards(user, userSigner, rewardToken);
@@ -604,7 +601,7 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       // Stake tokens
@@ -613,7 +610,7 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        toToken(100),
+        toToken(100)
       );
 
       // Get initial time from global state
@@ -625,40 +622,40 @@ describe("solana-staking", () => {
 
       // Claim rewards
       const rewardBalanceBefore = BigInt(
-        getAccount(provider, rewardToken).amount,
+        getAccount(provider, rewardToken).amount
       );
       await claimUserRewards(user, userSigner, rewardToken);
       const rewardBalanceAfter = BigInt(
-        getAccount(provider, rewardToken).amount,
+        getAccount(provider, rewardToken).amount
       );
 
       // Verify stake amount hasn't changed
       const afterClaimStakeInfo = getUserStakeInfo(provider, userStakePda);
       expect(afterClaimStakeInfo!.amount.toString()).to.equal(
-        toToken(100).toString(),
+        toToken(100).toString()
       );
       expect(rewardBalanceAfter - rewardBalanceBefore).to.equal(
-        BigInt(2 * SECONDS_IN_A_DAY) * REWARD_PER_SECOND,
+        BigInt(2 * SECONDS_IN_A_DAY) * REWARD_PER_SECOND
       );
 
       // Advance time by another 3 days and claim again
       const fiveDaysFromStart = currentTime + 5 * SECONDS_IN_A_DAY;
       setNextBlockTimestamp(fiveDaysFromStart);
       const rewardBalanceBefore2 = BigInt(
-        getAccount(provider, rewardToken).amount,
+        getAccount(provider, rewardToken).amount
       );
       await claimUserRewards(user, userSigner, rewardToken);
       const rewardBalanceAfter2 = BigInt(
-        getAccount(provider, rewardToken).amount,
+        getAccount(provider, rewardToken).amount
       );
 
       // Verify amount still hasn't changed and rewards match incremental time
       const finalStakeInfo = getUserStakeInfo(provider, userStakePda);
       expect(finalStakeInfo!.amount.toString()).to.equal(
-        toToken(100).toString(),
+        toToken(100).toString()
       );
       expect(rewardBalanceAfter2 - rewardBalanceBefore2).to.equal(
-        BigInt(3 * SECONDS_IN_A_DAY) * REWARD_PER_SECOND,
+        BigInt(3 * SECONDS_IN_A_DAY) * REWARD_PER_SECOND
       );
     });
 
@@ -670,14 +667,14 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
       await stakeTokens(
         user,
         userSigner,
         stakingToken,
         rewardToken,
-        toToken(100),
+        toToken(100)
       );
       const userStakePda = getUserStakePda(statePda, user.publicKey);
       const testCases = [
@@ -707,7 +704,7 @@ describe("solana-staking", () => {
         const newTime = stakeTimestamp + testCase.hoursFromStart * 3600;
         setNextBlockTimestamp(newTime);
         console.log(
-          `\nTesting ${testCase.hoursFromStart} hours from initial stake`,
+          `\nTesting ${testCase.hoursFromStart} hours from initial stake`
         );
 
         // Calculate expected rewards for this claim
@@ -715,16 +712,16 @@ describe("solana-staking", () => {
           BigInt(newTime - stakeTimestamp) * REWARD_PER_SECOND -
           totalClaimedRewards;
         console.log(
-          `Expected incremental rewards: ${expectedIncrementalRewards} lamports`,
+          `Expected incremental rewards: ${expectedIncrementalRewards} lamports`
         );
 
         // Check if reward vault has enough balance
         const rewardVaultBeforeClaim = getAccount(provider, rewardVaultPda);
         console.log(
-          `Reward vault before claim: ${rewardVaultBeforeClaim.amount} lamports`,
+          `Reward vault before claim: ${rewardVaultBeforeClaim.amount} lamports`
         );
         console.log(
-          `Has enough balance: ${BigInt(rewardVaultBeforeClaim.amount) >= expectedIncrementalRewards}`,
+          `Has enough balance: ${BigInt(rewardVaultBeforeClaim.amount) >= expectedIncrementalRewards}`
         );
 
         // Claim rewards
@@ -756,7 +753,7 @@ describe("solana-staking", () => {
         admin,
         blacklistedUser,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       // First, stake some tokens before blacklisting
@@ -765,26 +762,27 @@ describe("solana-staking", () => {
         blacklistedUserSigner,
         blacklistedUserStakingToken,
         blacklistedUserRewardToken,
-        toToken(50),
+        toToken(50)
       );
 
       // Add to blacklist
       await addUserToBlacklist(blacklistedUser.publicKey);
 
       const stateAfterStake = getGlobalState(provider, statePda);
-      const nextDay = Number(stateAfterStake!.lastRewardTime.toString()) + SECONDS_IN_A_DAY;
+      const nextDay =
+        Number(stateAfterStake!.lastRewardTime.toString()) + SECONDS_IN_A_DAY;
       setNextBlockTimestamp(nextDay);
 
       const rewardBefore = BigInt(
-        getAccount(provider, blacklistedUserRewardToken).amount,
+        getAccount(provider, blacklistedUserRewardToken).amount
       );
       await claimUserRewards(
         blacklistedUser,
         blacklistedUserSigner,
-        blacklistedUserRewardToken,
+        blacklistedUserRewardToken
       );
       const rewardAfter = BigInt(
-        getAccount(provider, blacklistedUserRewardToken).amount,
+        getAccount(provider, blacklistedUserRewardToken).amount
       );
 
       expect(rewardAfter > rewardBefore).to.equal(true);
@@ -803,7 +801,7 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       await stakeTokens(
@@ -811,13 +809,13 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        toToken(100),
+        toToken(100)
       );
 
       const globalStateBefore = getGlobalState(provider, statePda);
       console.log(
         "Global state total staked before:",
-        globalStateBefore!.totalStaked,
+        globalStateBefore!.totalStaked
       );
 
       const unstakeAmount = toToken(40);
@@ -825,8 +823,7 @@ describe("solana-staking", () => {
         user,
         userSigner,
         stakingToken,
-        rewardToken,
-        unstakeAmount,
+        unstakeAmount
       );
 
       // Verify user stake info data
@@ -839,7 +836,7 @@ describe("solana-staking", () => {
       // Verify global state total staked was updated
       const globalStateAfter = getGlobalState(provider, statePda);
       expect(globalStateAfter!.totalStaked).to.equal(
-        globalStateBefore!.totalStaked - unstakeAmount,
+        globalStateBefore!.totalStaked - unstakeAmount
       );
     });
 
@@ -850,7 +847,7 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       const stakeAmount = toToken(100);
@@ -859,7 +856,7 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        stakeAmount,
+        stakeAmount
       );
 
       const tooMuchAmount = stakeAmount + toToken(100); // Try to unstake more than staked
@@ -868,8 +865,7 @@ describe("solana-staking", () => {
           user,
           userSigner,
           stakingToken,
-          rewardToken,
-          tooMuchAmount,
+          tooMuchAmount
         );
         expect.fail("Transaction should have failed");
       } catch (error: any) {
@@ -881,7 +877,7 @@ describe("solana-staking", () => {
       const userStakePda = getUserStakePda(statePda, user.publicKey);
       const userStakeInfoAfter = getUserStakeInfo(provider, userStakePda);
       expect(userStakeInfoAfter!.amount.toString()).to.equal(
-        stakeAmount.toString(),
+        stakeAmount.toString()
       );
     });
 
@@ -892,7 +888,7 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       // First stake some tokens
@@ -901,7 +897,7 @@ describe("solana-staking", () => {
         userSigner,
         stakingToken,
         rewardToken,
-        toToken(100),
+        toToken(100)
       );
 
       // Try to unstake 0 tokens
@@ -910,8 +906,7 @@ describe("solana-staking", () => {
           user,
           userSigner,
           stakingToken,
-          rewardToken,
-          BigInt(0), // Try to unstake 0 tokens
+          BigInt(0) // Try to unstake 0 tokens
         );
         expect.fail("Should have thrown an error");
       } catch (error: any) {
@@ -923,7 +918,7 @@ describe("solana-staking", () => {
       const userStakePda = getUserStakePda(statePda, user.publicKey);
       const userStakeInfo = getUserStakeInfo(provider, userStakePda);
       expect(userStakeInfo!.amount.toString()).to.equal(
-        toToken(100).toString(),
+        toToken(100).toString()
       );
     });
 
@@ -938,7 +933,7 @@ describe("solana-staking", () => {
         admin,
         blacklistedUser,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       // First, stake some tokens before blacklisting
@@ -947,7 +942,7 @@ describe("solana-staking", () => {
         blacklistedUserSigner,
         blacklistedUserStakingToken,
         blacklistedUserRewardToken,
-        toToken(50),
+        toToken(50)
       );
 
       // Add to blacklist
@@ -968,8 +963,7 @@ describe("solana-staking", () => {
         blacklistedUser,
         blacklistedUserSigner,
         blacklistedUserStakingToken,
-        blacklistedUserRewardToken,
-        toToken(50),
+        toToken(50)
       );
 
       const userStakePda = getUserStakePda(statePda, blacklistedUser.publicKey);
@@ -990,17 +984,23 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
-      await stakeTokens(user, userSigner, stakingToken, rewardToken, toToken(100));
-      await unstakeTokens(
+      await stakeTokens(
         user,
         userSigner,
         stakingToken,
         rewardToken,
-        toToken(100),
+        toToken(100)
       );
+      await unstakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        toToken(100)
+      );
+      await claimUserRewards(user, userSigner, rewardToken);
 
       await closeUserStakeAccount(user, userSigner);
 
@@ -1016,10 +1016,16 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
-      await stakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
+      await stakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        rewardToken,
+        toToken(10)
+      );
 
       try {
         await closeUserStakeAccount(user, userSigner);
@@ -1030,35 +1036,73 @@ describe("solana-staking", () => {
       }
     });
 
-    it("should fail to close user stake account when reward debt is not zero", async () => {
+    it("should not auto-claim rewards on full unstake — must claim separately", async () => {
       const { user, userSigner } = await createTestUser(svm);
       const { stakingToken, rewardToken } = await setupUserWithTokens(
         provider,
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
-      await stakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
+      await stakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        rewardToken,
+        toToken(10)
+      );
       const stateAfterStake = getGlobalState(provider, statePda);
       const oneDayLater =
         Number(stateAfterStake!.lastRewardTime.toString()) + SECONDS_IN_A_DAY;
       setNextBlockTimestamp(oneDayLater);
 
+      // Full unstake — should NOT transfer rewards
+      const rewardBalanceBefore = BigInt(
+        getAccount(provider, rewardToken).amount
+      );
+      await unstakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        toToken(10)
+      );
+      const rewardBalanceAfter = BigInt(
+        getAccount(provider, rewardToken).amount
+      );
+      expect(rewardBalanceAfter - rewardBalanceBefore).to.equal(BigInt(0));
+
+      // Verify amount=0, reward_debt < 0 (unclaimed rewards preserved)
+      const userStakePda = getUserStakePda(statePda, user.publicKey);
+      const userStakeInfo = getUserStakeInfo(provider, userStakePda);
+      expect(userStakeInfo).to.not.be.null;
+      expect(userStakeInfo!.amount.toString()).to.equal("0");
+      expect(BigInt(userStakeInfo!.rewardDebt.toString()) < BigInt(0)).to.be
+        .true;
+
+      // Cannot close account yet — reward_debt != 0
       try {
-        await unstakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
-        expect.fail("Should have thrown an error");
-      } catch (error: any) {
-        expect(error).to.not.be.null;
-        expect(error.toString()).to.include("MustClaimRewardsBeforeFullUnstake");
+        await closeUserStakeAccount(user, userSigner);
+        expect.fail("Should have thrown");
+      } catch (e: any) {
+        expect(e.toString()).to.include("UserRewardDebtNotZero");
       }
 
+      // Claim rewards separately
       await claimUserRewards(user, userSigner, rewardToken);
-      await unstakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
+      const rewardBalanceFinal = BigInt(
+        getAccount(provider, rewardToken).amount
+      );
+      expect(rewardBalanceFinal - rewardBalanceBefore).to.equal(
+        BigInt(SECONDS_IN_A_DAY) * REWARD_PER_SECOND
+      );
+
+      // Now reward_debt is 0, can close
+      const stakeInfoAfterClaim = getUserStakeInfo(provider, userStakePda);
+      expect(stakeInfoAfterClaim!.rewardDebt.toString()).to.equal("0");
       await closeUserStakeAccount(user, userSigner);
 
-      const userStakePda = getUserStakePda(statePda, user.publicKey);
       const closedUserStake = provider.client.getAccount(userStakePda);
       expectClosedOrDrainedAccount(closedUserStake);
     });
@@ -1076,20 +1120,24 @@ describe("solana-staking", () => {
         admin,
         stakingMint,
         rewardMint,
-        BigInt(0),
+        BigInt(0)
       );
 
-      const rewardVaultBefore = BigInt(getAccount(provider, rewardVaultPda).amount);
+      const rewardVaultBefore = BigInt(
+        getAccount(provider, rewardVaultPda).amount
+      );
       const adminRewardBefore = BigInt(
-        getAccount(provider, adminRewardAccount).amount,
+        getAccount(provider, adminRewardAccount).amount
       );
 
       const withdrawAmount = toToken(100);
       await withdrawRemainingRewards(withdrawAmount);
 
-      const rewardVaultAfter = BigInt(getAccount(provider, rewardVaultPda).amount);
+      const rewardVaultAfter = BigInt(
+        getAccount(provider, rewardVaultPda).amount
+      );
       const adminRewardAfter = BigInt(
-        getAccount(provider, adminRewardAccount).amount,
+        getAccount(provider, adminRewardAccount).amount
       );
       expect(rewardVaultBefore - rewardVaultAfter).to.equal(withdrawAmount);
       expect(adminRewardAfter - adminRewardBefore).to.equal(withdrawAmount);
@@ -1104,7 +1152,7 @@ describe("solana-staking", () => {
         randomUser,
         stakingMint,
         rewardMint,
-        BigInt(0),
+        BigInt(0)
       );
 
       const instruction = programClient.getWithdrawRemainingRewardsInstruction({
@@ -1132,9 +1180,15 @@ describe("solana-staking", () => {
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
-      await stakeTokens(user, userSigner, stakingToken, rewardToken, toToken(1));
+      await stakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        rewardToken,
+        toToken(1)
+      );
 
       try {
         await withdrawRemainingRewards(toToken(1));
@@ -1143,6 +1197,54 @@ describe("solana-staking", () => {
         expect(error).to.not.be.null;
         expect(error.toString()).to.include("PoolHasActiveStakes");
       }
+    });
+
+    it("should protect reserved rewards from admin withdrawal after full unstake", async () => {
+      const { user, userSigner } = await createTestUser(svm);
+      const { stakingToken, rewardToken } = await setupUserWithTokens(
+        provider,
+        admin,
+        user,
+        stakingMint,
+        rewardMint
+      );
+
+      await stakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        rewardToken,
+        toToken(10)
+      );
+
+      const stateAfterStake = getGlobalState(provider, statePda);
+      const oneDayLater =
+        Number(stateAfterStake!.lastRewardTime.toString()) + SECONDS_IN_A_DAY;
+      setNextBlockTimestamp(oneDayLater);
+
+      // Full unstake — rewards preserved in negative reward_debt
+      await unstakeTokens(user, userSigner, stakingToken, toToken(10));
+
+      const expectedRewards = BigInt(SECONDS_IN_A_DAY) * REWARD_PER_SECOND;
+      const vaultBalance = BigInt(getAccount(provider, rewardVaultPda).amount);
+
+      // Admin should NOT be able to withdraw the full vault — reserved rewards must be protected
+      try {
+        await withdrawRemainingRewards(vaultBalance);
+        expect.fail("Should have thrown an error");
+      } catch (error: any) {
+        expect(error).to.not.be.null;
+        expect(error.toString()).to.include("InsufficientRewardVaultBalance");
+      }
+
+      // Admin CAN withdraw the non-reserved portion
+      const availableToWithdraw = vaultBalance - expectedRewards;
+      await withdrawRemainingRewards(availableToWithdraw);
+
+      // User can still claim their rewards
+      await claimUserRewards(user, userSigner, rewardToken);
+      const rewardBalance = BigInt(getAccount(provider, rewardToken).amount);
+      expect(rewardBalance).to.equal(expectedRewards);
     });
 
     it("should fail close_pool when reward vault is not empty", async () => {
@@ -1161,32 +1263,42 @@ describe("solana-staking", () => {
 
       const poolConfigAccount = provider.client.getAccount(statePda);
       const poolStateAccount = provider.client.getAccount(poolStatePda);
-      const stakingVaultAccount = provider.client.getAccount(stakingVaultPda);
+      const stakingTokenAccount = provider.client.getAccount(stakingTokenPda);
       const rewardVaultAccount = provider.client.getAccount(rewardVaultPda);
 
-      expect(poolConfigAccount).to.not.be.null;
-      expect(poolStateAccount).to.not.be.null;
-      expectClosedOrDrainedAccount(stakingVaultAccount);
+      expectClosedOrDrainedAccount(poolConfigAccount);
+      expectClosedOrDrainedAccount(poolStateAccount);
+      expectClosedOrDrainedAccount(stakingTokenAccount);
       expectClosedOrDrainedAccount(rewardVaultAccount);
     });
 
-    it("should keep cleanup paths available after close_pool", async () => {
+    it("should require cleanup before close_pool since it closes PDA accounts", async () => {
       const { user, userSigner } = await createTestUser(svm);
       const { stakingToken, rewardToken } = await setupUserWithTokens(
         provider,
         admin,
         user,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
-      await stakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
-      await unstakeTokens(user, userSigner, stakingToken, rewardToken, toToken(10));
+      await stakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        rewardToken,
+        toToken(10)
+      );
+      await unstakeTokens(
+        user,
+        userSigner,
+        stakingToken,
+        toToken(10)
+      );
+      await claimUserRewards(user, userSigner, rewardToken);
       await addUserToBlacklist(user.publicKey);
 
-      await withdrawRemainingRewards(toToken(5000));
-      await closePool();
-
+      // Cleanup must happen before close_pool since it closes pool_config/pool_state PDAs
       await closeUserStakeAccount(user, userSigner);
       await removeUserFromBlacklist(user.publicKey);
 
@@ -1197,6 +1309,15 @@ describe("solana-staking", () => {
 
       expectClosedOrDrainedAccount(closedUserStake);
       expectClosedOrDrainedAccount(closedBlacklist);
+
+      await withdrawRemainingRewards(toToken(5000));
+      await closePool();
+
+      // Verify pool_config and pool_state are closed
+      const poolConfigAccount = provider.client.getAccount(statePda);
+      const poolStateAccount = provider.client.getAccount(poolStatePda);
+      expectClosedOrDrainedAccount(poolConfigAccount);
+      expectClosedOrDrainedAccount(poolStateAccount);
     });
   });
 
@@ -1242,7 +1363,7 @@ describe("solana-staking", () => {
         admin,
         blacklistedUser,
         stakingMint,
-        rewardMint,
+        rewardMint
       );
 
       // First add to blacklist
@@ -1258,7 +1379,7 @@ describe("solana-staking", () => {
       if (blacklistAccount) {
         expect(blacklistAccount.lamports).to.equal(0);
         expect(blacklistAccount.owner.toBase58()).to.equal(
-          SystemProgram.programId.toBase58(),
+          SystemProgram.programId.toBase58()
         );
         expect(blacklistAccount.data.length).to.equal(0);
       }
@@ -1269,7 +1390,7 @@ describe("solana-staking", () => {
         blacklistedUserSigner,
         blacklistedUserStakingToken,
         blacklistedUserRewardToken,
-        toToken(25),
+        toToken(25)
       );
 
       // Verify stake was successful

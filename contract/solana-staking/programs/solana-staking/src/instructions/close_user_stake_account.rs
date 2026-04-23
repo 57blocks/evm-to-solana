@@ -22,12 +22,11 @@ pub struct CloseUserStakeAccount<'info> {
         bump = user_stake_info.bump
     )]
     pub user_stake_info: Box<Account<'info, UserStakeInfo>>,
-
-    pub clock: Sysvar<'info, Clock>,
 }
 
 pub fn close_user_stake_account_handler(ctx: Context<CloseUserStakeAccount>) -> Result<()> {
     let user_stake_info = &ctx.accounts.user_stake_info;
+    let clock = Clock::get()?;
 
     require!(
         user_stake_info.amount == 0,
@@ -41,7 +40,7 @@ pub fn close_user_stake_account_handler(ctx: Context<CloseUserStakeAccount>) -> 
     emit!(UserStakeAccountClosed {
         pool: ctx.accounts.pool_config.pool_id,
         user: ctx.accounts.user.key(),
-        timestamp: ctx.accounts.clock.unix_timestamp,
+        timestamp: clock.unix_timestamp,
     });
 
     Ok(())

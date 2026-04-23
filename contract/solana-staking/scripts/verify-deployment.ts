@@ -21,9 +21,6 @@ const PROGRAM_ID = new PublicKey(
   "EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX"
 );
 const REWARD_PER_SECOND = new BN(1_000_000); // 0.001 token/sec (9 decimals)
-const SYSVAR_CLOCK_PUBKEY = new PublicKey(
-  "SysvarC1ock11111111111111111111111111111111"
-);
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -295,8 +292,8 @@ async function main() {
         program.programId
       );
 
-      const [stakingVaultPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("staking_vault"), statePda.toBuffer()],
+      const [stakingTokenPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("staking_token"), statePda.toBuffer()],
         program.programId
       );
 
@@ -317,11 +314,10 @@ async function main() {
             poolState: poolStatePda,
             stakingMint,
             rewardMint,
-            stakingVault: stakingVaultPda,
+            stakingToken: stakingTokenPda,
             rewardVault: rewardVaultPda,
             systemProgram: SystemProgram.programId,
             tokenProgram: TOKEN_PROGRAM_ID,
-            clock: SYSVAR_CLOCK_PUBKEY,
           })
           .rpc();
 
@@ -333,8 +329,8 @@ async function main() {
     }
 
     // Get vault PDAs
-    const [stakingVaultPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("staking_vault"), statePda.toBuffer()],
+    const [stakingTokenPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("staking_token"), statePda.toBuffer()],
       program.programId
     );
 
@@ -457,7 +453,6 @@ async function main() {
           adminRewardAccount: userRewardAccount,
           rewardVault: rewardVaultPda,
           tokenProgram: TOKEN_PROGRAM_ID,
-          clock: SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
 
@@ -503,13 +498,10 @@ async function main() {
           poolState: poolStatePda,
           userStakeInfo: userStakeInfoPda,
           userTokenAccount: userStakingAccount,
-          stakingVault: stakingVaultPda,
-          rewardVault: rewardVaultPda,
-          userRewardAccount,
+          stakingToken: stakingTokenPda,
           blacklistEntry: blacklistPda,
           tokenProgram: TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
-          clock: SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
 
@@ -545,7 +537,6 @@ async function main() {
           userRewardAccount,
           rewardVault: rewardVaultPda,
           tokenProgram: TOKEN_PROGRAM_ID,
-          clock: SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
 
@@ -578,11 +569,8 @@ async function main() {
           poolState: poolStatePda,
           userStakeInfo: userStakeInfoPda,
           userTokenAccount: userStakingAccount,
-          stakingVault: stakingVaultPda,
-          rewardVault: rewardVaultPda,
-          userRewardAccount,
+          stakingToken: stakingTokenPda,
           tokenProgram: TOKEN_PROGRAM_ID,
-          clock: SYSVAR_CLOCK_PUBKEY,
         })
         .rpc();
 

@@ -4,14 +4,9 @@ use crate::state::{PoolConfig, PoolState, UserStakeInfo};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
-fn calculate_reward_debt_delta(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
-    let delta = (amount as u128 * acc_reward_per_share) / ACC_REWARD_PRECISION;
-    i128::try_from(delta).map_err(|_| error!(StakingError::ArithmeticOverflow))
-}
-
-fn calculate_accumulated_reward(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
-    let accumulated = (amount as u128 * acc_reward_per_share) / ACC_REWARD_PRECISION;
-    i128::try_from(accumulated).map_err(|_| error!(StakingError::ArithmeticOverflow))
+pub fn calculate_share_value(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
+    let share_value = (amount as u128 * acc_reward_per_share) / ACC_REWARD_PRECISION;
+    i128::try_from(share_value).map_err(|_| error!(StakingError::ArithmeticOverflow))
 }
 
 fn calculate_acc_reward_per_share(
@@ -37,7 +32,7 @@ fn calculate_acc_reward_per_share(
 pub fn update_pool(
     pool_config: &Account<PoolConfig>,
     pool_state: &mut Account<PoolState>,
-    clock: &Sysvar<Clock>,
+    clock: &Clock,
 ) -> Result<()> {
     let current_time = clock.unix_timestamp;
     if current_time <= pool_state.last_reward_time {
@@ -53,22 +48,6 @@ pub fn update_pool(
     Ok(())
 }
 
-pub fn pending_reward(
-    pool_config: &PoolConfig,
-    pool_state: &PoolState,
-    user_stake: &UserStakeInfo,
-    current_time: i64,
-) -> Result<u64> {
-    let acc_reward_per_share =
-        calculate_acc_reward_per_share(pool_config, pool_state, current_time)?;
-    let accumulated = calculate_accumulated_reward(user_stake.amount, acc_reward_per_share)?;
-    let pending = accumulated - user_stake.reward_debt;
-    if pending <= 0 {
-        return Ok(0);
-    }
-    u64::try_from(pending).map_err(|_| error!(StakingError::ArithmeticOverflow))
-}
-
 pub fn claim_pending_rewards<'info>(
     pool_config: &Account<'info, PoolConfig>,
     pool_state: &mut Account<'info, PoolState>,
@@ -76,14 +55,15 @@ pub fn claim_pending_rewards<'info>(
     reward_vault: &Account<'info, TokenAccount>,
     user_reward_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
-    clock: &Sysvar<'info, Clock>,
+    clock: &Clock,
 ) -> Result<u64> {
     update_pool(pool_config, pool_state, clock)?;
 
     let accumulated =
-        calculate_accumulated_reward(user_stake.amount, pool_state.acc_reward_per_share)?;
+        calculate_share_value(user_stake.amount, pool_state.acc_reward_per_share)?;
     let pending = accumulated - user_stake.reward_debt;
 
+    pool_state.total_reward_debt += pending;
     user_stake.reward_debt = accumulated;
 
     if pending > 0 {
@@ -110,8 +90,4 @@ pub fn claim_pending_rewards<'info>(
     }
 
     Ok(0)
-}
-
-pub fn reward_debt_delta(amount: u64, acc_reward_per_share: u128) -> Result<i128> {
-    calculate_reward_debt_delta(amount, acc_reward_per_share)
 }
