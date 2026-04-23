@@ -80,8 +80,11 @@ For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 The following contracts have been deployed to the Devnet network:
 
 - Program ID: [`EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX`](https://explorer.solana.com/address/EDgQa4GCRN8Xz6UYtMBxyVDcv7PyJ7NgMTcWHzqgcnpX?cluster=devnet)
-- Staking Token: [`5JjY1oa8c3GmHctWBRroXcAQZRkL7waws9MjHo41zh42`](https://explorer.solana.com/address/5JjY1oa8c3GmHctWBRroXcAQZRkL7waws9MjHo41zh42?cluster=devnet)
-- Reward Token: [`9apfB2rWpGYQfjsX8xW2koq5XEw6jaj97D5xtgW1As4C`](https://explorer.solana.com/address/9apfB2rWpGYQfjsX8xW2koq5XEw6jaj97D5xtgW1As4C?cluster=devnet)
+- Pool Config PDA: [`3yr6r86HNaHA713TkNbEpNZmJaqFPT6VE8aoFQ7cQ7d8`](https://explorer.solana.com/address/3yr6r86HNaHA713TkNbEpNZmJaqFPT6VE8aoFQ7cQ7d8?cluster=devnet)
+- Pool State PDA: [`Dpq83z3kFpUJTo8EMGWb2QsAvqjjaohjqksAGrg7xotR`](https://explorer.solana.com/address/Dpq83z3kFpUJTo8EMGWb2QsAvqjjaohjqksAGrg7xotR?cluster=devnet)
+- Pool ID: [`BrvkF22Ko6Fdnu3KZajVgokF7T1wkhfBfrktUp9Ak4BF`](https://explorer.solana.com/address/BrvkF22Ko6Fdnu3KZajVgokF7T1wkhfBfrktUp9Ak4BF?cluster=devnet)
+- Staking Token: [`CK51MPvLVQ5HZn43BWqjU3GEti42umSREhA8jBdKk5Pw`](https://explorer.solana.com/address/CK51MPvLVQ5HZn43BWqjU3GEti42umSREhA8jBdKk5Pw?cluster=devnet)
+- Reward Token: [`6dnkYjQLo8tRt9qeoMsLkvwFUQ4hNSS2EzsBNV5tCKGu`](https://explorer.solana.com/address/6dnkYjQLo8tRt9qeoMsLkvwFUQ4hNSS2EzsBNV5tCKGu?cluster=devnet)
 
 ## Verification and Testing
 
