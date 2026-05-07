@@ -1,5 +1,5 @@
 /**
- * 事件类型
+ * Event types
  */
 export enum EventType {
   Staked = "Staked",
@@ -15,12 +15,12 @@ export enum EventType {
 }
 
 /**
- * UserActivity (用户活动记录)
- * 用户在质押协议中的所有操作历史记录
+ * UserActivity
+ * Full history of user operations in the staking protocol.
  */
 export class UserActivity {
   public readonly userAddress: string;
-  public readonly poolConfig: string; // 所属 pool（PoolConfig PDA base58）
+  public readonly poolConfig: string; // owning pool (PoolConfig PDA base58)
   public readonly eventType: EventType;
   public readonly positionDelta: bigint;
   public readonly rewards: bigint;

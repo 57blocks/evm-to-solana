@@ -1,12 +1,12 @@
 import { PoolConfig, PoolState } from "../../domain-models";
 
 /**
- * PoolRepository 接口
- * 从 Solana 链上查询 pool 的 config + state
+ * IPoolRepository
+ * Queries pool config + state from the Solana chain.
  */
 export interface IPoolRepository {
   /**
-   * 取一个 pool 的不可变配置 + 累积状态
+   * Returns the immutable config and accumulated state for a pool.
    * @param programId staking program id
    * @param poolId PoolConfig.pool_id (Pubkey base58)
    */

@@ -1,9 +1,9 @@
 /**
- * SyncStatus (同步状态)
- * 每个 pool 一个记录，跟踪事件同步进度
+ * SyncStatus
+ * One record per pool, tracks event sync progress.
  */
 export class SyncStatus {
-  public readonly poolConfig: string; // PoolConfig PDA base58, 主键
+  public readonly poolConfig: string; // PoolConfig PDA base58, primary key
   public readonly lastSyncBlock: number;
   public readonly initializeBlock: number;
 

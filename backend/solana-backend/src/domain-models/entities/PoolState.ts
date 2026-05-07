@@ -1,11 +1,11 @@
 /**
- * PoolState (池状态)
- * 单个 staking pool 的可变累积状态。MasterChef-style:
- * acc_reward_per_share 按 ACC_REWARD_PRECISION (1e12) 精度累积
+ * PoolState
+ * Mutable accumulated state for a single staking pool. MasterChef-style:
+ * acc_reward_per_share accumulates with ACC_REWARD_PRECISION (1e12) precision.
  */
 export class PoolState {
   public readonly poolStateAddress: string; // PoolState PDA, base58
-  public readonly poolConfig: string; // 关联 PoolConfig PDA
+  public readonly poolConfig: string; // associated PoolConfig PDA
   public readonly accRewardPerShare: bigint; // u128
   public readonly lastRewardTime: number; // i64 unix seconds
   public readonly totalStaked: bigint; // u64

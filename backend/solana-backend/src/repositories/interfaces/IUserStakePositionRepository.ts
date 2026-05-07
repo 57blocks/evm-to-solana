@@ -1,12 +1,12 @@
 import { UserStakeStatus } from "../../domain-models";
 
 /**
- * UserStakePositionRepository 接口
- * 链上查询用户在指定 pool 的质押状态（含 pendingRewards）
+ * IUserStakePositionRepository
+ * Queries user stake position in a given pool from the chain (includes pendingRewards).
  */
 export interface IUserStakePositionRepository {
   /**
-   * @param userAddress 用户钱包地址
+   * @param userAddress user wallet address
    * @param programId staking program id
    * @param poolId PoolConfig.pool_id
    */

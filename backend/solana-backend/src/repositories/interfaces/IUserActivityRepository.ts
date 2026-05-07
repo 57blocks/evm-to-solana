@@ -1,8 +1,8 @@
 import { UserActivity } from "../../domain-models";
 
 /**
- * UserActivityRepository 接口
- * 查询和保存用户活动记录
+ * IUserActivityRepository
+ * Queries and saves user activity records.
  */
 export interface IUserActivityRepository {
   save(activity: UserActivity): Promise<void>;

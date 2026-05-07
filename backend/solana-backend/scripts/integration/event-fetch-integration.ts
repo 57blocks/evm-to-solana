@@ -14,22 +14,22 @@ import { CHAIN_ID } from "../../src/event-fetch/chain/chain";
 /**
  * Event Fetch Integration Test Script
  * 
- * 功能：
- * 1. 读取 solana_staking.json 文件获取程序地址
- * 2. 从区块 430369060 到当前块获取所有事件
- * 3. 打印所有解析的事件
- * 4. 验证 event-fetch 模块的功能
- * 
- * 不涉及数据库操作，只测试 event-fetch 模块的逻辑
+ * Features:
+ * 1. Reads program address from solana_staking.json
+ * 2. Fetches all events from block 430369060 to the current block
+ * 3. Prints all parsed events
+ * 4. Validates the event-fetch module logic
+ *
+ * No database operations involved; tests event-fetch module logic only.
  */
 
-// 配置常量
+// Configuration constants
 const START_BLOCK = 430369060; // initialize_block
-const CHAIN_ID_VALUE = CHAIN_ID.SolanaDevnet; // 可以根据需要修改为 SolanaDevnet
+const CHAIN_ID_VALUE = CHAIN_ID.SolanaDevnet; // change as needed
 const RPC_URL = process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
 const END_BLOCK = 430605379; // 0 means use current block automatically
 
-// 获取程序地址
+// Get program address
 function getProgramAddress(): string {
   if (!StakingIDL.address) {
     throw new Error("solana_staking.json does not contain 'address' field");
@@ -41,18 +41,16 @@ function getProgramAddress(): string {
 
 
 
-// 主测试函数
+// Main test function
 async function testEventFetch() {
   console.log("=".repeat(80));
   console.log("Event Fetch Integration Test");
   console.log("=".repeat(80));
 
   try {
-    // 1. 获取程序地址
     console.log("\n[Step 1] Loading solana_staking.json...");
     const programAddress = getProgramAddress();
 
-    // 2. 初始化连接
     console.log("\n[Step 2] Initializing Solana connections...");
     const solanaConnections = new SolanaConnections(RPC_URL);
     const solanaService = new SolanaService(solanaConnections);
@@ -61,15 +59,13 @@ async function testEventFetch() {
     console.log(`[Info] Start block: ${START_BLOCK}`);
     console.log(`[Info] End block: ${END_BLOCK} (will use current block automatically)`);
 
-    // 3. 创建事件解析器工厂
     console.log("\n[Step 3] Creating event parser factory...");
     const eventParserFactory = new UserTransactionEventsParserFactory();
 
-    // 4. 创建事件解析器（使用程序地址作为 monitorAddress）
     console.log("\n[Step 4] Creating event parser...");
     const eventsParser = eventParserFactory.createTransactionEventsParser(
       CHAIN_ID_VALUE,
-      [programAddress], // monitorAddress 使用程序地址（一次性扫所有池子的 tx）
+      [programAddress], // use program address to scan all pool txs in one pass
       [
         UserStakedEvent,
         UserUnstakedEvent,
@@ -77,7 +73,6 @@ async function testEventFetch() {
       ]
     );
 
-    // 5. 配置 SolanaEventFetcher
     console.log("\n[Step 5] Configuring SolanaEventFetcher...");
     const fetcherConfig: SolanaEventFetcherConfig = {
       slotToExclusion: 100,
@@ -98,7 +93,6 @@ async function testEventFetch() {
       fetcherConfig
     );
 
-    // 6. 获取事件
     console.log("\n[Step 6] Fetching events...");
     console.log(`[Info] This may take a while depending on the block range...`);
     
@@ -111,7 +105,6 @@ async function testEventFetch() {
     );
     const endTime = Date.now();
 
-    // 7. 打印结果
     console.log("\n" + "=".repeat(80));
     console.log("Fetch Results");
     console.log("=".repeat(80));
@@ -119,7 +112,6 @@ async function testEventFetch() {
     console.log(`End block number: ${result.endBlockNumber}`);
     console.log(`Time taken: ${((endTime - startTime) / 1000).toFixed(2)} seconds`);
 
-    // 8. 打印所有事件
     if (result.events.length > 0) {
       console.log("\n" + "=".repeat(80));
       console.log("Events Details");
@@ -130,7 +122,6 @@ async function testEventFetch() {
         console.log(event.toString());
       });
 
-      // 统计事件类型
       console.log("\n" + "=".repeat(80));
       console.log("Event Type Statistics");
       console.log("=".repeat(80));
@@ -164,7 +155,7 @@ async function testEventFetch() {
   }
 }
 
-// 运行测试
+// Run test
 testEventFetch()
   .then(() => {
     console.log("\n[Info] Script execution completed.");

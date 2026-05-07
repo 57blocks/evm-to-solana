@@ -3,8 +3,8 @@ import { RPC_BY_CHAINS } from "../event-fetch/chain/chain";
 
 /**
  * SolanaConnections
- * 所有模块的公共依赖，负责所有与 Solana RPC 的交互
- * 提供统一的 Connection 管理，避免重复创建连接
+ * Shared dependency for all modules; handles all Solana RPC interactions.
+ * Manages connections uniformly to avoid duplicate connections.
  */
 export class SolanaConnections {
   private rpc: string;
@@ -15,8 +15,8 @@ export class SolanaConnections {
   }
 
   /**
-   * 获取指定 chainId 的 Connection
-   * 如果连接不存在，则创建并缓存
+   * Returns the Connection for the given chainId.
+   * Creates and caches the connection if it does not exist.
    */
   getConnection(chainId: number): Connection {
     let connection: Connection | undefined = this.connectionMap.get(chainId);
@@ -28,8 +28,8 @@ export class SolanaConnections {
   }
 
   /**
-   * 创建 RPC 连接
-   * 优先使用传入的 rpc，如果没有则使用默认的 RPC_BY_CHAINS
+   * Creates an RPC connection.
+   * Prefers the provided rpc; falls back to RPC_BY_CHAINS.
    */
   private createRpcConnection(rpc: string, chainId: number): Connection {
     console.log(`rpc env - ${rpc} default - ${RPC_BY_CHAINS[chainId]}`);

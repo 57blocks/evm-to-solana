@@ -1,14 +1,14 @@
 /**
- * UserStakeStatus (用户质押状态)
- * 镜像 on-chain UserStakeInfo（仅 amount, reward_debt, bump），
- * 加上后端计算的 pendingRewards
+ * UserStakeStatus
+ * Mirrors on-chain UserStakeInfo (amount, reward_debt, bump only),
+ * plus backend-calculated pendingRewards.
  */
 export class UserStakeStatus {
   public readonly userAddress: string;
-  public readonly poolConfig: string; // 所属池
+  public readonly poolConfig: string; // owning pool
   public readonly amount: bigint; // u64
   public readonly rewardDebt: bigint; // i128
-  public readonly pendingRewards: bigint; // 后端计算
+  public readonly pendingRewards: bigint; // backend-calculated
   public readonly bump: number;
 
   constructor(

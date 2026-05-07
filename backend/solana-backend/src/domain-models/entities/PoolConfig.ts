@@ -1,11 +1,11 @@
 /**
- * PoolConfig (池配置)
- * 单个 staking pool 的不可变配置
+ * PoolConfig
+ * Immutable configuration for a single staking pool.
  */
 export class PoolConfig {
   public readonly poolConfigAddress: string; // PoolConfig PDA, base58
   public readonly admin: string;
-  public readonly poolId: string; // pool 唯一标识 (Pubkey)
+  public readonly poolId: string; // unique pool identifier (Pubkey)
   public readonly stakingMint: string;
   public readonly rewardMint: string;
   public readonly rewardPerSecond: bigint; // u64

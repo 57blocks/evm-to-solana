@@ -33,12 +33,12 @@ export interface FetchSchedulerConfig {
 
 /**
  * FetchScheduler
- * 拉起 + 管理 UserActivity 同步任务。
+ * Starts and manages UserActivity sync tasks.
  *
- * 同步粒度：每个 pool 对应一条 SyncStatus（vaultId → poolConfig）。
- * 监听地址：直接用 PoolConfig PDA（base58）作为 getSignaturesForAddress 的入参——
- * 该 PDA 在每条 stake / unstake / claim_rewards / fund_rewards / close_pool tx 里
- * 都作为 account 出现，足以覆盖所有用户事件。
+ * Sync granularity: one SyncStatus record per pool (vaultId → poolConfig).
+ * Monitor address: the PoolConfig PDA (base58) is passed directly to getSignaturesForAddress —
+ * this PDA appears as an account in every stake / unstake / claim_rewards / fund_rewards / close_pool tx,
+ * so it covers all user events.
  */
 export class FetchScheduler {
   private syncStatusRepository: ISyncStatusRepository;

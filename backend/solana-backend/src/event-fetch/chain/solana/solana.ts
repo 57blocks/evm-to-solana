@@ -221,7 +221,7 @@ export class SolanaEventFetcher implements EventFetcher {
       // console.log(
       //   `Start to find start block from slot ${lastSyncedSlot} to slot ${lastSyncedSlot + CONFIG.backfill.solana.slotToCheck}`
       // );
-      // 列出lastSyncedSlot到lastSyncedSlot + this.config.slotToCheck已确认的blocks
+      // List confirmed blocks from lastSyncedSlot to lastSyncedSlot + this.config.slotToCheck
       const blockHistories = await connection.getBlocks(
         lastSyncedSlot,
         lastSyncedSlot + this.config.slotToCheck
@@ -229,11 +229,11 @@ export class SolanaEventFetcher implements EventFetcher {
       // console.log(
       //   `Finish to find start block from slot ${lastSyncedSlot} to slot ${lastSyncedSlot + CONFIG.backfill.solana.slotToCheck}`
       // );
-      // 遍历每个block，找到第一个transaction signature
+      // Iterate each block, find the first transaction signature
       for (let i = 0; i < blockHistories.length; i++) {
         // console.log(`Start to find start block ${blockHistories[i]}`);
         // getBlock is a heavy function, it costs around 5s
-        // 返回block的信息
+        // Fetch block info
         const startBlock = await connection.getBlock(blockHistories[i], {
           maxSupportedTransactionVersion: 0,
           rewards: false,

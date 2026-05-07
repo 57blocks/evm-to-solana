@@ -13,25 +13,25 @@ import { getPrismaClient, disconnectPrisma } from "../../src/infrastructure/Pris
 /**
  * FetchScheduler Integration Test Script
  * 
- * 功能：
- * 1. 使用真实的 repositories（SyncStatusRepository, UserActivityRepository）
- * 2. 初始化 FetchScheduler 配置
- * 3. 启动 FetchScheduler 并持续运行
- * 4. 支持优雅停止（Ctrl+C）
- * 
- * 注意：此脚本假设数据库已经初始化（通过 init-db.ts 脚本）
- * 使用真实的 SQLite 数据库进行测试
- * FetchScheduler 会持续运行，直到收到停止信号（SIGINT/SIGTERM）
+ * Features:
+ * 1. Uses real repositories (SyncStatusRepository, UserActivityRepository)
+ * 2. Initializes FetchScheduler configuration
+ * 3. Starts FetchScheduler and keeps it running
+ * 4. Supports graceful shutdown (Ctrl+C)
+ *
+ * Note: This script assumes the database is already initialized (via init-db.ts).
+ * Uses a real SQLite database for testing.
+ * FetchScheduler runs continuously until it receives a stop signal (SIGINT/SIGTERM).
  */
 
-// 配置常量
+// Configuration constants
 const CHAIN_ID_VALUE = CHAIN_ID.SolanaDevnet;
 const RPC_URL = process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com";
-const FETCHING_INTERVAL = 5000; // 5秒，用于测试
-const RETRY_DELAY_INTERVAL = 1000; // 1秒
+const FETCHING_INTERVAL = 5000; // 5 seconds, for testing
+const RETRY_DELAY_INTERVAL = 1000; // 1 second
 const MAX_RETRIES = 3;
 
-// 获取程序地址
+// Get program address
 function getProgramAddress(): string {
   if (!StakingIDL.address) {
     throw new Error("solana_staking.json does not contain 'address' field");
@@ -40,7 +40,7 @@ function getProgramAddress(): string {
 }
 
 /**
- * 打印统计信息
+ * Print final statistics.
  */
 async function printStatistics(
   syncStatusRepo: SyncStatusRepository
@@ -48,7 +48,6 @@ async function printStatistics(
   const prisma = getPrismaClient();
   
   try {
-    // 检查 SyncStatus 更新
     const updatedSyncStatuses = await syncStatusRepo.findAll();
     console.log("\n" + "=".repeat(80));
     console.log("Final Statistics");
@@ -61,7 +60,6 @@ async function printStatistics(
       console.log(`    Initialize Block: ${status.initializeBlock}`);
     });
 
-    // 检查 UserActivity 保存
     const allActivityRecords = await prisma.userActivity.findMany({
       orderBy: { timestamp: 'desc' }
     });
@@ -82,7 +80,6 @@ async function printStatistics(
     console.log(`Total UserActivity records: ${allActivities.length}`);
     
     if (allActivities.length > 0) {
-      // 按类型统计
       const statsByType: Record<string, number> = {};
       allActivities.forEach((activity) => {
         statsByType[activity.eventType] = (statsByType[activity.eventType] || 0) + 1;
@@ -92,7 +89,6 @@ async function printStatistics(
         console.log(`  - ${type}: ${count}`);
       });
 
-      // 按 pool 统计
       const statsByPool: Record<string, number> = {};
       allActivities.forEach((activity) => {
         statsByPool[activity.poolConfig] = (statsByPool[activity.poolConfig] || 0) + 1;
@@ -109,25 +105,22 @@ async function printStatistics(
 
 
 
-// 主测试函数
+// Main test function
 async function testFetchScheduler() {
   console.log("=".repeat(80));
   console.log("FetchScheduler Integration Test");
   console.log("=".repeat(80));
 
   try {
-    // 1. 获取程序地址
     console.log("\n[Step 1] Loading configuration...");
     const programAddress = getProgramAddress();
     console.log(`[Info] Program address: ${programAddress}`);
     console.log(`[Info] Chain ID: ${CHAIN_ID_VALUE}`);
     console.log(`[Info] RPC URL: ${RPC_URL}`);
     const syncStatusRepo = new SyncStatusRepository();
-    // 3. 创建真实的 repositories
     console.log("\n[Step 3] Creating repositories...");
     const userActivityRepo = new UserActivityRepository();
 
-    // 4. 创建 FetchScheduler 配置
     console.log("\n[Step 4] Creating FetchScheduler configuration...");
     const solanaConnections = new SolanaConnections(RPC_URL);
     const eventParserFactory = new UserTransactionEventsParserFactory();
@@ -153,7 +146,6 @@ async function testFetchScheduler() {
       solanaEventFetcherConfig: fetcherConfig,
     };
 
-    // 5. 创建 FetchScheduler 实例
     console.log("\n[Step 5] Creating FetchScheduler instance...");
     const scheduler = new FetchScheduler(
       syncStatusRepo,
@@ -161,17 +153,15 @@ async function testFetchScheduler() {
       schedulerConfig
     );
 
-    // 6. 启动 FetchScheduler（会立即执行一次同步）
     console.log("\n[Step 6] Starting FetchScheduler...");
     console.log("[Info] FetchScheduler will run continuously until stopped (Ctrl+C)");
     await scheduler.start();
 
-    // 7. 设置优雅停止处理
     console.log("\n[Step 7] FetchScheduler is now running...");
     console.log("[Info] Press Ctrl+C to stop gracefully");
     console.log("=".repeat(80));
 
-    // 设置信号处理器，优雅停止
+    // Set up signal handler for graceful shutdown
     const stopHandler = async (signal: string) => {
       console.log(`\n\n[Info] Received ${signal}, stopping FetchScheduler gracefully...`);
       try {
@@ -193,12 +183,8 @@ async function testFetchScheduler() {
     process.on('SIGINT', () => stopHandler('SIGINT'));
     process.on('SIGTERM', () => stopHandler('SIGTERM'));
 
-    // 保持进程运行
-    // 使用一个永不 resolve 的 Promise 来保持进程运行
-    await new Promise<void>(() => {
-      // 这个 Promise 永远不会 resolve，进程会一直运行
-      // 直到收到 SIGINT 或 SIGTERM 信号
-    });
+    // Keep the process alive until SIGINT or SIGTERM
+    await new Promise<void>(() => {});
 
   } catch (error) {
     console.error("\n" + "=".repeat(80));
@@ -214,7 +200,7 @@ async function testFetchScheduler() {
   }
 }
 
-// 运行测试
+// Run test
 testFetchScheduler()
   .then(() => {
     console.log("\n[Info] Script execution completed.");

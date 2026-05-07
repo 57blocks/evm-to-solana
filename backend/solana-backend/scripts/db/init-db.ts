@@ -4,12 +4,12 @@ import { SyncStatusRepository } from "../../src/repositories/implementations/Syn
 import { getPrismaClient, disconnectPrisma } from "../../src/infrastructure/PrismaClient";
 
 /**
- * 数据库初始化函数
- * 在 SyncStatus 表中插入监控的 pool_config 数据
+ * Database initialization function.
+ * Inserts monitored pool_config data into the SyncStatus table.
  *
- * @param poolsToInit - pool 配置数组，每个包含 poolConfig 和 initializeBlock
- * @param reset - 是否重置数据库（清空 SyncStatus 和 UserActivity），默认 false
- * @param disconnectAfterInit - 是否在初始化后断开连接（默认 true）
+ * @param poolsToInit - Array of pool configurations, each containing poolConfig and initializeBlock
+ * @param reset - Whether to reset the database (clear SyncStatus and UserActivity), defaults to false
+ * @param disconnectAfterInit - Whether to disconnect after initialization (defaults to true)
  */
 async function initDatabase(
   poolsToInit: Array<{ poolConfig: string; initializeBlock: number }>,
@@ -80,7 +80,7 @@ async function initDatabase(
 }
 
 /**
- * 从环境变量读取配置并初始化数据库
+ * Reads config from environment variables and initializes the database.
  *
  * Format: POOL_CONFIGS="pool1:block1,pool2:block2"
  */

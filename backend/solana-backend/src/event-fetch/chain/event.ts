@@ -8,8 +8,8 @@ export interface TransactionEventsParser {
 }
 
 /**
- * EventClass 类型定义：只要求类有静态方法 eventName() 和 eventType()
- * 不要求构造函数签名匹配，因为实际使用时只调用静态方法
+ * EventClass type: only requires static eventName() and eventType() methods.
+ * Constructor signature is not enforced since only static methods are called.
  */
 export type EventClass = {
   eventName(): string;
