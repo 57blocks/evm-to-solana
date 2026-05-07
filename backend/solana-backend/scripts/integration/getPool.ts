@@ -1,5 +1,5 @@
 import "dotenv/config";
-import StakingIDL from "../../solana_staking.json";
+import StakingIDL from "../../idl/solana_staking.json";
 import { PoolRepository } from "../../src/repositories/implementations/PoolRepository";
 import { SolanaConnections } from "../../src/infrastructure/SolanaConnections";
 import { CHAIN_ID } from "../../src/event-fetch/chain/chain";

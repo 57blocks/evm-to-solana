@@ -15,7 +15,7 @@ import {
   TransactionEventsParserFactory,
   EventClass,
 } from "../chain/event";
-import StakingIDL from "../../solana_staking.json";
+import StakingIDL from "../../../idl/solana_staking.json";
 
 const SOLANA_ANCHOR_EVENT = "solana.anchor.event";
 const SOLANA_SPL_EVENT = "solana.spl.event";

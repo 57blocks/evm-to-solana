@@ -11,11 +11,9 @@
     "script": "ANCHOR_PROVIDER_URL=https://api.devnet.solana.com ANCHOR_WALLET=~/.config/solana/id.json tsx",
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:init": "tsx scripts/db/init-db.ts",
-    "db:reset": "prisma migrate reset"
+    "db:push": "prisma db push"
   },
   "keywords": [
     "solana",

@@ -4,7 +4,7 @@ import { PoolConfig, PoolState } from "../../domain-models";
 import { IPoolRepository } from "../interfaces/IPoolRepository";
 import { SolanaConnections } from "../../infrastructure";
 import { POOL_CONFIG_SEED, POOL_STATE_SEED } from "../constants";
-import StakingIDL from "../../solana_staking.json";
+import StakingIDL from "../../../idl/solana_staking.json";
 
 interface DecodedPoolConfig {
   admin: PublicKey;

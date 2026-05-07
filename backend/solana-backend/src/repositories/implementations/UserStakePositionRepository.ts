@@ -6,7 +6,7 @@ import { IPoolRepository } from "../interfaces/IPoolRepository";
 import { RewardCalculationService } from "../../domain-services/RewardCalculationService";
 import { SolanaConnections } from "../../infrastructure";
 import { POOL_CONFIG_SEED, STAKE_SEED } from "../constants";
-import StakingIDL from "../../solana_staking.json";
+import StakingIDL from "../../../idl/solana_staking.json";
 
 interface DecodedUserStake {
   amount: bigint;

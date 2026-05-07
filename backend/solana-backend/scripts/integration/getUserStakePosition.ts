@@ -1,5 +1,5 @@
 import "dotenv/config";
-import StakingIDL from "../../solana_staking.json";
+import StakingIDL from "../../idl/solana_staking.json";
 import { PoolRepository } from "../../src/repositories/implementations/PoolRepository";
 import { UserStakePositionRepository } from "../../src/repositories/implementations/UserStakePositionRepository";
 import { RewardCalculationService } from "../../src/domain-services/RewardCalculationService";

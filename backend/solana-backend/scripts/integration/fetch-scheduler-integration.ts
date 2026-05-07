@@ -1,5 +1,5 @@
 import "dotenv/config";
-import StakingIDL from "../../solana_staking.json";
+import StakingIDL from "../../idl/solana_staking.json";
 import { FetchScheduler, FetchSchedulerConfig } from "../../src/event-fetch/FetchScheduler";
 import { SyncStatusRepository } from "../../src/repositories/implementations/SyncStatusRepository";
 import { UserActivityRepository } from "../../src/repositories/implementations/UserActivityRepository";

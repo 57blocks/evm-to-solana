@@ -10,14 +10,14 @@ datasource db {
   provider = "sqlite"
 }
 
-// UserActivity 表
+// UserActivity table
 model UserActivity {
   id            String   @id @default(uuid())
   userAddress   String   @map("user_address")
   poolConfig    String   @map("pool_config")
   eventType     String   @map("event_type")
   positionDelta String   @map("position_delta")
-  rewards       String   @map("rewards") // 使用 String 存储 bigint
+  rewards       String   @map("rewards") // stored as String to support bigint
   blockNumber   Int      @map("block_number")
   txHash        String   @map("tx_hash")
   timestamp     Int      @map("timestamp")
@@ -28,7 +28,7 @@ model UserActivity {
   @@map("user_activity")
 }
 
-// SyncStatus 表
+// SyncStatus table
 model SyncStatus {
   poolConfig      String  @id @map("pool_config")
   lastSyncBlock   Int     @map("last_sync_block")
