@@ -1,14 +1,14 @@
 /**
  * SyncStatus (同步状态)
- * 事件同步服务维护的同步进度状态
+ * 每个 pool 一个记录，跟踪事件同步进度
  */
 export class SyncStatus {
-  public readonly vaultId: string; // Address
-  public readonly lastSyncBlock: number; // Slot
-  public readonly initializeBlock: number; // Slot
+  public readonly poolConfig: string; // PoolConfig PDA base58, 主键
+  public readonly lastSyncBlock: number;
+  public readonly initializeBlock: number;
 
   constructor(
-    vaultId: string,
+    poolConfig: string,
     lastSyncBlock: number,
     initializeBlock: number
   ) {
@@ -17,31 +17,24 @@ export class SyncStatus {
         "lastSyncBlock must be greater than or equal to initializeBlock"
       );
     }
-    this.vaultId = vaultId;
+    this.poolConfig = poolConfig;
     this.lastSyncBlock = lastSyncBlock;
     this.initializeBlock = initializeBlock;
   }
 
-  /**
-   * 从数据库数据创建SyncStatus实体
-   */
   static fromDatabase(data: {
-    vaultId: string;
+    poolConfig: string;
     lastSyncBlock: number;
     initializeBlock: number;
   }): SyncStatus {
     return new SyncStatus(
-      data.vaultId,
+      data.poolConfig,
       data.lastSyncBlock,
       data.initializeBlock
     );
   }
 
-  /**
-   * 更新lastSyncBlock
-   */
   updateLastSyncBlock(newLastSyncBlock: number): SyncStatus {
-    return new SyncStatus(this.vaultId, newLastSyncBlock, this.initializeBlock);
+    return new SyncStatus(this.poolConfig, newLastSyncBlock, this.initializeBlock);
   }
 }
-

@@ -2,23 +2,17 @@ import { UserStakeStatus } from "../../domain-models";
 
 /**
  * UserStakePositionRepository 接口
- * 从Solana链上查询用户质押状态
+ * 链上查询用户在指定 pool 的质押状态（含 pendingRewards）
  */
 export interface IUserStakePositionRepository {
   /**
-   * 获取用户质押状态
-   * @param userAddress 用户地址
-   * @param programId 程序ID
-   * @param stakingMint 质押代币类型
-   * @param stateSeed PDA seed，默认 "state"
-   * @param stakeSeed PDA seed，默认 "stake"
+   * @param userAddress 用户钱包地址
+   * @param programId staking program id
+   * @param poolId PoolConfig.pool_id
    */
   getUserStakePosition(
     userAddress: string,
     programId: string,
-    stakingMint: string,
-    stateSeed?: string,
-    stakeSeed?: string
+    poolId: string
   ): Promise<UserStakeStatus | null>;
 }
-

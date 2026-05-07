@@ -5,7 +5,7 @@ import { SyncStatusRepository } from "../../src/repositories/implementations/Syn
 import { UserActivityRepository } from "../../src/repositories/implementations/UserActivityRepository";
 import { UserActivity, EventType } from "../../src/domain-models";
 import { SolanaConnections } from "../../src/infrastructure/SolanaConnections";
-import { PermissionlessTransactionEventsParserFactory } from "../../src/event-fetch/permissionless/event";
+import { UserTransactionEventsParserFactory } from "../../src/event-fetch/user/event";
 import { SolanaEventFetcherConfig } from "../../src/event-fetch/chain/solana/solana";
 import { CHAIN_ID } from "../../src/event-fetch/chain/chain";
 import { getPrismaClient, disconnectPrisma } from "../../src/infrastructure/PrismaClient";
@@ -56,7 +56,7 @@ async function printStatistics(
     console.log(`\n[SyncStatus Results]`);
     console.log(`Total SyncStatus records: ${updatedSyncStatuses.length}`);
     updatedSyncStatuses.forEach((status) => {
-      console.log(`  - Vault: ${status.vaultId}`);
+      console.log(`  - Pool: ${status.poolConfig}`);
       console.log(`    Last Sync Block: ${status.lastSyncBlock} (started from ${status.initializeBlock})`);
       console.log(`    Initialize Block: ${status.initializeBlock}`);
     });
@@ -65,10 +65,10 @@ async function printStatistics(
     const allActivityRecords = await prisma.userActivity.findMany({
       orderBy: { timestamp: 'desc' }
     });
-    const allActivities = allActivityRecords.map(record => 
+    const allActivities = allActivityRecords.map(record =>
       new UserActivity(
         record.userAddress,
-        record.vaultId,
+        record.poolConfig,
         record.eventType as EventType,
         BigInt(record.positionDelta),
         BigInt(record.rewards),
@@ -92,14 +92,14 @@ async function printStatistics(
         console.log(`  - ${type}: ${count}`);
       });
 
-      // 按 vault 统计
-      const statsByVault: Record<string, number> = {};
+      // 按 pool 统计
+      const statsByPool: Record<string, number> = {};
       allActivities.forEach((activity) => {
-        statsByVault[activity.vaultId] = (statsByVault[activity.vaultId] || 0) + 1;
+        statsByPool[activity.poolConfig] = (statsByPool[activity.poolConfig] || 0) + 1;
       });
-      console.log(`\nActivity by vault:`);
-      Object.entries(statsByVault).forEach(([vault, count]) => {
-        console.log(`  - ${vault}: ${count}`);
+      console.log(`\nActivity by pool:`);
+      Object.entries(statsByPool).forEach(([pool, count]) => {
+        console.log(`  - ${pool}: ${count}`);
       });
     }
   } catch (error) {
@@ -130,7 +130,7 @@ async function testFetchScheduler() {
     // 4. 创建 FetchScheduler 配置
     console.log("\n[Step 4] Creating FetchScheduler configuration...");
     const solanaConnections = new SolanaConnections(RPC_URL);
-    const eventParserFactory = new PermissionlessTransactionEventsParserFactory();
+    const eventParserFactory = new UserTransactionEventsParserFactory();
 
     const fetcherConfig: SolanaEventFetcherConfig = {
       slotToExclusion: 100,

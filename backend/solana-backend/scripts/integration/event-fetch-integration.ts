@@ -3,12 +3,12 @@ import StakingIDL from "../../solana_staking.json";
 import { SolanaConnections } from "../../src/infrastructure/SolanaConnections";
 import { SolanaService } from "../../src/event-fetch/chain/solana/solana";
 import { SolanaEventFetcher, SolanaEventFetcherConfig } from "../../src/event-fetch/chain/solana/solana";
-import { PermissionlessTransactionEventsParserFactory } from "../../src/event-fetch/permissionless/event";
+import { UserTransactionEventsParserFactory } from "../../src/event-fetch/user/event";
 import {
-  PermissionlessStakedEvent,
-  PermissionlessUnstakedEvent,
-  PermissionlessRewardsClaimedEvent,
-} from "../../src/event-fetch/permissionless/event";
+  UserStakedEvent,
+  UserUnstakedEvent,
+  UserRewardsClaimedEvent,
+} from "../../src/event-fetch/user/event";
 import { CHAIN_ID } from "../../src/event-fetch/chain/chain";
 
 /**
@@ -63,17 +63,17 @@ async function testEventFetch() {
 
     // 3. 创建事件解析器工厂
     console.log("\n[Step 3] Creating event parser factory...");
-    const eventParserFactory = new PermissionlessTransactionEventsParserFactory();
+    const eventParserFactory = new UserTransactionEventsParserFactory();
 
     // 4. 创建事件解析器（使用程序地址作为 monitorAddress）
     console.log("\n[Step 4] Creating event parser...");
     const eventsParser = eventParserFactory.createTransactionEventsParser(
       CHAIN_ID_VALUE,
-      [programAddress], // vaultId/monitorAddress 使用程序地址
+      [programAddress], // monitorAddress 使用程序地址（一次性扫所有池子的 tx）
       [
-        PermissionlessStakedEvent,
-        PermissionlessUnstakedEvent,
-        PermissionlessRewardsClaimedEvent,
+        UserStakedEvent,
+        UserUnstakedEvent,
+        UserRewardsClaimedEvent,
       ]
     );
 

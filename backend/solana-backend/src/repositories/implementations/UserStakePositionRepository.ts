@@ -1,69 +1,86 @@
 import { PublicKey } from "@solana/web3.js";
+import { BorshCoder, Idl } from "@coral-xyz/anchor";
 import { UserStakeStatus } from "../../domain-models";
 import { IUserStakePositionRepository } from "../interfaces/IUserStakePositionRepository";
+import { IPoolRepository } from "../interfaces/IPoolRepository";
+import { RewardCalculationService } from "../../domain-services/RewardCalculationService";
 import { SolanaConnections } from "../../infrastructure";
-import { BorshCoder, Idl } from "@coral-xyz/anchor";
+import { POOL_CONFIG_SEED, STAKE_SEED } from "../constants";
 import StakingIDL from "../../solana_staking.json";
 
-/**
- * UserStakePositionRepository 实现
- * 从Solana链上查询用户质押状态
- */
-export class UserStakePositionRepository implements IUserStakePositionRepository
-{
+interface DecodedUserStake {
+  amount: bigint;
+  reward_debt: bigint; // i128
+  bump: number;
+}
+
+export class UserStakePositionRepository implements IUserStakePositionRepository {
   private solanaConnections: SolanaConnections;
   private chainId: number;
+  private poolRepository: IPoolRepository;
+  private rewardCalculator: RewardCalculationService;
+
   constructor(
     solanaConnections: SolanaConnections,
-    chainId: number
+    chainId: number,
+    poolRepository: IPoolRepository,
+    rewardCalculator: RewardCalculationService
   ) {
     this.solanaConnections = solanaConnections;
     this.chainId = chainId;
+    this.poolRepository = poolRepository;
+    this.rewardCalculator = rewardCalculator;
   }
 
-  /**
-   * 获取用户质押状态
-   */
   async getUserStakePosition(
     userAddress: string,
     programId: string,
-    stakingMint: string,
-    stateSeed: string = "state",
-    stakeSeed: string = "stake"
+    poolId: string
   ): Promise<UserStakeStatus | null> {
     const programPubkey = new PublicKey(programId);
-    const stakingMintPubkey = new PublicKey(stakingMint);
+    const poolIdPubkey = new PublicKey(poolId);
     const userPubkey = new PublicKey(userAddress);
-    const [statePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(stateSeed), stakingMintPubkey.toBuffer()],
+
+    const [poolConfigPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(POOL_CONFIG_SEED), poolIdPubkey.toBuffer()],
       programPubkey
     );
     const [stakePda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(stakeSeed), statePda.toBuffer(), userPubkey.toBuffer()],
+      [Buffer.from(STAKE_SEED), poolConfigPda.toBuffer(), userPubkey.toBuffer()],
       programPubkey
     );
-    // 查询账户数据
+
     const connection = this.solanaConnections.getConnection(this.chainId);
     const accountInfo = await connection.getAccountInfo(stakePda);
     if (!accountInfo) {
       return null;
     }
+
     const coder = new BorshCoder(StakingIDL as Idl);
-    const decodedStake = coder.accounts.decode("UserStakeInfo", accountInfo.data) as {
-      owner: PublicKey;
-      amount: bigint;
-      stake_timestamp: bigint; // i64 in IDL
-      last_claim_time: bigint; // i64 in IDL
-      reward_debt: bigint; // u64 in IDL
-      bump: number;
-    };
+    const decoded = coder.accounts.decode(
+      "UserStakeInfo",
+      accountInfo.data
+    ) as DecodedUserStake;
+
+    const amount = BigInt(decoded.amount.toString());
+    const rewardDebt = BigInt(decoded.reward_debt.toString());
+
+    const { config, state } = await this.poolRepository.getPool(programId, poolId);
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    const pendingRewards = this.rewardCalculator.pendingRewards(
+      { amount, rewardDebt },
+      state,
+      config,
+      now
+    );
+
     return UserStakeStatus.fromChainData({
-      owner: decodedStake.owner.toBase58(),
-      amount: decodedStake.amount,
-      stakeTimestamp: Number(decodedStake.stake_timestamp), // Convert i64 to number
-      lastClaimTime: Number(decodedStake.last_claim_time), // Convert i64 to number
-      rewardDebt: decodedStake.reward_debt,
+      userAddress,
+      poolConfig: poolConfigPda.toBase58(),
+      amount,
+      rewardDebt,
+      pendingRewards,
+      bump: decoded.bump,
     });
   }
 }
-

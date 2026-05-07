@@ -6,22 +6,22 @@ import { SolanaEventFetcher, SolanaEventFetcherConfig } from "./chain/solana/sol
 import { SolanaService } from "./chain/solana/solana";
 import { TransactionEventsParserFactory, BaseEvent } from "./chain/event";
 import {
-  PermissionlessStakedEvent,
-  PermissionlessUnstakedEvent,
-  PermissionlessRewardsClaimedEvent
-} from "./permissionless/event";
+  UserStakedEvent,
+  UserUnstakedEvent,
+  UserRewardsClaimedEvent,
+} from "./user/event";
 import { SolanaConnections } from "../infrastructure/SolanaConnections";
 import { SolscanTransferEventFetcher } from "./chain/solana/solscan";
 import { EventFetcher } from "./chain/chain";
 
 export interface FetchSchedulerConfig {
-  fetchingInterval: number; // 默认: 10000ms = 10s
-  retryDelayInterval: number; // 默认: 2000ms = 2s
-  maxRetries: number; // 默认: 3
+  fetchingInterval: number;
+  retryDelayInterval: number;
+  maxRetries: number;
   chainId: number;
   eventParserFactory: TransactionEventsParserFactory;
   solanaConnections: SolanaConnections;
-  solanaEventFetcherConfig: SolanaEventFetcherConfig
+  solanaEventFetcherConfig: SolanaEventFetcherConfig;
   solscanConfig?: {
     endpoint: string;
     apiKey: string;
@@ -33,7 +33,12 @@ export interface FetchSchedulerConfig {
 
 /**
  * FetchScheduler
- * 负责拉起和管理 UserActivity 同步到数据库的任务
+ * 拉起 + 管理 UserActivity 同步任务。
+ *
+ * 同步粒度：每个 pool 对应一条 SyncStatus（vaultId → poolConfig）。
+ * 监听地址：直接用 PoolConfig PDA（base58）作为 getSignaturesForAddress 的入参——
+ * 该 PDA 在每条 stake / unstake / claim_rewards / fund_rewards / close_pool tx 里
+ * 都作为 account 出现，足以覆盖所有用户事件。
  */
 export class FetchScheduler {
   private syncStatusRepository: ISyncStatusRepository;
@@ -53,9 +58,6 @@ export class FetchScheduler {
     this.config = config;
   }
 
-  /**
-   * 启动 FetchScheduler
-   */
   async start(): Promise<void> {
     if (this.isRunning) {
       console.log("[FetchScheduler] Already running");
@@ -65,16 +67,13 @@ export class FetchScheduler {
     console.log("[FetchScheduler] Starting...");
     this.isRunning = true;
 
-    // 初始化 EventFetcher
     await this.initializeEventFetcher();
 
-    // 立即执行一次同步
-    await this.syncAllVaults();
+    await this.syncAllPools();
 
-    // 设置定时器
     this.timer = setInterval(async () => {
       try {
-        await this.syncAllVaults();
+        await this.syncAllPools();
       } catch (error) {
         console.error("[FetchScheduler] Error in scheduled sync:", error);
       }
@@ -85,9 +84,6 @@ export class FetchScheduler {
     );
   }
 
-  /**
-   * 停止 FetchScheduler
-   */
   async stop(): Promise<void> {
     if (!this.isRunning) {
       return;
@@ -96,7 +92,6 @@ export class FetchScheduler {
     console.log("[FetchScheduler] Stopping...");
     this.isRunning = false;
 
-    // 取消定时器
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
@@ -105,9 +100,6 @@ export class FetchScheduler {
     console.log("[FetchScheduler] Stopped");
   }
 
-  /**
-   * 初始化 EventFetcher
-   */
   private async initializeEventFetcher(): Promise<void> {
     const solanaService = new SolanaService(this.config.solanaConnections);
     let transferEventFetcher: SolscanTransferEventFetcher | undefined;
@@ -128,97 +120,83 @@ export class FetchScheduler {
     this.eventFetcher = new SolanaEventFetcher(
       this.config.chainId,
       solanaService,
-      0, // defaultStartBlock
-      10000, // maxCount
+      0,
+      10000,
       this.config.solanaEventFetcherConfig,
       transferEventFetcher
     );
   }
 
-  /**
-   * 同步所有 vault
-   */
-  private async syncAllVaults(): Promise<void> {
+  private async syncAllPools(): Promise<void> {
     try {
-      console.log("[FetchScheduler] Starting sync for all vaults...");
+      console.log("[FetchScheduler] Starting sync for all pools...");
 
-      // 获取所有 vault 记录
       const allSyncStatuses = await this.syncStatusRepository.findAll();
 
       if (allSyncStatuses.length === 0) {
-        console.log("[FetchScheduler] No vaults found in SyncStatus");
+        console.log("[FetchScheduler] No pools found in SyncStatus");
         return;
       }
 
       console.log(
-        `[FetchScheduler] Found ${allSyncStatuses.length} vault(s) to sync`
+        `[FetchScheduler] Found ${allSyncStatuses.length} pool(s) to sync`
       );
 
-      // 为每个 vault 创建异步任务
       const syncPromises = allSyncStatuses.map((syncStatus) =>
-        this.syncVault(syncStatus)
+        this.syncPool(syncStatus)
       );
 
-      // 等待所有任务完成
       await Promise.allSettled(syncPromises);
 
-      console.log("[FetchScheduler] Completed sync for all vaults");
+      console.log("[FetchScheduler] Completed sync for all pools");
     } catch (error) {
-      console.error("[FetchScheduler] Error syncing all vaults:", error);
+      console.error("[FetchScheduler] Error syncing all pools:", error);
       throw error;
     }
   }
 
-  /**
-   * 同步单个 vault
-   */
-  private async syncVault(syncStatus: SyncStatus): Promise<void> {
-    const vaultId = syncStatus.vaultId;
+  private async syncPool(syncStatus: SyncStatus): Promise<void> {
+    const poolConfig = syncStatus.poolConfig;
     let retries = 0;
 
     while (retries <= this.config.maxRetries) {
       try {
         console.log(
-          `[FetchScheduler] Syncing vault ${vaultId}, lastSyncBlock: ${syncStatus.lastSyncBlock}`
+          `[FetchScheduler] Syncing pool ${poolConfig}, lastSyncBlock: ${syncStatus.lastSyncBlock}`
         );
 
-        // 确定起始区块
         const startBlock = syncStatus.lastSyncBlock + 1;
         const eventsParser = this.config.eventParserFactory.createTransactionEventsParser(
           this.config.chainId,
-          [vaultId], // vaultId 就是 monitorAddress (tokenMints)
+          [poolConfig],
           [
-            PermissionlessStakedEvent,
-            PermissionlessUnstakedEvent,
-            PermissionlessRewardsClaimedEvent,
+            UserStakedEvent,
+            UserUnstakedEvent,
+            UserRewardsClaimedEvent,
           ]
         );
-        // 调用 SolanaEventFetcher 同步
         if (!this.eventFetcher) {
           throw new Error("EventFetcher not initialized");
         }
 
         const result = await this.eventFetcher.fetchEvents(
-          [vaultId],
+          [poolConfig],
           startBlock,
           eventsParser
         );
 
         console.log(
-          `[FetchScheduler] Fetched ${result.events.length} events for vault ${vaultId}`
+          `[FetchScheduler] Fetched ${result.events.length} events for pool ${poolConfig}`
         );
 
-        // 转换并保存事件
         if (result.events.length > 0) {
           const userActivities: UserActivity[] = [];
-          
-          // 转换事件，跳过无法转换的事件
+
           for (const event of result.events) {
             try {
-              const activity = this.convertEventToUserActivity(event, vaultId);
+              const activity = this.convertEventToUserActivity(event, poolConfig);
               userActivities.push(activity);
             } catch (error) {
-              // 记录日志但跳过该事件，不中断同步流程
               console.warn(
                 `[FetchScheduler] Failed to convert event ${event.transactionHash}:`,
                 error
@@ -226,85 +204,75 @@ export class FetchScheduler {
             }
           }
 
-          // 保存所有成功转换的事件
           for (const activity of userActivities) {
             await this.userActivityRepository.save(activity);
           }
 
           console.log(
-            `[FetchScheduler] Saved ${userActivities.length} activities for vault ${vaultId} (skipped ${result.events.length - userActivities.length} events)`
+            `[FetchScheduler] Saved ${userActivities.length} activities for pool ${poolConfig} (skipped ${result.events.length - userActivities.length} events)`
           );
         }
 
-        // 更新 SyncStatus
         const updatedSyncStatus = syncStatus.updateLastSyncBlock(
           result.endBlockNumber
         );
         await this.syncStatusRepository.save(updatedSyncStatus);
 
         console.log(
-          `[FetchScheduler] Updated sync status for vault ${vaultId}, new lastSyncBlock: ${result.endBlockNumber}`
+          `[FetchScheduler] Updated sync status for pool ${poolConfig}, new lastSyncBlock: ${result.endBlockNumber}`
         );
 
-        // 成功，退出重试循环
         return;
       } catch (error) {
         retries++;
         console.error(
-          `[FetchScheduler] Error syncing vault ${vaultId} (attempt ${retries}/${this.config.maxRetries}):`,
+          `[FetchScheduler] Error syncing pool ${poolConfig} (attempt ${retries}/${this.config.maxRetries}):`,
           error
         );
 
         if (retries > this.config.maxRetries) {
           console.error(
-            `[FetchScheduler] Max retries reached for vault ${vaultId}, giving up`
+            `[FetchScheduler] Max retries reached for pool ${poolConfig}, giving up`
           );
           throw error;
         }
-        // 等待后重试
         await this.sleep(this.config.retryDelayInterval);
       }
     }
   }
 
-  /**
-   * 转换 BaseEvent 到 UserActivity
-   */
   private convertEventToUserActivity(
     event: BaseEvent,
-    vaultId: string
+    poolConfig: string
   ): UserActivity {
-    if (event instanceof PermissionlessStakedEvent) {
+    if (event instanceof UserStakedEvent) {
       return UserActivity.createStakedActivity(
         event.userAddress,
-        vaultId,
+        poolConfig,
         event.amount,
-        event.rewards,
         event.blockNumber,
         event.transactionHash,
         event.timestamp
       );
-    } else if (event instanceof PermissionlessUnstakedEvent) {
+    } else if (event instanceof UserUnstakedEvent) {
       return UserActivity.createUnstakedActivity(
         event.userAddress,
-        vaultId,
+        poolConfig,
         event.amount,
-        event.rewards,
         event.blockNumber,
         event.transactionHash,
         event.timestamp
       );
-    } else if (event instanceof PermissionlessRewardsClaimedEvent) {
+    } else if (event instanceof UserRewardsClaimedEvent) {
       return UserActivity.createRewardsClaimedActivity(
         event.userAddress,
-        vaultId,
+        poolConfig,
         event.amount,
         event.blockNumber,
         event.transactionHash,
         event.timestamp
       );
     } else {
-      // 未知事件类型，记录日志但跳过
       console.warn(
         `[FetchScheduler] Unknown event type: ${event.constructor.name}, skipping`
       );
@@ -312,11 +280,7 @@ export class FetchScheduler {
     }
   }
 
-  /**
-   * 睡眠工具函数
-   */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-

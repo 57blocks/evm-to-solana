@@ -1,54 +1,47 @@
 /**
  * UserStakeStatus (用户质押状态)
- * 用户在质押程序中的当前质押状态
+ * 镜像 on-chain UserStakeInfo（仅 amount, reward_debt, bump），
+ * 加上后端计算的 pendingRewards
  */
 export class UserStakeStatus {
-  public readonly userAddress: string; // Address
-  public readonly amount: bigint; // TokenAmount (u64)
-  public readonly stakeTimestamp: number; // Unix timestamp
-  public readonly lastClaimTime: number; // Unix timestamp
-  public readonly rewardDebt: bigint; // TokenAmount (u64)
+  public readonly userAddress: string;
+  public readonly poolConfig: string; // 所属池
+  public readonly amount: bigint; // u64
+  public readonly rewardDebt: bigint; // i128
+  public readonly pendingRewards: bigint; // 后端计算
+  public readonly bump: number;
 
   constructor(
     userAddress: string,
+    poolConfig: string,
     amount: bigint,
-    stakeTimestamp: number,
-    lastClaimTime: number,
     rewardDebt: bigint,
+    pendingRewards: bigint,
+    bump: number
   ) {
-    if (stakeTimestamp < 0) {
-      throw new Error("Stake timestamp must be non-negative");
-    }
-    if (lastClaimTime < 0) {
-      throw new Error("Last claim time must be non-negative");
-    }
-    if (lastClaimTime < stakeTimestamp) {
-      throw new Error("Last claim time cannot be before stake timestamp");
-    }
     this.userAddress = userAddress;
+    this.poolConfig = poolConfig;
     this.amount = amount;
-    this.stakeTimestamp = stakeTimestamp;
-    this.lastClaimTime = lastClaimTime;
     this.rewardDebt = rewardDebt;
+    this.pendingRewards = pendingRewards;
+    this.bump = bump;
   }
 
-  /**
-   * 从链上账户数据创建UserStakeStatus实体
-   */
   static fromChainData(data: {
-    owner: string;
+    userAddress: string;
+    poolConfig: string;
     amount: bigint;
-    stakeTimestamp: number;
-    lastClaimTime: number;
     rewardDebt: bigint;
+    pendingRewards: bigint;
+    bump: number;
   }): UserStakeStatus {
     return new UserStakeStatus(
-      data.owner,
+      data.userAddress,
+      data.poolConfig,
       data.amount,
-      data.stakeTimestamp,
-      data.lastClaimTime,
-      data.rewardDebt
+      data.rewardDebt,
+      data.pendingRewards,
+      data.bump
     );
   }
 }
-

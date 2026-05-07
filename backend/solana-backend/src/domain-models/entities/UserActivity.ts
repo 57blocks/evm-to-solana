@@ -5,6 +5,13 @@ export enum EventType {
   Staked = "Staked",
   Unstaked = "Unstaked",
   RewardsClaimed = "RewardsClaimed",
+  PoolCreated = "PoolCreated",
+  RewardsFunded = "RewardsFunded",
+  PoolClosed = "PoolClosed",
+  UserStakeAccountClosed = "UserStakeAccountClosed",
+  RemainingRewardsWithdrawn = "RemainingRewardsWithdrawn",
+  AddedToBlacklist = "AddedToBlacklist",
+  RemovedFromBlacklist = "RemovedFromBlacklist",
 }
 
 /**
@@ -12,18 +19,18 @@ export enum EventType {
  * 用户在质押协议中的所有操作历史记录
  */
 export class UserActivity {
-  public readonly userAddress: string; // Address
-  public readonly vaultId: string; // Address
+  public readonly userAddress: string;
+  public readonly poolConfig: string; // 所属 pool（PoolConfig PDA base58）
   public readonly eventType: EventType;
-  public readonly positionDelta: bigint; // 质押数量的变化量（正数表示增加，负数表示减少）
-  public readonly rewards: bigint; // TokenAmount (u64)
-  public readonly blockNumber: number; // Slot
-  public readonly txHash: string; // TransactionHash
-  public readonly timestamp: number; // Unix timestamp
+  public readonly positionDelta: bigint;
+  public readonly rewards: bigint;
+  public readonly blockNumber: number;
+  public readonly txHash: string;
+  public readonly timestamp: number;
 
   constructor(
     userAddress: string,
-    vaultId: string,
+    poolConfig: string,
     eventType: EventType,
     positionDelta: bigint,
     rewards: bigint,
@@ -35,7 +42,7 @@ export class UserActivity {
       throw new Error("Timestamp must be non-negative");
     }
     this.userAddress = userAddress;
-    this.vaultId = vaultId;
+    this.poolConfig = poolConfig;
     this.eventType = eventType;
     this.positionDelta = positionDelta;
     this.rewards = rewards;
@@ -44,60 +51,49 @@ export class UserActivity {
     this.timestamp = timestamp;
   }
 
-  /**
-   * 创建Staked事件的UserActivity
-   */
   static createStakedActivity(
     userAddress: string,
-    vaultId: string,
+    poolConfig: string,
     amount: bigint,
-    rewards: bigint,
     blockNumber: number,
     txHash: string,
     timestamp: number,
   ): UserActivity {
     return new UserActivity(
       userAddress,
-      vaultId,
+      poolConfig,
       EventType.Staked,
       amount,
-      rewards,
+      0n,
       blockNumber,
       txHash,
       timestamp
     );
   }
 
-  /**
-   * 创建Unstaked事件的UserActivity
-   */
   static createUnstakedActivity(
     userAddress: string,
-    vaultId: string,
+    poolConfig: string,
     amount: bigint,
-    rewards: bigint,
     blockNumber: number,
     txHash: string,
     timestamp: number,
   ): UserActivity {
     return new UserActivity(
       userAddress,
-      vaultId,
+      poolConfig,
       EventType.Unstaked,
       -amount,
-      rewards,
+      0n,
       blockNumber,
       txHash,
       timestamp
     );
   }
 
-  /**
-   * 创建RewardsClaimed事件的UserActivity
-   */
   static createRewardsClaimedActivity(
     userAddress: string,
-    vaultId: string,
+    poolConfig: string,
     amount: bigint,
     blockNumber: number,
     txHash: string,
@@ -105,7 +101,7 @@ export class UserActivity {
   ): UserActivity {
     return new UserActivity(
       userAddress,
-      vaultId,
+      poolConfig,
       EventType.RewardsClaimed,
       0n,
       amount,
@@ -115,4 +111,3 @@ export class UserActivity {
     );
   }
 }
-

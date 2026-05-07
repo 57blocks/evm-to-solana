@@ -6,6 +6,7 @@ dist
 *.swp
 .vscode
 .idea
-prisma
+prisma/dev.db
+prisma/dev.db-journal
 
 /src/generated/prisma

@@ -3,22 +3,15 @@ import { ISyncStatusRepository } from "../interfaces/ISyncStatusRepository";
 import { getPrismaClient } from "../../infrastructure/PrismaClient";
 import { PrismaClient } from "../../generated/prisma/client";
 
-/**
- * SyncStatusRepository 实现
- * 使用 Prisma 数据库存储同步状态
- */
 export class SyncStatusRepository implements ISyncStatusRepository {
   private prisma: PrismaClient;
   constructor() {
     this.prisma = getPrismaClient();
   }
 
-  /**
-   * 获取当前同步状态
-   */
-  async findByVault(vaultId: string): Promise<SyncStatus | null> {
+  async findByPoolConfig(poolConfig: string): Promise<SyncStatus | null> {
     const record = await this.prisma.syncStatus.findUnique({
-      where: { vaultId },
+      where: { poolConfig },
     });
 
     if (!record) {
@@ -28,44 +21,34 @@ export class SyncStatusRepository implements ISyncStatusRepository {
     return this.toDomainModel(record);
   }
 
-  /**
-   * 获取所有 vault 的同步状态
-   */
   async findAll(): Promise<SyncStatus[]> {
     const records = await this.prisma.syncStatus.findMany();
     return records.map((record) => this.toDomainModel(record));
   }
 
-  /**
-   * 保存同步状态
-   */
   async save(syncStatus: SyncStatus): Promise<void> {
     await this.prisma.syncStatus.upsert({
-      where: { vaultId: syncStatus.vaultId },
+      where: { poolConfig: syncStatus.poolConfig },
       update: {
         lastSyncBlock: syncStatus.lastSyncBlock,
       },
       create: {
-        vaultId: syncStatus.vaultId,
+        poolConfig: syncStatus.poolConfig,
         lastSyncBlock: syncStatus.lastSyncBlock,
         initializeBlock: syncStatus.initializeBlock,
       },
     });
   }
 
-  /**
-   * 将数据库记录转换为领域模型
-   */
   private toDomainModel(record: {
-    vaultId: string;
+    poolConfig: string;
     lastSyncBlock: number;
     initializeBlock: number;
   }): SyncStatus {
     return SyncStatus.fromDatabase({
-      vaultId: record.vaultId,
+      poolConfig: record.poolConfig,
       lastSyncBlock: record.lastSyncBlock,
       initializeBlock: record.initializeBlock,
     });
   }
 }
-

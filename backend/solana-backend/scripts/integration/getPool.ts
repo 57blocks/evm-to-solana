@@ -1,17 +1,20 @@
 import "dotenv/config";
 import StakingIDL from "../../solana_staking.json";
 import { PoolRepository } from "../../src/repositories/implementations/PoolRepository";
-import { UserStakePositionRepository } from "../../src/repositories/implementations/UserStakePositionRepository";
-import { RewardCalculationService } from "../../src/domain-services/RewardCalculationService";
 import { SolanaConnections } from "../../src/infrastructure/SolanaConnections";
 import { CHAIN_ID } from "../../src/event-fetch/chain/chain";
 
 /**
- * GetUserStakePosition Integration Test Script
+ * GetPool Integration Test Script
+ *
+ * 1. Load program address from solana_staking.json
+ * 2. Initialize PoolRepository
+ * 3. Call getPool(programId, poolId) for the configured pool
+ * 4. Print PoolConfig + PoolState
  *
  * Usage:
- *   USER_ADDRESS=<addr> POOL_ID=<pool_id_pubkey> pnpm tsx scripts/integration/getUserStakePosition.ts
- *   pnpm tsx scripts/integration/getUserStakePosition.ts <userAddress> <poolId>
+ *   POOL_ID=<pool_id_pubkey> pnpm tsx scripts/integration/getPool.ts
+ *   pnpm tsx scripts/integration/getPool.ts <poolId>
  */
 
 const CHAIN_ID_VALUE = CHAIN_ID.SolanaDevnet;
@@ -24,9 +27,9 @@ function getProgramAddress(): string {
   return StakingIDL.address;
 }
 
-async function testGetUserStakePosition() {
+async function testGetPool() {
   console.log("=".repeat(80));
-  console.log("GetUserStakePosition Integration Test");
+  console.log("GetPool Integration Test");
   console.log("=".repeat(80));
 
   try {
@@ -34,21 +37,12 @@ async function testGetUserStakePosition() {
     const programAddress = getProgramAddress();
     console.log(`[Info] Program address: ${programAddress}`);
 
-    const userAddress = process.argv[2] || process.env.USER_ADDRESS;
-    const poolId = process.argv[3] || process.env.POOL_ID;
-
-    if (!userAddress) {
-      throw new Error(
-        "USER_ADDRESS is required. Provide via env or first cli arg."
-      );
-    }
+    const poolId = process.argv[2] || process.env.POOL_ID;
     if (!poolId) {
       throw new Error(
-        "POOL_ID is required. Provide via env or second cli arg."
+        "POOL_ID is required. Provide via env POOL_ID=<pool_id_pubkey> or as cli arg."
       );
     }
-
-    console.log(`[Info] User Address: ${userAddress}`);
     console.log(`[Info] Pool ID: ${poolId}`);
     console.log(`[Info] Chain ID: ${CHAIN_ID_VALUE}`);
     console.log(`[Info] RPC URL: ${RPC_URL}`);
@@ -56,41 +50,36 @@ async function testGetUserStakePosition() {
     console.log("\n[Step 2] Initializing Solana connections...");
     const solanaConnections = new SolanaConnections(RPC_URL);
 
-    console.log("\n[Step 3] Wiring repositories...");
+    console.log("\n[Step 3] Creating PoolRepository...");
     const poolRepo = new PoolRepository(solanaConnections, CHAIN_ID_VALUE);
-    const rewardCalculator = new RewardCalculationService();
-    const userStakePositionRepo = new UserStakePositionRepository(
-      solanaConnections,
-      CHAIN_ID_VALUE,
-      poolRepo,
-      rewardCalculator
-    );
 
-    console.log("\n[Step 4] Fetching user stake position from chain...");
+    console.log("\n[Step 4] Fetching pool from chain...");
     const startTime = Date.now();
-    const userStakeStatus = await userStakePositionRepo.getUserStakePosition(
-      userAddress,
-      programAddress,
-      poolId
-    );
+    const { config, state } = await poolRepo.getPool(programAddress, poolId);
     const endTime = Date.now();
 
     console.log("\n" + "=".repeat(80));
-    console.log("User Stake Position Results");
+    console.log("Pool Results");
     console.log("=".repeat(80));
     console.log(`Time taken: ${((endTime - startTime) / 1000).toFixed(2)} seconds\n`);
 
-    if (userStakeStatus === null) {
-      console.log("User Stake Status: Not Found");
-    } else {
-      console.log("User Stake Status: Found");
-      console.log(`  User Address: ${userStakeStatus.userAddress}`);
-      console.log(`  Pool Config: ${userStakeStatus.poolConfig}`);
-      console.log(`  Staked Amount: ${userStakeStatus.amount.toString()}`);
-      console.log(`  Reward Debt: ${userStakeStatus.rewardDebt.toString()}`);
-      console.log(`  Pending Rewards: ${userStakeStatus.pendingRewards.toString()}`);
-      console.log(`  Bump: ${userStakeStatus.bump}`);
-    }
+    console.log("PoolConfig:");
+    console.log(`  Address: ${config.poolConfigAddress}`);
+    console.log(`  Admin: ${config.admin}`);
+    console.log(`  Pool ID: ${config.poolId}`);
+    console.log(`  Staking Mint: ${config.stakingMint}`);
+    console.log(`  Reward Mint: ${config.rewardMint}`);
+    console.log(`  Reward Per Second: ${config.rewardPerSecond.toString()}`);
+    console.log(`  Bump: ${config.bump}`);
+
+    console.log("\nPoolState:");
+    console.log(`  Address: ${state.poolStateAddress}`);
+    console.log(`  Pool Config: ${state.poolConfig}`);
+    console.log(`  Acc Reward Per Share: ${state.accRewardPerShare.toString()}`);
+    console.log(`  Last Reward Time: ${state.lastRewardTime}`);
+    console.log(`  Total Staked: ${state.totalStaked.toString()}`);
+    console.log(`  Total Reward Debt: ${state.totalRewardDebt.toString()}`);
+    console.log(`  Bump: ${state.bump}`);
 
     console.log("\n" + "=".repeat(80));
     console.log("Test completed successfully!");
@@ -108,7 +97,7 @@ async function testGetUserStakePosition() {
   }
 }
 
-testGetUserStakePosition()
+testGetPool()
   .then(() => {
     console.log("\n[Info] Script execution completed.");
     process.exit(0);
