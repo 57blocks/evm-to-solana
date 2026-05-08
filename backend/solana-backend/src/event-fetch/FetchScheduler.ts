@@ -100,6 +100,13 @@ export class FetchScheduler {
     console.log("[FetchScheduler] Stopped");
   }
 
+  async runOnce(): Promise<void> {
+    if (!this.eventFetcher) {
+      await this.initializeEventFetcher();
+    }
+    await this.syncAllPools();
+  }
+
   private async initializeEventFetcher(): Promise<void> {
     const solanaService = new SolanaService(this.config.solanaConnections);
     let transferEventFetcher: SolscanTransferEventFetcher | undefined;
@@ -165,7 +172,7 @@ export class FetchScheduler {
           `[FetchScheduler] Syncing pool ${poolConfig}, lastSyncBlock: ${syncStatus.lastSyncBlock}`
         );
 
-        const startBlock = syncStatus.lastSyncBlock + 1;
+        const startBlock = syncStatus.lastSyncBlock;
         const eventsParser = this.config.eventParserFactory.createTransactionEventsParser(
           this.config.chainId,
           [poolConfig],
@@ -179,44 +186,25 @@ export class FetchScheduler {
           throw new Error("EventFetcher not initialized");
         }
 
+        let persistedBatchCount = 0;
         const result = await this.eventFetcher.fetchEvents(
           [poolConfig],
           startBlock,
-          eventsParser
+          eventsParser,
+          undefined,
+          async (batchResult) => {
+            persistedBatchCount++;
+            await this.persistFetchingResult(syncStatus, batchResult);
+          }
         );
 
         console.log(
           `[FetchScheduler] Fetched ${result.events.length} events for pool ${poolConfig}`
         );
 
-        if (result.events.length > 0) {
-          const userActivities: UserActivity[] = [];
-
-          for (const event of result.events) {
-            try {
-              const activity = this.convertEventToUserActivity(event, poolConfig);
-              userActivities.push(activity);
-            } catch (error) {
-              console.warn(
-                `[FetchScheduler] Failed to convert event ${event.transactionHash}:`,
-                error
-              );
-            }
-          }
-
-          for (const activity of userActivities) {
-            await this.userActivityRepository.save(activity);
-          }
-
-          console.log(
-            `[FetchScheduler] Saved ${userActivities.length} activities for pool ${poolConfig} (skipped ${result.events.length - userActivities.length} events)`
-          );
+        if (persistedBatchCount === 0) {
+          await this.persistFetchingResult(syncStatus, result);
         }
-
-        const updatedSyncStatus = syncStatus.updateLastSyncBlock(
-          result.endBlockNumber
-        );
-        await this.syncStatusRepository.save(updatedSyncStatus);
 
         console.log(
           `[FetchScheduler] Updated sync status for pool ${poolConfig}, new lastSyncBlock: ${result.endBlockNumber}`
@@ -239,6 +227,41 @@ export class FetchScheduler {
         await this.sleep(this.config.retryDelayInterval);
       }
     }
+  }
+
+  private async persistFetchingResult(
+    syncStatus: SyncStatus,
+    result: { events: BaseEvent[]; endBlockNumber: number }
+  ): Promise<void> {
+    const poolConfig = syncStatus.poolConfig;
+    const userActivities: UserActivity[] = [];
+
+    for (const event of result.events) {
+      try {
+        const activity = this.convertEventToUserActivity(event, poolConfig);
+        userActivities.push(activity);
+      } catch (error) {
+        console.warn(
+          `[FetchScheduler] Failed to convert event ${event.transactionHash}:`,
+          error
+        );
+      }
+    }
+
+    for (const activity of userActivities) {
+      await this.userActivityRepository.save(activity);
+    }
+
+    if (result.events.length > 0 || userActivities.length > 0) {
+      console.log(
+        `[FetchScheduler] Saved ${userActivities.length} activities for pool ${poolConfig} (skipped ${result.events.length - userActivities.length} events)`
+      );
+    }
+
+    const updatedSyncStatus = syncStatus.updateLastSyncBlock(
+      result.endBlockNumber
+    );
+    await this.syncStatusRepository.save(updatedSyncStatus);
   }
 
   private convertEventToUserActivity(

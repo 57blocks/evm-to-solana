@@ -1,0 +1,7 @@
+services:
+  solana-backend:
+    build: .
+    env_file: .env
+    volumes:
+      - ./prisma:/app/prisma
+    restart: unless-stopped

@@ -36,3 +36,17 @@ model SyncStatus {
 
   @@map("sync_status")
 }
+
+model Alert {
+  id          String   @id @default(uuid())
+  poolConfig  String   @map("pool_config")
+  alertType   String   @map("alert_type")
+  message     String
+  threshold   String
+  actualValue String   @map("actual_value")
+  createdAt   Int      @map("created_at")
+  resolved    Boolean  @default(false)
+
+  @@index([poolConfig, alertType, resolved])
+  @@map("alert")
+}

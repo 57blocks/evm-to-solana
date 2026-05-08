@@ -10,11 +10,17 @@ export class FetchingResult {
   }
 }
 
+export type FetchEventsBatchHandler = (
+  result: FetchingResult
+) => Promise<void> | void;
+
 export interface EventFetcher {
   fetchEvents(
     monitorAddresses: string[],
     startBlock: number,
-    eventsParser: TransactionEventsParser
+    eventsParser: TransactionEventsParser,
+    endBlock?: number,
+    onBatchFetched?: FetchEventsBatchHandler
   ): Promise<FetchingResult>;
 }
 

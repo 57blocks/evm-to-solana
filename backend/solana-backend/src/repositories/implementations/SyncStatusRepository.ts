@@ -5,8 +5,8 @@ import { PrismaClient } from "../../generated/prisma/client";
 
 export class SyncStatusRepository implements ISyncStatusRepository {
   private prisma: PrismaClient;
-  constructor() {
-    this.prisma = getPrismaClient();
+  constructor(prisma: PrismaClient = getPrismaClient()) {
+    this.prisma = prisma;
   }
 
   async findByPoolConfig(poolConfig: string): Promise<SyncStatus | null> {

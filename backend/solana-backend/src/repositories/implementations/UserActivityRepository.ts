@@ -6,8 +6,8 @@ import { PrismaClient } from "../../generated/prisma/client";
 export class UserActivityRepository implements IUserActivityRepository {
   private prisma: PrismaClient;
 
-  constructor() {
-    this.prisma = getPrismaClient();
+  constructor(prisma: PrismaClient = getPrismaClient()) {
+    this.prisma = prisma;
   }
 
   async save(activity: UserActivity): Promise<void> {

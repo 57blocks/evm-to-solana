@@ -1,17 +1,18 @@
 # Solana Backend
 
-Backend service for the Solana staking program — event indexing, data querying, and API.
+Backend service for the Solana staking program — scheduled event indexing, data querying utilities, and reward vault monitoring.
 
 ## Overview
 
-Read-only backend: syncs user events from the chain into the database, queries pool/user state by PDA, and returns pending rewards to the frontend.
+Read-only backend: runs scheduled jobs to sync user events from the chain into the database, queries pool/user state by PDA, calculates pending rewards, and records reward vault balance alerts.
 
 Key features:
 
 - **Event indexing**: Fetches and indexes staking-related events from Solana (Staked, Unstaked, RewardsClaimed, PoolCreated, RewardsFunded)
 - **Data querying**: Provides query interfaces for pool config/state and user stake status (including pendingRewards)
-- **Data storage**: Uses SQLite to store sync status and user activity records
-- **Scheduled sync**: Automatically syncs on-chain event data at a configured interval
+- **Data storage**: Uses SQLite to store sync status, user activity, and alert records
+- **Scheduled sync**: Automatically syncs on-chain event data using `INDEXING_CRON`
+- **Reward vault monitoring**: Checks reward vault balances using `POOL_BALANCE_MONITOR_CRON`
 
 ## Contract Mapping
 
@@ -28,12 +29,17 @@ The contract uses a multi-pool MasterChef reward accumulation model:
 ```
 solana-backend/
 ├── src/
+│   ├── autotask/                # Reward vault balance monitor + alert repository
+│   ├── config/                  # Nest config schema and defaults
 │   ├── domain-models/           # PoolConfig, PoolState, UserStakeStatus, UserActivity, SyncStatus
 │   ├── domain-services/         # RewardCalculationService (MasterChef pending reward)
 │   ├── event-fetch/             # Event parsing + FetchScheduler
+│   ├── generated/               # Generated Prisma client
+│   ├── indexer/                 # Nest scheduled event indexing service
 │   ├── infrastructure/          # SolanaConnections + PrismaClient
-│   ├── repositories/            # On-chain + DB repositories
-│   └── index.ts
+│   ├── repositories/            # Repository interfaces + implementations
+│   ├── app.module.ts            # Nest application module
+│   └── main.ts                  # Application entrypoint
 ├── scripts/
 │   ├── db/init-db.ts            # Initialize SyncStatus records
 │   └── integration/
@@ -41,7 +47,10 @@ solana-backend/
 │       ├── getUserStakePosition.ts          # Query user state + pendingRewards
 │       ├── event-fetch-integration.ts       # Full program event fetch test
 │       └── fetch-scheduler-integration.ts   # Scheduled sync test
-├── prisma/                      # Prisma schema
+├── prisma/                      # Prisma schema and SQLite database file
+├── specs/                       # Design notes and backend spec
+├── Dockerfile
+├── docker-compose.yml
 ├── package.json
 ├── tsconfig.json
 └── README.md
@@ -51,8 +60,8 @@ solana-backend/
 
 ### Prerequisites
 
-- Node.js >= 18
-- pnpm >= 8
+- Node.js 20.19+ / 22.12+ / 24+
+- pnpm 10.6.3+
 - Solana CLI (optional)
 
 ### Installation
@@ -69,12 +78,25 @@ pnpm install
 
 ```bash
 SOLANA_RPC_URL=https://api.devnet.solana.com
+PROGRAM_ID=<program_id>
+CHAIN_ID=901
 POOL_ID=<pool_id_pubkey>
 USER_ADDRESS=<user_wallet_address>
 
 # For SyncStatus initialization: '<poolConfigPda>:<initBlock>,...'
 POOL_CONFIGS=<pool_config_pda>:<create_pool_slot>
-DATABASE_URL=file:./dev.db
+DATABASE_URL=file:./prisma/dev.db
+
+# Scheduled jobs
+INDEXING_CRON=*/10 * * * * *
+INDEXING_RETRY_DELAY_MS=1000
+INDEXING_MAX_RETRIES=3
+POOL_BALANCE_MONITOR_CRON=0 */5 * * * *
+REWARD_BALANCE_THRESHOLD=1000000
+
+# Optional Solscan fallback/config
+SOLSCAN_API_KEY=
+SOLSCAN_ENDPOINT=
 ```
 
 3. **Initialize the database**
@@ -83,6 +105,85 @@ DATABASE_URL=file:./dev.db
 pnpm db:generate
 pnpm db:push
 pnpm db:init
+```
+
+## Docker
+
+### Build Image
+
+Build the backend image from the backend project directory:
+
+```bash
+cd backend/solana-backend
+docker build -t solana-backend .
+```
+
+### Configure Environment
+
+Create `.env` from `.env.example` and fill in the required values before starting the container:
+
+```bash
+cp .env.example .env
+```
+
+For Docker, keep the SQLite database under `/app/prisma` so it is persisted by the compose volume:
+
+```bash
+DATABASE_URL="file:./prisma/dev.db"
+SOLANA_RPC_URL=https://api.devnet.solana.com
+PROGRAM_ID=<program_id>
+POOL_CONFIGS=<pool_config_pda_base58>:<create_pool_slot>
+```
+
+### Run with Docker
+
+```bash
+docker run --env-file .env \
+  -v "$(pwd)/prisma:/app/prisma" \
+  --name solana-backend \
+  solana-backend
+```
+
+Initialize or update the database schema before the first run if needed:
+
+```bash
+docker run --rm --env-file .env \
+  -v "$(pwd)/prisma:/app/prisma" \
+  solana-backend ./node_modules/.bin/prisma db push
+
+docker run --rm --env-file .env \
+  -v "$(pwd)/prisma:/app/prisma" \
+  solana-backend node dist/scripts/db/init-db.js
+```
+
+### Run with Docker Compose
+
+Build the image after changing `Dockerfile`, `package.json`, or source files:
+
+```bash
+docker compose build solana-backend
+```
+
+Initialize or update the database schema before the first startup. In Docker, use the compiled init script under `dist/`; do not run `pnpm db:init` because the runtime image does not include the source `scripts/` directory.
+
+```bash
+docker compose run --rm solana-backend ./node_modules/.bin/prisma db push
+docker compose run --rm solana-backend node dist/scripts/db/init-db.js
+```
+
+Start the backend service:
+
+```bash
+docker compose up --build -d
+```
+
+Useful compose commands:
+
+```bash
+docker compose logs -f solana-backend
+docker compose run --rm solana-backend ./node_modules/.bin/prisma db push
+docker compose run --rm solana-backend node dist/scripts/db/init-db.js
+docker compose down
 ```
 
 ## Script Prerequisites
@@ -142,6 +243,7 @@ pnpm tsx scripts/integration/fetch-scheduler-integration.ts
 pnpm dev      # hot reload
 pnpm build    # tsc compile
 pnpm start    # run dist
+pnpm test     # run Jest tests
 ```
 
 ### Database
@@ -170,6 +272,7 @@ pnpm db:studio           # database GUI
 
 ## Related Files
 
-- Solana program IDL: `idl/solana_staking.json` (project root)
+- Solana program IDL: `idl/solana_staking.json`
 - Database schema: `prisma/schema.prisma`
-- Design notes: `design.txt` (partially outdated — defer to the code)
+- Backend spec: `specs/backend.spec`
+- Design notes: `specs/design.txt` (partially outdated — defer to the code)

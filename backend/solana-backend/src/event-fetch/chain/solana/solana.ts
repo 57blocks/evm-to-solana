@@ -1,4 +1,4 @@
-import { EventFetcher, FetchingResult } from "../chain";
+import { EventFetcher, FetchingResult, FetchEventsBatchHandler } from "../chain";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { sleep, mergeSortedArrays } from "../../common";
 import { BaseEvent, TransactionEventsParser } from "../event";
@@ -43,7 +43,8 @@ export class SolanaEventFetcher implements EventFetcher {
     monitorAddresses: string[],
     startBlock: number,
     eventsParser: TransactionEventsParser,
-    endBlock: number = 0
+    endBlock: number = 0,
+    onBatchFetched?: FetchEventsBatchHandler
   ): Promise<FetchingResult> {
     if (startBlock == 0) {
       startBlock = this.defaultStartBlock - 1;
@@ -163,6 +164,11 @@ export class SolanaEventFetcher implements EventFetcher {
         fetchedTransactionCount += sigList.length;
       }
       parsedEvents.push(...parsedEventsForBatch);
+      if (onBatchFetched) {
+        await onBatchFetched(
+          new FetchingResult(parsedEventsForBatch, endBlockInfo.endBlockSlot)
+        );
+      }
       console.log(`Total fetched transaction count ${fetchedTransactionCount}`);
       if (fetchedTransactionCount >= maxFetchedTransactionCount) {
         console.log(
