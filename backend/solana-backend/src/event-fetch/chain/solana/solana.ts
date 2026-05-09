@@ -67,19 +67,14 @@ export class SolanaEventFetcher implements EventFetcher {
     } else {
       signatureBatchSize = 216000 * this.config.batchDays; // 216000 is slots per day
     }
-    console.log(
-      `Fetching transactions from slot ${startSlotOfBatch} to slot ${endSlot}`
-    );
     const maxFetchedTransactionCount = this.config.maxFetchedTransactionCount;
     let fetchedTransactionCount = 0;
     let endSlotOfFetchedTransaction = 0;
     while (startSlotOfBatch < endSlot) {
-      console.log(`Start to fetch signatures from ${startSlotOfBatch}`);
       const startBlock = await this.getStartTransactionSignature(
         connection,
         startSlotOfBatch
       );
-      console.log(`Start block ${startBlock.startBlockSlot}`);
 
       const endSlotOfBatch = Math.min(
         startSlotOfBatch + signatureBatchSize,
@@ -89,7 +84,6 @@ export class SolanaEventFetcher implements EventFetcher {
         connection,
         endSlotOfBatch
       );
-      console.log(`End block ${endBlockInfo.endBlockSlot}`);
 
       let parsedEventsForBatch: BaseEvent[] = [];
       for (let i = 0; i < monitorAddresses.length; i++) {
@@ -99,9 +93,6 @@ export class SolanaEventFetcher implements EventFetcher {
         let beforeSignagure = endBlockInfo.endSignature;
         let sigsCount = this.config.signaturesPerBatch;
         while (sigsCount >= this.config.signaturesPerBatch) {
-          console.log(
-            `Start to fetch signatures from ${startBlock.startSignature} to ${beforeSignagure}, address ${monitorAddress}`
-          );
           const sigs = await connection.getSignaturesForAddress(
             new PublicKey(monitorAddress),
             {
@@ -112,17 +103,11 @@ export class SolanaEventFetcher implements EventFetcher {
           );
           sigsCount = sigs.length;
           if (sigsCount > 0) {
-            console.log(
-              `Fetched ${sigsCount} signatures, address ${monitorAddress}`
-            );
             beforeSignagure = sigs[sigsCount - 1].signature;
             sigList.unshift(...sigs.reverse().map((sig: any) => sig.signature));
             await sleep(this.config.sleepTime);
           }
         }
-        console.log(
-          `Fetched total ${sigList.length} signatures, address ${monitorAddress}`
-        );
         for (
           let i = 0;
           i < sigList.length;
@@ -169,22 +154,11 @@ export class SolanaEventFetcher implements EventFetcher {
           new FetchingResult(parsedEventsForBatch, endBlockInfo.endBlockSlot)
         );
       }
-      console.log(`Total fetched transaction count ${fetchedTransactionCount}`);
       if (fetchedTransactionCount >= maxFetchedTransactionCount) {
-        console.log(
-          `Total fetched transaction count ${fetchedTransactionCount} reaches max limit ${maxFetchedTransactionCount}`
-        );
         endSlotOfFetchedTransaction = endBlockInfo.endBlockSlot;
         break;
       }
-      console.log(
-        `Fetched ${parsedEvents.length} events ` +
-          `from slot from slot ${startBlock.startBlockSlot} to slot ${endBlockInfo.endBlockSlot}, this.maxCount ${this.maxCount}`
-      );
       if (parsedEvents.length >= this.maxCount) {
-        console.log(
-          `Total found event count ${parsedEvents.length} reaches max limit ${this.maxCount}`
-        );
         break;
       }
       startSlotOfBatch = endBlockInfo.endBlockSlot + 1;
@@ -208,13 +182,6 @@ export class SolanaEventFetcher implements EventFetcher {
     }
 
     const result = new FetchingResult(parsedEvents, endBlockSlot);
-    console.log(
-      `Total events ${result.events.length}, synced block ${
-        result.endBlockNumber
-      }, event txhashes: ${result.events
-        .map((e) => e.transactionHash)
-        .join(", ")}`
-    );
 
     return result;
   }
@@ -330,14 +297,13 @@ export class SolanaService {
     });
 
     if (!ptx) {
-      console.log(
+      console.error(
         `[Error] Can not get the parsed transaction from solana rpc, txhash: ${sig}`
       );
       return events;
     }
 
     if (ptx.meta?.err) {
-      console.log(`Transaction ${sig} is failed`);
       return events;
     }
 

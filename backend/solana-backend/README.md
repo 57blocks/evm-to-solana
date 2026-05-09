@@ -42,11 +42,6 @@ solana-backend/
 │   └── main.ts                  # Application entrypoint
 ├── scripts/
 │   ├── db/init-db.ts            # Initialize SyncStatus records
-│   └── integration/
-│       ├── getPool.ts                       # Query pool config + state
-│       ├── getUserStakePosition.ts          # Query user state + pendingRewards
-│       ├── event-fetch-integration.ts       # Full program event fetch test
-│       └── fetch-scheduler-integration.ts   # Scheduled sync test
 ├── prisma/                      # Prisma schema and SQLite database file
 ├── specs/                       # Design notes and backend spec
 ├── Dockerfile
@@ -80,8 +75,6 @@ pnpm install
 SOLANA_RPC_URL=https://api.devnet.solana.com
 PROGRAM_ID=<program_id>
 CHAIN_ID=901
-POOL_ID=<pool_id_pubkey>
-USER_ADDRESS=<user_wallet_address>
 
 # For SyncStatus initialization: '<poolConfigPda>:<initBlock>,...'
 POOL_CONFIGS=<pool_config_pda>:<create_pool_slot>
@@ -174,7 +167,7 @@ docker compose run --rm solana-backend node dist/scripts/db/init-db.js
 Start the backend service:
 
 ```bash
-docker compose up --build -d
+docker compose up -d
 ```
 
 Useful compose commands:
@@ -184,55 +177,6 @@ docker compose logs -f solana-backend
 docker compose run --rm solana-backend ./node_modules/.bin/prisma db push
 docker compose run --rm solana-backend node dist/scripts/db/init-db.js
 docker compose down
-```
-
-## Script Prerequisites
-
-1. **Deploy contract + create pool**
-   - Program ID is in `idl/solana_staking.json` (`.address` field)
-   - Call `create_pool` at least once to get a pool_id and PoolConfig PDA
-   - At least one user must have staked
-
-2. **Required parameters**
-   - `POOL_ID`: The pool_id (Pubkey base58) used when creating the pool
-   - `USER_ADDRESS`: User wallet address
-
-## Running Scripts
-
-### 1. Query Pool (replaces old getGlobalState)
-
-```bash
-# env
-export POOL_ID=<pool_id_pubkey>
-pnpm tsx scripts/integration/getPool.ts
-
-# cli
-pnpm tsx scripts/integration/getPool.ts <poolId>
-```
-
-### 2. Query User Stake Status
-
-```bash
-# env
-export USER_ADDRESS=<addr>
-export POOL_ID=<pool_id_pubkey>
-pnpm tsx scripts/integration/getUserStakePosition.ts
-
-# cli
-pnpm tsx scripts/integration/getUserStakePosition.ts <userAddress> <poolId>
-```
-
-### 3. Event Fetch
-
-```bash
-pnpm tsx scripts/integration/event-fetch-integration.ts
-```
-
-### 4. Scheduled Sync
-
-```bash
-pnpm tsx scripts/integration/fetch-scheduler-integration.ts
-# Ctrl+C to stop
 ```
 
 ## Common Commands
@@ -266,7 +210,7 @@ pnpm db:studio           # database GUI
 ## Notes
 
 1. `idl/solana_staking.json` (project root) must match the deployed contract IDL — mismatched program ID/accounts/events will cause decoding failures
-2. `POOL_ID` is the PoolConfig.pool_id field; the `PoolConfig PDA` is derived via `findProgramAddress(["pool_config", poolId], programId)`. `SyncStatus.poolConfig` stores this PDA as base58
+2. The `PoolConfig PDA` is derived via `findProgramAddress(["pool_config", poolId], programId)`. `SyncStatus.poolConfig` stores this PDA as base58 and serves as the primary key for sync tracking
 3. In multi-pool scenarios, each pool has one `SyncStatus` record; FetchScheduler processes all pools in parallel
 4. Pending rewards are entirely calculated by the backend using the same formula as the contract: `(amount * acc_reward_per_share / 1e12) - reward_debt`
 

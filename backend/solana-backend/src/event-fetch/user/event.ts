@@ -266,7 +266,7 @@ class UserTransactionAnchorEventsParser implements TransactionEventsParser {
     try {
       logs = ep.parseLogs(ptx.meta?.logMessages ?? []);
     } catch (error) {
-      console.log(
+      console.error(
         `[Error] UserTransactionAnchorEventsParser parseLogs failed, tx: ${data.sig}, error: ${error}`
       );
       return events;
@@ -276,7 +276,7 @@ class UserTransactionAnchorEventsParser implements TransactionEventsParser {
     try {
       next = logs.next();
     } catch (error) {
-      console.log(
+      console.error(
         `[Error] UserTransactionAnchorEventsParser iteration failed, tx: ${data.sig}, error: ${error}`
       );
       return events;
@@ -300,7 +300,7 @@ class UserTransactionAnchorEventsParser implements TransactionEventsParser {
       try {
         next = logs.next();
       } catch (error) {
-        console.log(
+        console.error(
           `[Error] UserTransactionAnchorEventsParser iteration failed mid-stream, tx: ${data.sig}, error: ${error}`
         );
         break;
@@ -480,7 +480,7 @@ class UserSPLTransactionEventsParser implements TransactionEventsParser {
     }
 
     if (!event) {
-      console.log(
+      console.warn(
         `[Warning] parse 0 Transfer event, txhash: ${baseEvent.transactionHash}`
       );
     }

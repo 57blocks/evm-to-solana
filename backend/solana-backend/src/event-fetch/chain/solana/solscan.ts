@@ -117,16 +117,8 @@ export class SolscanTransferEventFetcher {
         }
         events.push(new UserSPLTransferEvent(baseEvent, Array.from(froms.values()), Array.from(tos.values())));
       }
-      console.log(
-        `Fetched ${
-          events.length
-        } transfer transactions for ${tokenMintAddress}, event txhashes: ${events
-          .map((e) => e.transactionHash)
-          .join(", ")}`
-      );
       result = mergeSortedArrays(result, events);
     }
-    console.log(`Fetch ${result.length} transfer transactions`);
 
     return result;
   }
@@ -196,7 +188,7 @@ export class SolscanTransferEventFetcher {
 
         return (response.data.data || []) as TokenTransfer[];
       } catch (error) {
-        console.log(`Solscan transfer fetching ${requestString} failed`, error);
+        console.error(`Solscan transfer fetching failed`, error);
         retries++;
         if (retries >= maxRetries) {
           throw new Error(
@@ -204,11 +196,7 @@ export class SolscanTransferEventFetcher {
           );
         }
 
-        // Exponential backoff to avoid frequent retries
         const delay = Math.pow(2, retries) * 1000;
-        console.log(
-          `[Warning] Retry ${retries}/${maxRetries} for page ${page} after ${delay}ms`
-        );
         await sleep(delay);
       }
     }
@@ -274,10 +262,6 @@ export class SolscanService {
     // Add sorting
     queryString += `&sort_by=${sort_by}&sort_order=${sort_order}`;
 
-    console.log(
-      `Fetching token transfers: page ${page}, time range [${block_time[0]}, ${block_time[1]}]`
-    );
-
     const response = await axios.get(queryString, {
       headers: {
         "Content-Type": "application/json",
@@ -293,10 +277,6 @@ export class SolscanService {
     if (!result.success) {
       throw new Error("Solscan API returned unsuccessful response");
     }
-
-    console.log(
-      `Fetched ${result.data?.length ?? 0} transfers for page ${page}`
-    );
 
     return result;
   }

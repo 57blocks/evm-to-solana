@@ -29,7 +29,7 @@ export function mergeSortedArrays(a: BaseEvent[], b: BaseEvent[]): BaseEvent[] {
         if (aEvent.transactionHash === b[j].transactionHash) {
           j++;
         } else {
-          console.log(
+          console.warn(
             `[Warning] TransactionHashs are not equal, but slot are equal, a: ${aEvent.transactionHash}, b: ${b[j].transactionHash}`
           );
         }

@@ -17,6 +17,12 @@ pnpm start:dev
 
 ## Docker
 
+Build the image after changing `Dockerfile`, `package.json`, or source files:
+
+```bash
+docker compose build evm-backend
+```
+
 Initialize or update the database schema before the first startup. In Docker, use the compiled init script under `dist/`; do not run `pnpm db:init` because the runtime image does not include the source `scripts/` directory.
 
 ```bash
@@ -27,7 +33,7 @@ docker compose run --rm evm-backend node dist/scripts/db/init-db.js
 Start the backend service:
 
 ```bash
-docker compose up --build -d
+docker compose up -d
 ```
 
 Useful compose commands:

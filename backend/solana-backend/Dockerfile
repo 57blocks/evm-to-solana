@@ -4,7 +4,7 @@ WORKDIR /app
 
 RUN apk add --no-cache python3 make g++ && corepack enable
 
-COPY package.json pnpm-lock.yaml prisma.config.ts tsconfig.json ./
+COPY package.json pnpm-lock.yaml prisma.config.ts tsconfig.json tsconfig.build.json ./
 COPY prisma ./prisma
 COPY idl ./idl
 

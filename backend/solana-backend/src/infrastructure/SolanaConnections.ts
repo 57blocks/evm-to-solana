@@ -32,7 +32,6 @@ export class SolanaConnections {
    * Prefers the provided rpc; falls back to RPC_BY_CHAINS.
    */
   private createRpcConnection(rpc: string, chainId: number): Connection {
-    console.log(`rpc env - ${rpc} default - ${RPC_BY_CHAINS[chainId]}`);
     if (rpc) {
       return new Connection(rpc, "confirmed");
     }

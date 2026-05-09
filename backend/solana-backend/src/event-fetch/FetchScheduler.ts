@@ -60,11 +60,9 @@ export class FetchScheduler {
 
   async start(): Promise<void> {
     if (this.isRunning) {
-      console.log("[FetchScheduler] Already running");
       return;
     }
 
-    console.log("[FetchScheduler] Starting...");
     this.isRunning = true;
 
     await this.initializeEventFetcher();
@@ -78,10 +76,6 @@ export class FetchScheduler {
         console.error("[FetchScheduler] Error in scheduled sync:", error);
       }
     }, this.config.fetchingInterval);
-
-    console.log(
-      `[FetchScheduler] Started with interval ${this.config.fetchingInterval}ms`
-    );
   }
 
   async stop(): Promise<void> {
@@ -89,15 +83,12 @@ export class FetchScheduler {
       return;
     }
 
-    console.log("[FetchScheduler] Stopping...");
     this.isRunning = false;
 
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
     }
-
-    console.log("[FetchScheduler] Stopped");
   }
 
   async runOnce(): Promise<void> {
@@ -145,17 +136,11 @@ export class FetchScheduler {
         return;
       }
 
-      console.log(
-        `[FetchScheduler] Found ${allSyncStatuses.length} pool(s) to sync`
-      );
-
       const syncPromises = allSyncStatuses.map((syncStatus) =>
         this.syncPool(syncStatus)
       );
 
       await Promise.allSettled(syncPromises);
-
-      console.log("[FetchScheduler] Completed sync for all pools");
     } catch (error) {
       console.error("[FetchScheduler] Error syncing all pools:", error);
       throw error;
@@ -169,7 +154,7 @@ export class FetchScheduler {
     while (retries <= this.config.maxRetries) {
       try {
         console.log(
-          `[FetchScheduler] Syncing pool ${poolConfig}, lastSyncBlock: ${syncStatus.lastSyncBlock}`
+          `[FetchScheduler] Starting sync for ${poolConfig}, lastSyncBlock: ${syncStatus.lastSyncBlock}`
         );
 
         const startBlock = syncStatus.lastSyncBlock;
@@ -198,17 +183,9 @@ export class FetchScheduler {
           }
         );
 
-        console.log(
-          `[FetchScheduler] Fetched ${result.events.length} events for pool ${poolConfig}`
-        );
-
         if (persistedBatchCount === 0) {
           await this.persistFetchingResult(syncStatus, result);
         }
-
-        console.log(
-          `[FetchScheduler] Updated sync status for pool ${poolConfig}, new lastSyncBlock: ${result.endBlockNumber}`
-        );
 
         return;
       } catch (error) {
@@ -250,12 +227,6 @@ export class FetchScheduler {
 
     for (const activity of userActivities) {
       await this.userActivityRepository.save(activity);
-    }
-
-    if (result.events.length > 0 || userActivities.length > 0) {
-      console.log(
-        `[FetchScheduler] Saved ${userActivities.length} activities for pool ${poolConfig} (skipped ${result.events.length - userActivities.length} events)`
-      );
     }
 
     const updatedSyncStatus = syncStatus.updateLastSyncBlock(

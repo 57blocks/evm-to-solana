@@ -144,7 +144,7 @@ export class AdminTransactionEventsParser implements TransactionEventsParser {
     try {
       logs = ep.parseLogs(ptx.meta?.logMessages ?? []);
     } catch (error) {
-      console.log(
+      console.error(
         `[Error] AdminTransactionEventsParser parseLogs failed, tx: ${data.sig}, error: ${error}`
       );
       return events;
@@ -154,7 +154,7 @@ export class AdminTransactionEventsParser implements TransactionEventsParser {
     try {
       next = logs.next();
     } catch (error) {
-      console.log(
+      console.error(
         `[Error] AdminTransactionEventsParser iteration failed, tx: ${data.sig}, error: ${error}`
       );
       return events;
@@ -178,7 +178,7 @@ export class AdminTransactionEventsParser implements TransactionEventsParser {
       try {
         next = logs.next();
       } catch (error) {
-        console.log(
+        console.error(
           `[Error] AdminTransactionEventsParser iteration failed mid-stream, tx: ${data.sig}, error: ${error}`
         );
         break;

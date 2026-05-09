@@ -15,8 +15,5 @@ export const configSchema = Joi.object({
   REWARD_BALANCE_THRESHOLD: Joi.number().min(0).default(1000000),
   SOLSCAN_API_KEY: Joi.string().allow("").default(""),
   SOLSCAN_ENDPOINT: Joi.string().allow("").default(""),
-  POOL_ID: Joi.string().optional(),
-  USER_ADDRESS: Joi.string().optional(),
-  POOL_CONFIGS: Joi.string().optional(),
   RESET_DB: Joi.boolean().truthy("true").falsy("false").default(false),
 });
