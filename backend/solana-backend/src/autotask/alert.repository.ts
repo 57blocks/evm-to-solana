@@ -44,4 +44,20 @@ export class AlertRepository {
       },
     });
   }
+
+  async resolveOpenAlert(
+    poolConfig: string,
+    alertType: string
+  ): Promise<void> {
+    await this.prisma.alert.updateMany({
+      where: {
+        poolConfig,
+        alertType,
+        resolved: false,
+      },
+      data: {
+        resolved: true,
+      },
+    });
+  }
 }

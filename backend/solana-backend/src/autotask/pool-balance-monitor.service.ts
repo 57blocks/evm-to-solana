@@ -69,6 +69,16 @@ export class PoolBalanceMonitorService implements OnModuleInit {
       const balance = await this.rewardVaultReader.getRewardVaultBalance(poolConfig);
 
       if (balance.uiAmount >= threshold) {
+        const openAlert = await this.alertRepository.findOpenAlert(
+          poolConfig,
+          LOW_REWARD_BALANCE
+        );
+        if (openAlert) {
+          await this.alertRepository.resolveOpenAlert(
+            poolConfig,
+            LOW_REWARD_BALANCE
+          );
+        }
         return;
       }
 
