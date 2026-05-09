@@ -1,3 +1,4 @@
+import { Injectable } from "@nestjs/common";
 import { PoolConfig, PoolState } from "../domain-models";
 import { ACC_REWARD_PRECISION } from "../repositories/constants";
 
@@ -11,6 +12,7 @@ import { ACC_REWARD_PRECISION } from "../repositories/constants";
  *
  * All values use bigint to simulate on-chain u128/i128 arithmetic (no JS Number overflow).
  */
+@Injectable()
 export class RewardCalculationService {
   /**
    * Projects PoolState.accRewardPerShare to `now`.

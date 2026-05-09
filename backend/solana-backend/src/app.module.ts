@@ -4,6 +4,7 @@ import { ScheduleModule } from "@nestjs/schedule";
 import configuration from "./config/configuration";
 import { configSchema } from "./config/config.schema";
 import { AutotaskModule } from "./autotask/autotask.module";
+import { RewardModule } from "./reward/reward.module";
 import { IndexerModule } from "./indexer/indexer.module";
 import { InfrastructureModule } from "./infrastructure/infrastructure.module";
 import { RepositoriesModule } from "./repositories/repositories.module";
@@ -20,6 +21,7 @@ import { RepositoriesModule } from "./repositories/repositories.module";
     RepositoriesModule,
     IndexerModule,
     AutotaskModule,
+    RewardModule,
   ],
 })
 export class AppModule {}

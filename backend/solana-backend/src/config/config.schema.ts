@@ -3,6 +3,7 @@ import StakingIDL from "../../idl/solana_staking.json";
 import { CHAIN_ID } from "../event-fetch/chain/chain";
 
 export const configSchema = Joi.object({
+  PORT: Joi.number().integer().min(1).max(65535).default(3002),
   DATABASE_URL: Joi.string().required(),
   SOLANA_RPC_URL: Joi.string().uri().default("https://api.devnet.solana.com"),
   PROGRAM_ID: Joi.string().default(StakingIDL.address),

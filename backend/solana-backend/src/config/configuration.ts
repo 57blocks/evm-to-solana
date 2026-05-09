@@ -2,6 +2,7 @@ import StakingIDL from "../../idl/solana_staking.json";
 import { CHAIN_ID } from "../event-fetch/chain/chain";
 
 export default () => ({
+  PORT: parseInt(process.env.PORT || "3002", 10),
   DATABASE_URL: process.env.DATABASE_URL,
   SOLANA_RPC_URL: process.env.SOLANA_RPC_URL || "https://api.devnet.solana.com",
   PROGRAM_ID: process.env.PROGRAM_ID || StakingIDL.address,

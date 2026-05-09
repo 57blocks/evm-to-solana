@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 import { AutotaskModule } from "./autotask/autotask.module";
+import { RewardModule } from "./reward/reward.module";
 import { configSchema } from "./config/config.schema";
 import configuration from "./config/configuration";
 import { IndexerModule } from "./indexer/indexer.module";
@@ -20,6 +21,7 @@ import { RepositoriesModule } from "./repositories/repositories.module";
     RepositoriesModule,
     IndexerModule,
     AutotaskModule,
+    RewardModule,
   ],
 })
 export class AppModule {}

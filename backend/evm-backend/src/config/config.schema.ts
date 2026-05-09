@@ -2,6 +2,7 @@ import Joi from "joi";
 import { CHAIN_ID } from "../event-fetch/chain/chain";
 
 export const configSchema = Joi.object({
+  PORT: Joi.number().integer().min(1).max(65535).default(3001),
   DATABASE_URL: Joi.string().required(),
   EVM_RPC_URL: Joi.string().uri().default("https://ethereum-sepolia-rpc.publicnode.com"),
   CHAIN_ID: Joi.number().integer().default(CHAIN_ID.Sepolia),

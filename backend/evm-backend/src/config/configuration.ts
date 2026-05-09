@@ -1,6 +1,7 @@
 import { CHAIN_ID } from "../event-fetch/chain/chain";
 
 export default () => ({
+  PORT: parseInt(process.env.PORT || "3001", 10),
   DATABASE_URL: process.env.DATABASE_URL,
   EVM_RPC_URL:
     process.env.EVM_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
