@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model UserActivity {
+  id              String @id @default(uuid())
+  chainId         Int    @map("chain_id")
+  contractAddress String @map("contract_address")
+  userAddress     String @map("user_address")
+  eventType       String @map("event_type")
+  amount          String @map("amount")
+  blockNumber     Int    @map("block_number")
+  txHash          String @map("tx_hash")
+  logIndex        Int    @map("log_index")
+  timestamp       Int    @map("timestamp")
+
+  @@unique([txHash, logIndex])
+  @@index([userAddress, contractAddress])
+  @@index([userAddress, contractAddress, eventType])
+  @@index([chainId, contractAddress, blockNumber])
+  @@map("user_activity")
+}
+
+model SyncStatus {
+  poolKey            String @id @map("pool_key")
+  chainId            Int    @map("chain_id")
+  contractAddress    String @map("contract_address")
+  rewardTokenAddress String @map("reward_token_address")
+  name               String @map("name")
+  lastSyncedBlock    Int    @map("last_synced_block")
+  initializeBlock    Int    @map("initialize_block")
+
+  @@map("sync_status")
+}
+
+model Alert {
+  id          String  @id @default(uuid())
+  poolKey     String  @map("pool_key")
+  alertType   String  @map("alert_type")
+  message     String
+  threshold   String
+  actualValue String  @map("actual_value")
+  createdAt   Int     @map("created_at")
+  resolved    Boolean @default(false)
+
+  @@index([poolKey, alertType, resolved])
+  @@map("alert")
+}
