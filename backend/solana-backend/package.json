@@ -1,0 +1,79 @@
+{
+  "name": "solana-backend",
+  "version": "1.0.0",
+  "description": "Solana backend for event indexing and API",
+  "main": "dist/src/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start:dev": "tsx watch src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/src/main.js",
+    "start:prod": "node dist/src/main.js",
+    "script": "ANCHOR_PROVIDER_URL=https://api.devnet.solana.com ANCHOR_WALLET=~/.config/solana/id.json tsx",
+    "test": "jest --config jest.config.ts",
+    "test:watch": "jest --watch --config jest.config.ts",
+    "test:cov": "jest --coverage --config jest.config.ts",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:init": "tsx scripts/db/init-db.ts",
+    "db:push": "prisma db push"
+  },
+  "keywords": [
+    "solana",
+    "backend",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.6.3",
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.10.0",
+    "@nestjs/testing": "^11.1.9",
+    "jest": "^30.2.0",
+    "prisma": "^7.2.0",
+    "ts-node": "^10.9.2",
+    "ts-jest": "^29.4.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@nestjs/common": "^11.1.9",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.9",
+    "@nestjs/platform-express": "^11.1.9",
+    "@nestjs/schedule": "^6.0.1",
+    "@prisma/adapter-better-sqlite3": "^7.2.0",
+    "@prisma/client": "^7.2.0",
+    "@solana/rpc": "^5.0.0",
+    "@solana/web3.js": "^1.98.4",
+    "axios": "^1.13.2",
+    "cron": "^4.3.4",
+    "dayjs": "^1.11.19",
+    "dotenv": "^17.2.3",
+    "joi": "^18.0.2",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@prisma/engines",
+      "better-sqlite3",
+      "bufferutil",
+      "esbuild",
+      "prisma",
+      "utf-8-validate"
+    ],
+    "onlyBuiltDependencies": [
+      "@prisma/engines",
+      "better-sqlite3",
+      "bufferutil",
+      "esbuild",
+      "prisma",
+      "utf-8-validate"
+    ]
+  }
+}

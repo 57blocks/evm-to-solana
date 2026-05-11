@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// UserActivity table
+model UserActivity {
+  id            String   @id @default(uuid())
+  userAddress   String   @map("user_address")
+  poolConfig    String   @map("pool_config")
+  eventType     String   @map("event_type")
+  positionDelta String   @map("position_delta")
+  rewards       String   @map("rewards") // stored as String to support bigint
+  blockNumber   Int      @map("block_number")
+  txHash        String   @map("tx_hash")
+  timestamp     Int      @map("timestamp")
+
+  @@unique([txHash, eventType])
+  @@index([userAddress, poolConfig])
+  @@index([userAddress, poolConfig, eventType])
+  @@map("user_activity")
+}
+
+// SyncStatus table
+model SyncStatus {
+  poolConfig      String  @id @map("pool_config")
+  lastSyncBlock   Int     @map("last_sync_block")
+  initializeBlock Int     @map("initialize_block")
+
+  @@map("sync_status")
+}
+
+model Alert {
+  id          String   @id @default(uuid())
+  poolConfig  String   @map("pool_config")
+  alertType   String   @map("alert_type")
+  message     String
+  threshold   String
+  actualValue String   @map("actual_value")
+  createdAt   Int      @map("created_at")
+  resolved    Boolean  @default(false)
+
+  @@index([poolConfig, alertType, resolved])
+  @@map("alert")
+}
