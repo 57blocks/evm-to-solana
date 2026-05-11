@@ -47,17 +47,17 @@ export const executeStakeTransaction = async ({
 }: StakeTransactionParams): Promise<string> => {
   const accountInfo = await createStakingAccount(publicKey, program);
 
+  console.log("stake accountInfo:", JSON.stringify(accountInfo, (_, v) => typeof v === 'object' && v?.toBase58 ? v.toBase58() : v, 2));
+
   const txSignature = await program.methods
     .stake(new BN(convertToLamports(stakeAmount).toString()))
     .accountsPartial({
       user: publicKey,
-      userTokenAccount: accountInfo.userTokenAccount,
-      userRewardAccount: accountInfo.userRewardAccount,
       poolConfig: accountInfo.poolConfig,
       poolState: accountInfo.poolState,
       userStakeInfo: accountInfo.userStakeInfo,
-      stakingVault: accountInfo.stakingVault,
-      rewardVault: accountInfo.rewardVault,
+      userTokenAccount: accountInfo.userTokenAccount,
+      stakingToken: accountInfo.stakingVault,
       blacklistEntry: accountInfo.blacklistEntry,
     })
     .rpc();

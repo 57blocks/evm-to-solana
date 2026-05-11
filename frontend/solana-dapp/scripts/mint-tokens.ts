@@ -24,16 +24,11 @@ import { mintTo, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
  */
 
 // Target wallet address to receive the minted tokens
-const TARGET_WALLET = "your target wallet address";
+const TARGET_WALLET = "DzpVNJSGUJ9Q1KLwegYqwqXXPGb1hDPB8mNqbEkNNDzj";
 
 // Test wallet private key array (64 bytes)
 // WARNING: This is a test wallet for development - don't use for production
-const TEST_WALLET_PRIVATE_KEY = [
-  65, 191, 232, 77, 177, 238, 120, 29, 48, 140, 116, 52, 172, 232, 245, 210,
-  155, 142, 58, 16, 32, 13, 174, 185, 225, 115, 55, 237, 30, 84, 131, 61, 45,
-  131, 140, 83, 101, 243, 88, 213, 190, 29, 185, 249, 55, 77, 51, 108, 29, 151,
-  33, 71, 77, 65, 199, 57, 14, 123, 172, 136, 168, 12, 153, 15,
-];
+const TEST_WALLET_PRIVATE_KEY = [65, 191, 232, 77, 177, 238, 120, 29, 48, 140, 116, 52, 172, 232, 245, 210, 155, 142, 58, 16, 32, 13, 174, 185, 225, 115, 55, 237, 30, 84, 131, 61, 45, 131, 140, 83, 101, 243, 88, 213, 190, 29, 185, 249, 55, 77, 51, 108, 29, 151, 33, 71, 77, 65, 199, 57, 14, 123, 172, 136, 168, 12, 153, 15];
 
 /**
  * Main function to execute the token minting process

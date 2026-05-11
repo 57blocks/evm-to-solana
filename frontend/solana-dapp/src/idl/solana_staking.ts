@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/solana_staking.json`.
  */
 export type SolanaStaking = {
-  "address": "3qjRAH6gdr55QgxwmZdVYJYxqKiNY5qBdeye67q9yUh7",
+  "address": "9qUSHDxv4YmbJVgNsyqv2uierhBzuxDGLL4nX24L87M3",
   "metadata": {
     "name": "solanaStaking",
     "version": "0.1.0",
@@ -119,7 +119,6 @@ export type SolanaStaking = {
       "accounts": [
         {
           "name": "user",
-          "writable": true,
           "signer": true
         },
         {
@@ -242,10 +241,6 @@ export type SolanaStaking = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -331,7 +326,7 @@ export type SolanaStaking = {
           }
         },
         {
-          "name": "stakingVault",
+          "name": "stakingToken",
           "writable": true,
           "pda": {
             "seeds": [
@@ -346,11 +341,11 @@ export type SolanaStaking = {
                   110,
                   103,
                   95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
                 ]
               },
               {
@@ -392,10 +387,6 @@ export type SolanaStaking = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -471,10 +462,6 @@ export type SolanaStaking = {
               }
             ]
           }
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -559,7 +546,7 @@ export type SolanaStaking = {
           "name": "rewardMint"
         },
         {
-          "name": "stakingVault",
+          "name": "stakingToken",
           "writable": true,
           "pda": {
             "seeds": [
@@ -574,11 +561,11 @@ export type SolanaStaking = {
                   110,
                   103,
                   95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
                 ]
               },
               {
@@ -624,10 +611,6 @@ export type SolanaStaking = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -726,10 +709,6 @@ export type SolanaStaking = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -933,7 +912,7 @@ export type SolanaStaking = {
           "writable": true
         },
         {
-          "name": "stakingVault",
+          "name": "stakingToken",
           "writable": true,
           "pda": {
             "seeds": [
@@ -948,40 +927,11 @@ export type SolanaStaking = {
                   110,
                   103,
                   95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "poolConfig"
-              }
-            ]
-          }
-        },
-        {
-          "name": "rewardVault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
+                  116,
+                  111,
+                  107,
                   101,
-                  119,
-                  97,
-                  114,
-                  100,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
+                  110
                 ]
               },
               {
@@ -990,10 +940,6 @@ export type SolanaStaking = {
               }
             ]
           }
-        },
-        {
-          "name": "userRewardAccount",
-          "writable": true
         },
         {
           "name": "blacklistEntry",
@@ -1031,10 +977,6 @@ export type SolanaStaking = {
         {
           "name": "systemProgram",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1059,7 +1001,6 @@ export type SolanaStaking = {
       "accounts": [
         {
           "name": "user",
-          "writable": true,
           "signer": true
         },
         {
@@ -1151,7 +1092,7 @@ export type SolanaStaking = {
           "writable": true
         },
         {
-          "name": "stakingVault",
+          "name": "stakingToken",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1166,40 +1107,11 @@ export type SolanaStaking = {
                   110,
                   103,
                   95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "poolConfig"
-              }
-            ]
-          }
-        },
-        {
-          "name": "rewardVault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
+                  116,
+                  111,
+                  107,
                   101,
-                  119,
-                  97,
-                  114,
-                  100,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
+                  110
                 ]
               },
               {
@@ -1208,18 +1120,10 @@ export type SolanaStaking = {
               }
             ]
           }
-        },
-        {
-          "name": "userRewardAccount",
-          "writable": true
         },
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1343,10 +1247,6 @@ export type SolanaStaking = {
         {
           "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1591,33 +1491,33 @@ export type SolanaStaking = {
     },
     {
       "code": 6009,
-      "name": "nothingToWithdraw",
-      "msg": "Nothing to withdraw"
-    },
-    {
-      "code": 6010,
       "name": "invalidPoolId",
       "msg": "Invalid pool ID"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "userStakeAmountNotZero",
       "msg": "User stake amount must be 0 to close account"
     },
     {
-      "code": 6012,
+      "code": 6011,
       "name": "userRewardDebtNotZero",
       "msg": "User reward debt must be 0 to close account"
     },
     {
-      "code": 6013,
+      "code": 6012,
       "name": "poolHasActiveStakes",
       "msg": "Pool has active stakers"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "vaultNotEmpty",
       "msg": "Vault must be empty"
+    },
+    {
+      "code": 6014,
+      "name": "insufficientRewardVaultBalance",
+      "msg": "Insufficient reward vault balance"
     }
   ],
   "types": [
@@ -1755,6 +1655,10 @@ export type SolanaStaking = {
           {
             "name": "totalStaked",
             "type": "u64"
+          },
+          {
+            "name": "totalRewardDebt",
+            "type": "i128"
           },
           {
             "name": "bump",
@@ -1898,10 +1802,6 @@ export type SolanaStaking = {
           },
           {
             "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "rewards",
             "type": "u64"
           },
           {

@@ -413,6 +413,10 @@ function parseProgramErrorInternal(error: unknown): ProgramError | null {
     return SYSTEM_PROGRAM_ERRORS.INVALID_ACCOUNT_DATA;
   }
 
+  if (lowerMessage.includes("accountnotinitialized") || lowerMessage.includes("expected this account to be already initialized")) {
+    return SYSTEM_PROGRAM_ERRORS.ACCOUNT_NOT_FOUND;
+  }
+
   if (lowerMessage.includes("already initialized") || lowerMessage.includes("already in use")) {
     return SYSTEM_PROGRAM_ERRORS.ACCOUNT_ALREADY_INITIALIZED;
   }

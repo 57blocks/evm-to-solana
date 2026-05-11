@@ -54,6 +54,8 @@ export const useStake = ({
       onSuccess();
       setTransactionSignature(null);
     } catch (err) {
+      console.error("Raw stake error:", err);
+      console.error("Error logs:", (err as any)?.logs);
       const errorInfo = formatErrorForDisplay(err);
       onError(errorInfo);
     } finally {

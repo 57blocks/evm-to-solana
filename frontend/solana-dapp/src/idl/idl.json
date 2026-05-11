@@ -1,5 +1,5 @@
 {
-  "address": "3qjRAH6gdr55QgxwmZdVYJYxqKiNY5qBdeye67q9yUh7",
+  "address": "9qUSHDxv4YmbJVgNsyqv2uierhBzuxDGLL4nX24L87M3",
   "metadata": {
     "name": "solana_staking",
     "version": "0.1.0",
@@ -113,7 +113,6 @@
       "accounts": [
         {
           "name": "user",
-          "writable": true,
           "signer": true
         },
         {
@@ -236,10 +235,6 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -325,7 +320,7 @@
           }
         },
         {
-          "name": "staking_vault",
+          "name": "staking_token",
           "writable": true,
           "pda": {
             "seeds": [
@@ -340,11 +335,11 @@
                   110,
                   103,
                   95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
                 ]
               },
               {
@@ -386,10 +381,6 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -465,10 +456,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": []
@@ -553,7 +540,7 @@
           "name": "reward_mint"
         },
         {
-          "name": "staking_vault",
+          "name": "staking_token",
           "writable": true,
           "pda": {
             "seeds": [
@@ -568,11 +555,11 @@
                   110,
                   103,
                   95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
+                  116,
+                  111,
+                  107,
+                  101,
+                  110
                 ]
               },
               {
@@ -618,10 +605,6 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -720,10 +703,6 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -927,7 +906,7 @@
           "writable": true
         },
         {
-          "name": "staking_vault",
+          "name": "staking_token",
           "writable": true,
           "pda": {
             "seeds": [
@@ -942,40 +921,11 @@
                   110,
                   103,
                   95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "pool_config"
-              }
-            ]
-          }
-        },
-        {
-          "name": "reward_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
+                  116,
+                  111,
+                  107,
                   101,
-                  119,
-                  97,
-                  114,
-                  100,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
+                  110
                 ]
               },
               {
@@ -984,10 +934,6 @@
               }
             ]
           }
-        },
-        {
-          "name": "user_reward_account",
-          "writable": true
         },
         {
           "name": "blacklist_entry",
@@ -1025,10 +971,6 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1053,7 +995,6 @@
       "accounts": [
         {
           "name": "user",
-          "writable": true,
           "signer": true
         },
         {
@@ -1145,7 +1086,7 @@
           "writable": true
         },
         {
-          "name": "staking_vault",
+          "name": "staking_token",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1160,40 +1101,11 @@
                   110,
                   103,
                   95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "pool_config"
-              }
-            ]
-          }
-        },
-        {
-          "name": "reward_vault",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  114,
+                  116,
+                  111,
+                  107,
                   101,
-                  119,
-                  97,
-                  114,
-                  100,
-                  95,
-                  118,
-                  97,
-                  117,
-                  108,
-                  116
+                  110
                 ]
               },
               {
@@ -1202,18 +1114,10 @@
               }
             ]
           }
-        },
-        {
-          "name": "user_reward_account",
-          "writable": true
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1337,10 +1241,6 @@
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         }
       ],
       "args": [
@@ -1585,33 +1485,33 @@
     },
     {
       "code": 6009,
-      "name": "NothingToWithdraw",
-      "msg": "Nothing to withdraw"
-    },
-    {
-      "code": 6010,
       "name": "InvalidPoolId",
       "msg": "Invalid pool ID"
     },
     {
-      "code": 6011,
+      "code": 6010,
       "name": "UserStakeAmountNotZero",
       "msg": "User stake amount must be 0 to close account"
     },
     {
-      "code": 6012,
+      "code": 6011,
       "name": "UserRewardDebtNotZero",
       "msg": "User reward debt must be 0 to close account"
     },
     {
-      "code": 6013,
+      "code": 6012,
       "name": "PoolHasActiveStakes",
       "msg": "Pool has active stakers"
     },
     {
-      "code": 6014,
+      "code": 6013,
       "name": "VaultNotEmpty",
       "msg": "Vault must be empty"
+    },
+    {
+      "code": 6014,
+      "name": "InsufficientRewardVaultBalance",
+      "msg": "Insufficient reward vault balance"
     }
   ],
   "types": [
@@ -1749,6 +1649,10 @@
           {
             "name": "total_staked",
             "type": "u64"
+          },
+          {
+            "name": "total_reward_debt",
+            "type": "i128"
           },
           {
             "name": "bump",
@@ -1892,10 +1796,6 @@
           },
           {
             "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "rewards",
             "type": "u64"
           },
           {

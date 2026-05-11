@@ -1,23 +1,25 @@
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import idl from "@/idl/idl.json";
+import deploymentInfo from "@/../scripts/deployment-info.json";
 import { SolanaStaking } from "@/idl/solana_staking";
 import { Program } from "@coral-xyz/anchor";
 
 const STAKE_SEED = new Uint8Array([115, 116, 97, 107, 101]); // "stake"
 const BLACKLIST_SEED = new Uint8Array([98, 108, 97, 99, 107, 108, 105, 115, 116]); // "blacklist"
 const POOL_STATE_SEED = new Uint8Array([112, 111, 111, 108, 95, 115, 116, 97, 116, 101]); // "pool_state"
-const STAKING_VAULT_SEED = new Uint8Array([115, 116, 97, 107, 105, 110, 103, 95, 118, 97, 117, 108, 116]); // "staking_vault"
+const STAKING_VAULT_SEED = new Uint8Array([115, 116, 97, 107, 105, 110, 103, 95, 116, 111, 107, 101, 110]); // "staking_token"
 const REWARD_VAULT_SEED = new Uint8Array([114, 101, 119, 97, 114, 100, 95, 118, 97, 117, 108, 116]); // "reward_vault"
 export const createStakingAccount = async (publicKey: PublicKey, program: Program<SolanaStaking>) => {
 
   const programAddress = new PublicKey(idl.address);
-  const [poolConfigAccount] = await program.account.poolConfig.all();
-  const [poolStateAccount] = await program.account.poolState.all();
-  const poolId = poolConfigAccount.account.poolId;
-  const stakingMint = poolConfigAccount.account.stakingMint;
-  const rewardMint = poolConfigAccount.account.rewardMint;
-  const poolConfig = poolStateAccount.account.poolConfig;
+  const poolConfigPda = new PublicKey(deploymentInfo.poolConfigPda);
+  const poolConfigAccount = await program.account.poolConfig.fetch(poolConfigPda);
+  console.log("poolConfigAccount", poolConfigAccount);
+  const poolId = poolConfigAccount.poolId;
+  const stakingMint = poolConfigAccount.stakingMint;
+  const rewardMint = poolConfigAccount.rewardMint;
+  const poolConfig = poolConfigPda;
 
   const [userStakeInfoPda] = PublicKey.findProgramAddressSync(
     [STAKE_SEED, poolConfig.toBuffer(), publicKey.toBuffer()],
