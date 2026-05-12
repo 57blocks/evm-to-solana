@@ -19,6 +19,7 @@ export interface FetchSchedulerConfig {
   retryDelayInterval: number;
   maxRetries: number;
   chainId: number;
+  programId: string;
   eventParserFactory: TransactionEventsParserFactory;
   solanaConnections: SolanaConnections;
   solanaEventFetcherConfig: SolanaEventFetcherConfig;
@@ -165,7 +166,8 @@ export class FetchScheduler {
             UserStakedEvent,
             UserUnstakedEvent,
             UserRewardsClaimedEvent,
-          ]
+          ],
+          this.config.programId
         );
         if (!this.eventFetcher) {
           throw new Error("EventFetcher not initialized");

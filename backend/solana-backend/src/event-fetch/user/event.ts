@@ -226,8 +226,8 @@ export class UserTransactionEventsParser implements TransactionEventsParser {
   private anchorEventParser: UserTransactionAnchorEventsParser;
   private splEventParser: UserSPLTransactionEventsParser;
 
-  constructor(chainId: number, tokenMints: string[]) {
-    this.anchorEventParser = new UserTransactionAnchorEventsParser(chainId);
+  constructor(chainId: number, tokenMints: string[], programId: string) {
+    this.anchorEventParser = new UserTransactionAnchorEventsParser(chainId, programId);
     this.splEventParser = new UserSPLTransactionEventsParser(chainId, tokenMints);
   }
 
@@ -250,17 +250,18 @@ export class UserTransactionEventsParser implements TransactionEventsParser {
 
 class UserTransactionAnchorEventsParser implements TransactionEventsParser {
   private chainId: number;
+  private programId: PublicKey;
 
-  constructor(chainId: number) {
+  constructor(chainId: number, programId: string) {
     this.chainId = chainId;
+    this.programId = new PublicKey(programId);
   }
 
   parseEvents(data: any): BaseEvent[] {
     const events = new Array<BaseEvent>();
     const ptx = data.tx as ParsedTransactionWithMeta;
-    const programId = new PublicKey(StakingIDL.address);
     const coder = new BorshCoder(StakingIDL as Idl);
-    const ep = new EventParser(programId, coder);
+    const ep = new EventParser(this.programId, coder);
 
     let logs;
     try {
@@ -492,9 +493,10 @@ export class UserTransactionEventsParserFactory implements TransactionEventsPars
   createTransactionEventsParser(
     chainId: number,
     sources: string[],
-    eventClasses: EventClass[]
+    eventClasses: EventClass[],
+    programId: string
   ): TransactionEventsParser {
-    const parser = new UserTransactionEventsParser(chainId, sources);
+    const parser = new UserTransactionEventsParser(chainId, sources, programId);
     eventClasses.forEach((eventClass) => parser.addEventClass(eventClass));
     return parser;
   }

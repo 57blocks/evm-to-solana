@@ -21,7 +21,8 @@ export interface TransactionEventsParserFactory {
   createTransactionEventsParser(
     chainId: number,
     sources: string[],
-    eventClasses: EventClass[]
+    eventClasses: EventClass[],
+    programId: string
   ): TransactionEventsParser;
 }
 

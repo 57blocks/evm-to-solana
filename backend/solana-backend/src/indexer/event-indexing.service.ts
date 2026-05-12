@@ -89,6 +89,7 @@ export class EventIndexingService implements OnModuleInit {
       ),
       maxRetries: this.config.getOrThrow<number>("INDEXING_MAX_RETRIES"),
       chainId: this.config.get<number>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet,
+      programId: this.config.getOrThrow<string>("PROGRAM_ID"),
       eventParserFactory: new UserTransactionEventsParserFactory(),
       solanaConnections: this.solanaConnections,
       solanaEventFetcherConfig,
