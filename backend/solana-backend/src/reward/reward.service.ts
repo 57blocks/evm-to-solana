@@ -35,12 +35,21 @@ export interface SolanaPoolRewardInfo {
   claimedRewards: string;
 }
 
+export interface ActivityRecord {
+  eventType: string;
+  amount: string;
+  blockNumber: number;
+  txHash: string;
+  timestamp: number;
+}
+
 export interface SolanaUserRewardResponse {
   userAddress: string;
   pools: SolanaPoolRewardInfo[];
   totalStaked: string;
   totalPendingRewards: string;
   totalClaimedRewards: string;
+  activities: ActivityRecord[];
 }
 
 @Injectable()
@@ -62,7 +71,7 @@ export class RewardService {
 
   async getUserRewards(userAddress: string): Promise<SolanaUserRewardResponse> {
     const programId = this.config.getOrThrow<string>("PROGRAM_ID");
-    const chainId = this.config.get<number>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet;
+    const chainId = this.config.get<string>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet;
     const syncStatuses = await this.syncStatusRepository.findAll();
 
     const poolInfos = await Promise.all(
@@ -84,19 +93,42 @@ export class RewardService {
       0n,
     );
 
+    // Fetch reward claim activities across all pools
+    const allActivities: ActivityRecord[] = [];
+    for (const syncStatus of syncStatuses) {
+      const poolActivities = await this.userActivityRepository.findByUserAndEventType(
+        userAddress,
+        syncStatus.poolConfig,
+        EventType.RewardsClaimed,
+      );
+      allActivities.push(
+        ...poolActivities.map((a) => ({
+          eventType: a.eventType,
+          amount: a.eventType === EventType.RewardsClaimed
+            ? a.rewards.toString()
+            : a.positionDelta.toString(),
+          blockNumber: a.blockNumber,
+          txHash: a.txHash,
+          timestamp: a.timestamp,
+        })),
+      );
+    }
+    allActivities.sort((a, b) => b.timestamp - a.timestamp);
+
     return {
       userAddress,
       pools: poolInfos,
       totalStaked: totalStaked.toString(),
       totalPendingRewards: totalPending.toString(),
       totalClaimedRewards: totalClaimed.toString(),
+      activities: allActivities,
     };
   }
 
   private async getPoolRewardInfo(
     userAddress: string,
     programId: string,
-    chainId: number,
+    chainId: string | number,
     poolConfigPda: string,
   ): Promise<SolanaPoolRewardInfo> {
     try {
@@ -110,7 +142,7 @@ export class RewardService {
         programId,
         poolId,
       );
-
+      console.log("---- position----", position);
       // Get total claimed from DB events
       const claimedActivities = await this.userActivityRepository.findByUserAndEventType(
         userAddress,
@@ -146,7 +178,7 @@ export class RewardService {
 
   private async getPoolIdFromConfig(
     poolConfigPda: PublicKey,
-    chainId: number,
+    chainId: string | number,
   ): Promise<string> {
     const connection = this.solanaConnections.getConnection(chainId);
     const accountInfo = await connection.getAccountInfo(poolConfigPda);

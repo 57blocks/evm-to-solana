@@ -226,7 +226,7 @@ export class UserTransactionEventsParser implements TransactionEventsParser {
   private anchorEventParser: UserTransactionAnchorEventsParser;
   private splEventParser: UserSPLTransactionEventsParser;
 
-  constructor(chainId: number, tokenMints: string[], programId: string) {
+  constructor(chainId: string | number, tokenMints: string[], programId: string) {
     this.anchorEventParser = new UserTransactionAnchorEventsParser(chainId, programId);
     this.splEventParser = new UserSPLTransactionEventsParser(chainId, tokenMints);
   }
@@ -249,10 +249,10 @@ export class UserTransactionEventsParser implements TransactionEventsParser {
 }
 
 class UserTransactionAnchorEventsParser implements TransactionEventsParser {
-  private chainId: number;
+  private chainId: string | number;
   private programId: PublicKey;
 
-  constructor(chainId: number, programId: string) {
+  constructor(chainId: string | number, programId: string) {
     this.chainId = chainId;
     this.programId = new PublicKey(programId);
   }
@@ -350,11 +350,11 @@ class UserTransactionAnchorEventsParser implements TransactionEventsParser {
 class UserSPLTransactionEventsParser implements TransactionEventsParser {
   private static readonly LOG_PREFIX = `Program log: Instruction: `;
 
-  private chainId: number;
+  private chainId: string | number;
   private monitorLogs: Set<string> = new Set();
   private tokenMints: string[] = [];
 
-  constructor(chainId: number, tokenMints: string[]) {
+  constructor(chainId: string | number, tokenMints: string[]) {
     this.chainId = chainId;
     this.tokenMints = tokenMints;
   }
@@ -491,7 +491,7 @@ class UserSPLTransactionEventsParser implements TransactionEventsParser {
 
 export class UserTransactionEventsParserFactory implements TransactionEventsParserFactory {
   createTransactionEventsParser(
-    chainId: number,
+    chainId: string | number,
     sources: string[],
     eventClasses: EventClass[],
     programId: string

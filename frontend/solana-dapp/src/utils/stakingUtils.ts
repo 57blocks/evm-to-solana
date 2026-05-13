@@ -174,6 +174,42 @@ export const executeUnstakeTransaction = async ({
   return txSignature;
 };
 
+export interface ClaimRewardsParams {
+  publicKey: PublicKey;
+  program: Program<SolanaStaking>;
+}
+
+/**
+ * Execute claim rewards transaction using RPC
+ */
+export const executeClaimRewardsTransaction = async ({
+  publicKey,
+  program,
+}: ClaimRewardsParams): Promise<string> => {
+  const accountInfo = await createStakingAccount(publicKey, program);
+  console.log("txSignature", {
+    user: publicKey,
+    poolConfig: accountInfo.poolConfig,
+    poolState: accountInfo.poolState,
+    userStakeInfo: accountInfo.userStakeInfo,
+    userRewardAccount: accountInfo.userRewardAccount,
+    rewardVault: accountInfo.rewardVault,
+  });
+  const txSignature = await program.methods
+    .claimRewards()
+    .accountsPartial({
+      user: publicKey,
+      poolConfig: accountInfo.poolConfig,
+      poolState: accountInfo.poolState,
+      userStakeInfo: accountInfo.userStakeInfo,
+      userRewardAccount: accountInfo.userRewardAccount,
+      rewardVault: accountInfo.rewardVault,
+    })
+    .rpc();
+
+  return txSignature;
+};
+
 /**
  * Create unstake instruction (for use in custom transactions)
  */

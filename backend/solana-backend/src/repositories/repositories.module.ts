@@ -37,7 +37,7 @@ export const ALERT_REPOSITORY = "ALERT_REPOSITORY";
       useFactory: (solanaConnections: SolanaConnections, config: ConfigService) =>
         new PoolRepository(
           solanaConnections,
-          config.get<number>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet
+          config.get<string>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet
         ),
     },
     {
@@ -51,7 +51,7 @@ export const ALERT_REPOSITORY = "ALERT_REPOSITORY";
       ) =>
         new UserStakePositionRepository(
           solanaConnections,
-          config.get<number>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet,
+          config.get<string>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet,
           poolRepository,
           rewardCalculator,
         ),

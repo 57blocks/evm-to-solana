@@ -28,14 +28,14 @@ export enum CHAIN_ID {
   // testnet
   BaseSepolia = 84532,
   ScrollSepolia = 534351,
-  SolanaDevnet = 901,
-  SolanaTestnet = 902,
+  SolanaDevnet = "SolanaDevnet",
+  SolanaTestnet = "SolanaTestnet",
+  SolanaMainnet = "SolanaMainnet",
   // mainnet
   Scroll = 534352,
-  SolanaMainnet = 900,
 }
 
-export const RPC_BY_CHAINS: Record<number, string> = {
+export const RPC_BY_CHAINS: Record<string | number, string> = {
   // testnet
   // Base Sepolia Testnet
   [CHAIN_ID.BaseSepolia]: "https://sepolia.base.org",

@@ -32,7 +32,7 @@ export class RewardVaultReader {
     );
 
     const connection = this.solanaConnections.getConnection(
-      this.config.get<number>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet
+      this.config.get<string>("CHAIN_ID") ?? CHAIN_ID.SolanaDevnet
     );
     const balance = await connection.getTokenAccountBalance(rewardVaultPda);
     const rawAmount = balance.value.amount;

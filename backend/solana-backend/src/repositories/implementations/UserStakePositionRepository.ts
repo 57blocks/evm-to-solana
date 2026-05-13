@@ -16,13 +16,13 @@ interface DecodedUserStake {
 
 export class UserStakePositionRepository implements IUserStakePositionRepository {
   private solanaConnections: SolanaConnections;
-  private chainId: number;
+  private chainId: string | number;
   private poolRepository: IPoolRepository;
   private rewardCalculator: RewardCalculationService;
 
   constructor(
     solanaConnections: SolanaConnections,
-    chainId: number,
+    chainId: string | number,
     poolRepository: IPoolRepository,
     rewardCalculator: RewardCalculationService
   ) {

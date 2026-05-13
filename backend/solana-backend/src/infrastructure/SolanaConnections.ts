@@ -8,7 +8,7 @@ import { RPC_BY_CHAINS } from "../event-fetch/chain/chain";
  */
 export class SolanaConnections {
   private rpc: string;
-  private connectionMap: Map<number, Connection> = new Map();
+  private connectionMap: Map<string | number, Connection> = new Map();
 
   constructor(rpc: string) {
     this.rpc = rpc;
@@ -18,7 +18,7 @@ export class SolanaConnections {
    * Returns the Connection for the given chainId.
    * Creates and caches the connection if it does not exist.
    */
-  getConnection(chainId: number): Connection {
+  getConnection(chainId: string | number): Connection {
     let connection: Connection | undefined = this.connectionMap.get(chainId);
     if (!connection) {
       connection = this.createRpcConnection(this.rpc, chainId);
@@ -31,7 +31,7 @@ export class SolanaConnections {
    * Creates an RPC connection.
    * Prefers the provided rpc; falls back to RPC_BY_CHAINS.
    */
-  private createRpcConnection(rpc: string, chainId: number): Connection {
+  private createRpcConnection(rpc: string, chainId: string | number): Connection {
     if (rpc) {
       return new Connection(rpc, "confirmed");
     }

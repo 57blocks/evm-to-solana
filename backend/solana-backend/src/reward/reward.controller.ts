@@ -2,11 +2,13 @@ import { Controller, Get, Param, HttpException, HttpStatus, Inject } from "@nest
 import { PublicKey } from "@solana/web3.js";
 import { RewardService, SolanaUserRewardResponse } from "./reward.service";
 
-@Controller("api/rewards")
+@Controller("api")
 export class RewardController {
-  constructor(@Inject(RewardService) private readonly rewardService: RewardService) {}
+  constructor(
+    @Inject(RewardService) private readonly rewardService: RewardService,
+  ) {}
 
-  @Get(":userAddress")
+  @Get("rewards/:userAddress")
   async getUserRewards(
     @Param("userAddress") userAddress: string,
   ): Promise<SolanaUserRewardResponse> {

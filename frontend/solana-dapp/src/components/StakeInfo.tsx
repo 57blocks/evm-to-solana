@@ -26,7 +26,7 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
     setIsLoading(true);
 
     try {
-      const userStakeInfo = await fetchUserStakeInfo(publicKey, program);
+      const userStakeInfo = await fetchUserStakeInfo(publicKey, program); console.log(userStakeInfo);
       setStakeInfo(userStakeInfo);
     } catch (err) {
       console.error(

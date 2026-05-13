@@ -35,13 +35,13 @@ export interface TokenTransferResponse {
 }
 
 export class SolscanTransferEventFetcher {
-  private chainId: number;
+  private chainId: string | number;
   private solanaService: SolanaService;
   private config: SolscanTransferEventFetcherConfig;
   private apiKey: string;
 
   constructor(
-    chainId: number,
+    chainId: string | number,
     solanaService: SolanaService,
     apiKey: string,
     config: SolscanTransferEventFetcherConfig

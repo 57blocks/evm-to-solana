@@ -19,7 +19,7 @@ export type EventClass = {
 export interface TransactionEventsParserFactory {
   //TODO change to source: string
   createTransactionEventsParser(
-    chainId: number,
+    chainId: string | number,
     sources: string[],
     eventClasses: EventClass[],
     programId: string
@@ -28,14 +28,14 @@ export interface TransactionEventsParserFactory {
 
 export class BaseEvent {
 
-  chainId: number;
+  chainId: string | number;
   blockNumber: number;
   transactionHash: string;
   timestamp: number;
   status: string;
   monitorAddress?: string;
 
-  constructor(chainId: number,
+  constructor(chainId: string | number,
               blockNumber: number,
               transactionHash: string,
               timestamp: number,

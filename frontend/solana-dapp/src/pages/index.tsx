@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import StakingActions from "../components/StakingActions";
 import StakeInfo, { StakeInfoRef } from "../components/StakeInfo";
+import RewardHistory, { RewardHistoryRef } from "../components/RewardHistory";
 import { StakingOptimizations } from "../components/StakingOptimizations";
 import ErrorModal, { ErrorInfo } from "../components/ErrorModal";
 import SuccessToast from "../components/StakeSuccessToast";
@@ -13,6 +14,7 @@ const Home = () => {
   const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const { connected, publicKey } = useWallet();
   const stakeInfoRef = useRef<StakeInfoRef>(null);
+  const rewardHistoryRef = useRef<RewardHistoryRef>(null);
   // Monitor stake events
   const { latestStakeEvent, clearLatestStakeEvent } = useStakeEvents({
     userAddress: publicKey,
@@ -23,8 +25,9 @@ const Home = () => {
   useAutoSignOnConnect(setErrorInfo);
 
   const handleOnSuccess = () => {
-    // Refresh stake information immediately after successful transaction
+    // Refresh stake information and reward history immediately after successful transaction
     stakeInfoRef.current?.refresh();
+    rewardHistoryRef.current?.refresh();
   };
 
   const clearGlobalError = () => {
@@ -90,6 +93,13 @@ const Home = () => {
                 onError={setErrorInfo}
               />
             </div>
+          </div>
+        )}
+
+        {/* Reward History */}
+        {connected && (
+          <div className="w-full max-w-6xl px-4 mt-8">
+            <RewardHistory ref={rewardHistoryRef} />
           </div>
         )}
 

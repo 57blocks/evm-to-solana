@@ -7,7 +7,7 @@ export const configSchema = Joi.object({
   DATABASE_URL: Joi.string().required(),
   SOLANA_RPC_URL: Joi.string().uri().default("https://api.devnet.solana.com"),
   PROGRAM_ID: Joi.string().default(StakingIDL.address),
-  CHAIN_ID: Joi.number().integer().default(CHAIN_ID.SolanaDevnet),
+  CHAIN_ID: Joi.string().default(CHAIN_ID.SolanaDevnet),
   INDEXING_CRON: Joi.string().required().default("*/10 * * * * *"),
   INDEXING_RETRY_DELAY_MS: Joi.number().integer().min(0).default(1000),
   INDEXING_MAX_RETRIES: Joi.number().integer().min(0).default(3),

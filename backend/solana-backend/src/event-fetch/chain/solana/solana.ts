@@ -16,7 +16,7 @@ export type SolanaEventFetcherConfig = {
 };
 
 export class SolanaEventFetcher implements EventFetcher {
-  private chainId: number;
+  private chainId: string | number;
   private solanaEventsService: SolanaService;
   private defaultStartBlock: number;
   private maxCount: number;
@@ -24,7 +24,7 @@ export class SolanaEventFetcher implements EventFetcher {
   private config: SolanaEventFetcherConfig;
 
   constructor(
-    chainId: number,
+    chainId: string | number,
     solanaEventsService: SolanaService,
     defaultStartBlock: number,
     maxCount: number,
@@ -279,12 +279,12 @@ export class SolanaService {
     this.solanaConnections = solanaConnections;
   }
 
-  getConnection(chainId: number): Connection {
+  getConnection(chainId: string | number): Connection {
     return this.solanaConnections.getConnection(chainId);
   }
 
   async parseTransactionEvents(
-    chainId: number,
+    chainId: string | number,
     sig: string,
     eventsParser: TransactionEventsParser
   ): Promise<BaseEvent[]> {

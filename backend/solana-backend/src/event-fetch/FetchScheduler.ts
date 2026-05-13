@@ -18,7 +18,7 @@ export interface FetchSchedulerConfig {
   fetchingInterval: number;
   retryDelayInterval: number;
   maxRetries: number;
-  chainId: number;
+  chainId: string | number;
   programId: string;
   eventParserFactory: TransactionEventsParserFactory;
   solanaConnections: SolanaConnections;

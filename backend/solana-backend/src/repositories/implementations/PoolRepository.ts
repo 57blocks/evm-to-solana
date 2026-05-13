@@ -26,9 +26,9 @@ interface DecodedPoolState {
 
 export class PoolRepository implements IPoolRepository {
   private solanaConnections: SolanaConnections;
-  private chainId: number;
+  private chainId: string | number;
 
-  constructor(solanaConnections: SolanaConnections, chainId: number) {
+  constructor(solanaConnections: SolanaConnections, chainId: string | number) {
     this.solanaConnections = solanaConnections;
     this.chainId = chainId;
   }

@@ -123,9 +123,9 @@ export class AdminRewardsFundedEvent extends BaseEvent {
 }
 
 export class AdminTransactionEventsParser implements TransactionEventsParser {
-  private chainId: number;
+  private chainId: string | number;
 
-  constructor(chainId: number) {
+  constructor(chainId: string | number) {
     this.chainId = chainId;
   }
 
@@ -219,7 +219,7 @@ export class AdminTransactionEventsParser implements TransactionEventsParser {
 
 export class AdminTransactionEventsParserFactory implements TransactionEventsParserFactory {
   createTransactionEventsParser(
-    chainId: number,
+    chainId: string | number,
     _sources: string[],
     eventClasses: EventClass[]
   ): TransactionEventsParser {
