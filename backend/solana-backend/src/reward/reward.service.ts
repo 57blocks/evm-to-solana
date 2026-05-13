@@ -142,7 +142,6 @@ export class RewardService {
         programId,
         poolId,
       );
-      console.log("---- position----", position);
       // Get total claimed from DB events
       const claimedActivities = await this.userActivityRepository.findByUserAndEventType(
         userAddress,

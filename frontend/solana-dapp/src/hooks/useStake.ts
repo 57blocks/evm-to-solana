@@ -52,9 +52,7 @@ export const useStake = ({
       setTransactionSignature(txSignature);
       setStakeAmount(undefined);
       onSuccess();
-      setTransactionSignature(null);
     } catch (err) {
-      console.error("Raw stake error:", err);
       const errorInfo = formatErrorForDisplay(err);
       onError(errorInfo);
     } finally {

@@ -47,8 +47,6 @@ export const executeStakeTransaction = async ({
 }: StakeTransactionParams): Promise<string> => {
   const accountInfo = await createStakingAccount(publicKey, program);
 
-  console.log("stake accountInfo:", JSON.stringify(accountInfo, (_, v) => typeof v === 'object' && v?.toBase58 ? v.toBase58() : v, 2));
-
   const txSignature = await program.methods
     .stake(new BN(convertToLamports(stakeAmount).toString()))
     .accountsPartial({
@@ -187,14 +185,6 @@ export const executeClaimRewardsTransaction = async ({
   program,
 }: ClaimRewardsParams): Promise<string> => {
   const accountInfo = await createStakingAccount(publicKey, program);
-  console.log("txSignature", {
-    user: publicKey,
-    poolConfig: accountInfo.poolConfig,
-    poolState: accountInfo.poolState,
-    userStakeInfo: accountInfo.userStakeInfo,
-    userRewardAccount: accountInfo.userRewardAccount,
-    rewardVault: accountInfo.rewardVault,
-  });
   const txSignature = await program.methods
     .claimRewards()
     .accountsPartial({

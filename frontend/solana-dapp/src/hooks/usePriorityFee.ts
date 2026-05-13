@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
 import { createStakeInstruction, sendAndConfirmTransaction } from "../utils/stakingUtils";
@@ -14,6 +15,7 @@ import { validateStakeParams } from "./useStakeValidation";
 
 export interface PriorityFeeReturn {
   handlePriorityStake: () => Promise<string | undefined>;
+  isStaking: boolean;
 }
 
 export type PriorityFeeOptions = {
@@ -30,6 +32,7 @@ export const usePriorityFee = ({
   const { publicKey, signTransaction } = useWallet();
   const { program } = useProgram();
   const { connection } = useConnection();
+  const [isStaking, setIsStaking] = useState(false);
 
   const handlePriorityStake = async (): Promise<string | undefined> => {
     const { isValid } = validateStakeParams({
@@ -41,6 +44,7 @@ export const usePriorityFee = ({
     });
     if (!isValid) return;
 
+    setIsStaking(true);
     try {
       const { instruction, accountInfo } = await createStakeInstruction({
         publicKey: publicKey!,
@@ -89,10 +93,13 @@ export const usePriorityFee = ({
       const errorInfo = formatErrorForDisplay(error);
       onError(errorInfo);
       return;
+    } finally {
+      setIsStaking(false);
     }
   };
 
   return {
     handlePriorityStake,
+    isStaking,
   };
 };

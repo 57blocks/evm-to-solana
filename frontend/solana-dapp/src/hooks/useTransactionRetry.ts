@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Transaction } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useProgram } from "./useProgram";
@@ -19,6 +20,7 @@ export const useTransactionRetry = ({
   const { publicKey, signTransaction } = useWallet();
   const { program } = useProgram();
   const { connection } = useConnection();
+  const [isStaking, setIsStaking] = useState(false);
 
   /**
    * Executes the stake transaction with blockhash retry logic.
@@ -33,6 +35,9 @@ export const useTransactionRetry = ({
       onError,
     });
     if (!isValid) return;
+
+    setIsStaking(true);
+    try {
 
     // Get latest blockhash and set lastValidBlockHeight
     const blockhashResponse = await connection.getLatestBlockhash();
@@ -109,7 +114,10 @@ export const useTransactionRetry = ({
     }
 
     return confirmedSignature;
+    } finally {
+      setIsStaking(false);
+    }
   };
 
-  return { executeStakeWithRetry };
+  return { executeStakeWithRetry, isStaking };
 };

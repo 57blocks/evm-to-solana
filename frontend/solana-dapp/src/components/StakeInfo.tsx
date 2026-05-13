@@ -26,7 +26,7 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
     setIsLoading(true);
 
     try {
-      const userStakeInfo = await fetchUserStakeInfo(publicKey, program); console.log(userStakeInfo);
+      const userStakeInfo = await fetchUserStakeInfo(publicKey, program);
       setStakeInfo(userStakeInfo);
     } catch (err) {
       console.error(
@@ -47,10 +47,7 @@ const StakeInfo = forwardRef<StakeInfoRef>((_, ref) => {
   }, [connected, publicKey, program, loadStakeInfo]);
 
   const handleRefresh = useCallback(async () => {
-    if (!publicKey) {
-      console.error("Public key is not set");
-      return;
-    }
+    if (!publicKey) return;
     await loadStakeInfo();
   }, [publicKey, loadStakeInfo]);
 

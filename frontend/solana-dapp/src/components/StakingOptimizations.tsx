@@ -22,7 +22,7 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
   const [jitoAmount, setJitoAmount] = useState(0);
   const [retryAmount, setRetryAmount] = useState(0);
 
-  const { handlePriorityStake } = usePriorityFee({
+  const { handlePriorityStake, isStaking: isPriorityStaking } = usePriorityFee({
     onSuccess: () => {
       setPriorityAmount(0);
       onSuccess();
@@ -49,7 +49,7 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
     stakeAmount: jitoAmount,
   });
 
-  const { executeStakeWithRetry } = useTransactionRetry({
+  const { executeStakeWithRetry, isStaking: isRetryStaking } = useTransactionRetry({
     onSuccess: () => {
       setRetryAmount(0);
       onSuccess();
@@ -61,7 +61,7 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
   return (
     <div className="bg-white/95 rounded-2xl shadow-xl backdrop-blur-sm p-6">
       <h2 className="text-xl font-bold text-gray-900 mb-6">
-        Staking Optimizations
+        Advanced Staking Features
       </h2>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -78,10 +78,10 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
             />
             <ActionButton
               onClick={handlePriorityStake}
-              isLoading={false}
+              isLoading={isPriorityStaking}
               loadingText="Submitting..."
               className="min-w-[140px]"
-              disabled={priorityAmount <= 0}
+              disabled={priorityAmount <= 0 || isPriorityStaking}
             >
               Stake (Priority)
             </ActionButton>
@@ -127,10 +127,10 @@ export const StakingOptimizations: React.FC<StakingOptimizationsProps> = ({
             />
             <ActionButton
               onClick={executeStakeWithRetry}
-              isLoading={false}
+              isLoading={isRetryStaking}
               loadingText="Retrying..."
               className="min-w-[140px]"
-              disabled={retryAmount <= 0}
+              disabled={retryAmount <= 0 || isRetryStaking}
             >
               Stake (Retry)
             </ActionButton>

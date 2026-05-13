@@ -5,7 +5,7 @@ import { PublicKey } from "@solana/web3.js";
 import { ErrorInfo } from "@/components/ErrorModal";
 
 const appName = "Solana Staking Platform";
-const domain =  window.location.hostname;
+
 /**
  * Hook to automatically sign message when wallet connects
  */
@@ -22,7 +22,7 @@ export const useAutoSignOnConnect = (
   const [isSigning, setIsSigning] = useState(false);
   // Generate a sign-in message
   const generateSignInMessage = useCallback((walletAddress: PublicKey) => {
-    
+    const domain = typeof window !== "undefined" ? window.location.hostname : "localhost";
     const timestamp = new Date().toISOString();
     const nonce = Math.random().toString(36).substring(7);
 
@@ -102,9 +102,7 @@ export const useAutoSignOnConnect = (
             );
           }
 
-          if (isValid) {
-            console.log("Signature verified successfully!");
-          } else {
+          if (!isValid) {
             setErrorInfo({
               title: "Signature Verification Failed",
               message: "Please try again.",

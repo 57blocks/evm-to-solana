@@ -40,8 +40,6 @@ export const useClaimRewards = ({
       });
       onSuccess();
     } catch (err) {
-      console.error("Raw claim error:", err);
-      console.error("Error logs:", (err as any)?.logs);
       const errorInfo = formatErrorForDisplay(err);
       onError(errorInfo);
     } finally {

@@ -15,7 +15,6 @@ export const createStakingAccount = async (publicKey: PublicKey, program: Progra
   const programAddress = new PublicKey(idl.address);
   const poolConfigPda = new PublicKey(deploymentInfo.poolConfigPda);
   const poolConfigAccount = await program.account.poolConfig.fetch(poolConfigPda);
-  console.log("poolConfigAccount", poolConfigAccount);
   const poolId = poolConfigAccount.poolId;
   const stakingMint = poolConfigAccount.stakingMint;
   const rewardMint = poolConfigAccount.rewardMint;
