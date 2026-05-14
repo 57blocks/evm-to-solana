@@ -18,7 +18,7 @@ const StakingActions: React.FC<StakingActionsProps> = ({
   const { isConnected } = useAccount();
 
   return (
-    <div className="w-full max-w-full m-0 p-6 bg-white/95 rounded-2xl shadow-lg backdrop-blur-md border border-white/20 h-full min-h-[400px] flex flex-col">
+    <div className="w-full max-w-full m-0 p-6 bg-white/95 rounded-2xl shadow-lg backdrop-blur-md border border-white/20 flex flex-col">
       <h2 className="text-center mb-8 text-gray-800 text-2xl font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent pb-4 border-b border-black/10">
         Staking Operations
       </h2>
@@ -29,7 +29,7 @@ const StakingActions: React.FC<StakingActionsProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 mb-0 flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Stake Section */}
         <div
           className={`relative bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/20 rounded-xl p-6 shadow-md transition-all duration-300 overflow-hidden ${
@@ -63,9 +63,9 @@ const StakingActions: React.FC<StakingActionsProps> = ({
           />
         </div>
 
-        {/* Claim Rewards Section */}
+        {/* Claim Rewards Section - Full Width */}
         <div
-          className={`relative bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/20 rounded-xl p-6 shadow-md transition-all duration-300 overflow-hidden ${
+          className={`relative lg:col-span-2 bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/20 rounded-xl p-6 shadow-md transition-all duration-300 overflow-hidden ${
             !isConnected ? "opacity-60 bg-gray-50/50 border-gray-300/50" : "hover:-translate-y-0.5 hover:shadow-lg"
           }`}
         >

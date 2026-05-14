@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import StakingActions from "./components/StakingActions";
-import StakeInfo, { StakeInfoRef } from "./components/StakeInfo";
 import RewardHistory, { RewardHistoryRef } from "./components/RewardHistory";
 import ErrorModal from "./components/ErrorModal";
 import GlobalToast, { StakeEventData } from "./components/GlobalToast";
@@ -11,7 +10,6 @@ import { useStakeEvents } from "./hooks/useStakeEvents";
 const App: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { isConnected, address } = useAccount();
-  const stakeInfoRef = useRef<StakeInfoRef>(null);
   const rewardHistoryRef = useRef<RewardHistoryRef>(null);
   const [currentTransactionHash, setCurrentTransactionHash] = useState<
     string | null
@@ -35,7 +33,6 @@ const App: React.FC = () => {
     : null;
 
   const handleOnSuccess = () => {
-    stakeInfoRef.current?.refresh();
     rewardHistoryRef.current?.refresh();
   };
 
@@ -90,26 +87,15 @@ const App: React.FC = () => {
 
         {/* Main Content - Connected */}
         {isConnected && (
-          <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 px-4">
-            {/* Left Column - Stake Information */}
-            <div className="flex flex-col h-full">
-              <StakeInfo ref={stakeInfoRef} />
-            </div>
+          <div className="w-full max-w-6xl px-4 flex flex-col gap-8">
+            {/* Staking Actions */}
+            <StakingActions
+              onTransactionSuccess={handleOnSuccess}
+              onError={handleError}
+              onStakeTransactionStart={handleStakeTransactionStart}
+            />
 
-            {/* Right Column - Staking Actions */}
-            <div className="flex flex-col h-full">
-              <StakingActions
-                onTransactionSuccess={handleOnSuccess}
-                onError={handleError}
-                onStakeTransactionStart={handleStakeTransactionStart}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Reward History */}
-        {isConnected && (
-          <div className="w-full max-w-6xl px-4 mt-8">
+            {/* Stake Overview & Reward History */}
             <RewardHistory ref={rewardHistoryRef} />
           </div>
         )}

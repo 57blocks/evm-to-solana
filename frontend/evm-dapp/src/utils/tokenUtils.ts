@@ -47,16 +47,23 @@ export const formatTokenAmount = (
 
   const tokenAmount = convertFromWei(weiAmount, decimals);
 
-  // Simple formatting: just show the token amount with appropriate decimal places
+  // Format with appropriate decimal places, trimming trailing zeros
+  let fixed: string;
   if (tokenAmount >= 1) {
-    return tokenAmount.toFixed(4);
+    fixed = tokenAmount.toFixed(4);
   } else if (tokenAmount >= 0.01) {
-    return tokenAmount.toFixed(6);
+    fixed = tokenAmount.toFixed(6);
   } else if (tokenAmount >= 0.0001) {
-    return tokenAmount.toFixed(8);
+    fixed = tokenAmount.toFixed(8);
   } else {
-    return tokenAmount.toFixed(decimals);
+    fixed = tokenAmount.toFixed(decimals);
   }
+
+  // Remove trailing zeros after decimal point
+  if (fixed.includes(".")) {
+    fixed = fixed.replace(/\.?0+$/, "");
+  }
+  return fixed || "0";
 };
 
 /**

@@ -2,29 +2,28 @@
 
 A comprehensive staking DApp that demonstrates how to interact with Ethereum smart contracts using modern Web3 technologies. This repository serves as a practical guide for developers learning to build decentralized applications with contract reading, writing, and event tracking capabilities.
 
-> **⚠️ TESTNET ONLY (Sepolia)**
+> **TESTNET ONLY (Sepolia)**
 >
 > This application is deployed and runs exclusively on **Ethereum Sepolia Testnet**.
->
-> **You will need Testnet tokens to use this application:**
 
-## 🚀 Features
+## Features
 
 ### Core Functionality
 
-- **🔗 Multi-Wallet Support**: Connect with MetaMask, WalletConnect, Coinbase Wallet, and more via RainbowKit
-- **💰 Token Staking**: Stake tokens to earn rewards with real-time tracking
-- **📊 Subgraph Integration**: Real-time event tracking and reward history using The Graph
-- **📡 Event Listener**: Track on-chain events (Staked, Unstaked, RewardClaimed) via subgraph
+- **Multi-Wallet Support**: Connect with MetaMask, WalletConnect, Coinbase Wallet, and more via RainbowKit
+- **Token Staking**: Stake tokens to earn rewards with real-time tracking
+- **Claim Rewards**: Claim accumulated staking rewards with one click
+- **Subgraph Integration**: Real-time event tracking and reward history using The Graph
+- **Event Listener**: Track on-chain events (Staked, Unstaked, RewardClaimed) via subgraph
 
 ### Transaction Features
 
-- **✅ Smart Approval Flow**: Automatic allowance checking with approve → stake sequence
-- **📖 Contract Reading**: Real-time reading of contract state using Wagmi hooks
-- **✍️ Contract Writing**: Interactive staking and unstaking operations
-- **🛡️ Error Handling**: Comprehensive error display with user-friendly messages
+- **Smart Approval Flow**: Automatic allowance checking with approve → stake sequence
+- **Contract Reading**: Real-time reading of contract state using Wagmi hooks
+- **Contract Writing**: Interactive staking, unstaking and claim operations
+- **Error Handling**: Comprehensive error display with user-friendly messages
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Frontend Framework
 
@@ -38,47 +37,63 @@ A comprehensive staking DApp that demonstrates how to interact with Ethereum sma
 - **Viem**: Low-level Ethereum interface
 - **RainbowKit**: Wallet connection UI components
 
+### Styling
+
+- **Tailwind CSS**: Utility-first CSS framework
+
 ### Data & State Management
 
 - **GraphQL**: Subgraph queries for blockchain events
 
 ### Development Tools
 
-- **Package Manager**: npm, yarn, or pnpm supported
+- **Package Manager**: pnpm (recommended)
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 evm-dapp/
 ├── src/
+│   ├── main.tsx                       # Application entry point with providers
+│   ├── App.tsx                        # Main application component
 │   ├── components/
-│   │   ├── StakeTokens.tsx          # Staking input and approval logic
-│   │   ├── UnstakeTokens.tsx        # Unstaking operations
-│   │   ├── StakeInfo.tsx            # Display stake information
-│   │   ├── StakingActions.tsx       # Container for staking components
-│   │   ├── RewardHistory.tsx        # Subgraph-based reward history
-│   │   └── ErrorModal.tsx           # Global error display
-│   ├── pages/
-│   │   └── index.tsx                # Main application page
-│   ├── styles/                      # CSS Modules for component styling
+│   │   ├── StakeTokens.tsx            # Staking input and approval logic
+│   │   ├── UnstakeTokens.tsx          # Unstaking operations
+│   │   ├── ClaimRewards.tsx           # Claim accumulated rewards
+│   │   ├── StakingActions.tsx         # Container for staking components
+│   │   ├── RewardHistory.tsx          # Stake overview + subgraph reward history
+│   │   ├── ErrorModal.tsx             # Global error display
+│   │   └── GlobalToast.tsx            # Stake event notifications
+│   ├── hooks/
+│   │   ├── useStake.ts                # Staking logic (approve → stake flow)
+│   │   └── useStakeEvents.ts          # On-chain event listener
 │   ├── utils/
-│   │   └── tokenUtils.ts            # Token conversion utilities
-│   ├── abi/                         # Smart contract ABIs
-│   └── wagmi.ts                     # Wagmi configuration
-├── package.json                     # Dependencies and scripts
-├── tsconfig.json                    # TypeScript configuration
-├── vite.config.ts                   # Vite configuration
-├── .env.example                     # Environment variables template
-└── README.md                        # Project documentation
+│   │   └── tokenUtils.ts              # Token conversion and formatting
+│   ├── abi/
+│   │   ├── stakeAbi.ts                # Staking contract ABI
+│   │   └── StakingTokenABI.ts         # ERC20 staking token ABI
+│   ├── styles/
+│   │   └── globals.css                # Global styles
+│   └── wagmi.ts                       # Wagmi + RainbowKit configuration
+├── stake/                             # The Graph subgraph project
+├── snapshots/                         # Documentation screenshots
+├── consts.ts                          # Contract addresses
+├── package.json
+├── tsconfig.json
+├── tailwind.config.js                 # Tailwind CSS configuration
+├── vite.config.ts
+├── env.example                        # Environment variables template
+└── README.md
 ```
 
-## 🚀 Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 
 - Node.js v22.10.0 or higher
-- npm, yarn, or pnpm package manager
+- pnpm package manager
 - MetaMask or other Web3 wallet **configured for Sepolia Testnet**
+- **Sepolia ETH** for gas fees — get from [Google Cloud Faucet](https://cloud.google.com/application/web3/faucet/ethereum/sepolia) or [Alchemy Faucet](https://www.alchemy.com/faucets/ethereum-sepolia)
 
 > **Note**: This DApp runs on **Ethereum Sepolia Testnet** only. Make sure your wallet is connected to Sepolia network.
 
@@ -86,122 +101,59 @@ evm-dapp/
 
 ```bash
 git clone <repository-url>
-cd evm-to-solana-contract/frontend/evm-dapp
+cd evm-to-solana/frontend/evm-dapp
 ```
 
 ### 2. Install Dependencies
 
 ```bash
-# Using npm
-npm install
-
-# Using yarn
-yarn install
-
-# Using pnpm
 pnpm install
 ```
 
 ### 3. Environment Configuration
 
 ```bash
-# Copy environment template
 cp env.example .env.local
 ```
 
 Update `.env.local` with your configuration:
 
 ```bash
-# Graph API Key for subgraph queries
-NEXT_PUBLIC_GRAPH_API_KEY=your_graph_api_key_here
+# Alchemy RPC URL for Sepolia
+VITE_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY
 
-# Alchemy RPC URL for Ethereum testnet
-NEXT_PUBLIC_ALCHEMY_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_API_KEY
+# The Graph subgraph URL for reward history queries
+VITE_GRAPH_URL=https://api.studio.thegraph.com/query/YOUR_ID/YOUR_SUBGRAPH/version/latest
 
+# The Graph API key for authenticated subgraph queries
+VITE_GRAPH_API_KEY=your_graph_api_key_here
 ```
 
-### 4. Start Development Server
+### 4. Deploy Contracts & Mint Tokens
+
+Before using the DApp, you need to deploy the staking contracts and mint test tokens. See [`contract/evm-staking/README.md`](../../contract/evm-staking/README.md) for full deployment instructions.
+
+After deployment, update the contract addresses in `consts.ts` with the deployment output.
+
+To mint tokens to your test wallet, use the deployed RestrictedStakingToken contract on [Sepolia Etherscan](https://sepolia.etherscan.io/) — call `mint(address to, uint256 amount)` with the deployer wallet (only the contract owner can mint).
+
+### 5. Start Development Server
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
 ```
 
 The application will be available at `http://localhost:5173`
 
-## 🔧 Smart Contract Integration
+## Deployed Contracts (Sepolia)
 
-### Contract Reading
+Current deployment (from `consts.ts`):
 
-The DApp demonstrates reading contract state using Wagmi hooks:
+- **RestrictedStakingToken**: `0xeac74faE452fCCdcD1F56284e903aC6F0B4AA739`
+- **RewardToken**: `0x3b3D281AFCe9f7B4e4980C3E1d28c3C20Ebf22Fb`
+- **Staking**: `0xE4a35E1Ea3A5C2c5296FCE9C8Dc5B3aB25511C90`
 
-```typescript
-// Reading allowance
-const { data: currentAllowance } = useReadContract({
-  address: STAKING_TOKEN_ADDRESS,
-  abi: stakingTokenAbi,
-  functionName: "allowance",
-  args: [address, STAKING_CONTRACT_ADDRESS],
-});
-
-// Reading stake information
-const { data: stakeInfo } = useReadContract({
-  address: STAKING_CONTRACT_ADDRESS,
-  abi: stakingAbi,
-  functionName: "getStakeInfo",
-  args: [address],
-});
-```
-
-### Contract Writing
-
-Interactive contract operations with proper error handling:
-
-```typescript
-// Token approval
-const { writeContract: approveContract } = useWriteContract();
-
-const handleApprove = () => {
-  approveContract({
-    address: STAKING_TOKEN_ADDRESS,
-    abi: stakingTokenAbi,
-    functionName: "approve",
-    args: [STAKING_CONTRACT_ADDRESS, amountWei],
-  });
-};
-
-// Staking operation
-const { writeContract: stakeContract } = useWriteContract();
-
-const handleStake = () => {
-  stakeContract({
-    address: STAKING_CONTRACT_ADDRESS,
-    abi: stakingAbi,
-    functionName: "stake",
-    args: [amountWei],
-  });
-};
-```
-
-### Transaction Flow Management
-
-Smart approval → staking sequence with allowance validation:
-
-```typescript
-// Check allowance before staking
-if (currentAllowance < stakeAmountWei) {
-  // First approve, then auto-stake when allowance updates
-  handleApprove();
-} else {
-  // Direct staking if allowance is sufficient
-  handleStake();
-}
-```
-
-## 📊 Subgraph Configuration
+## Subgraph Configuration
 
 ### What is a Subgraph?
 
@@ -209,11 +161,7 @@ A subgraph is a GraphQL API that indexes blockchain data, making it easy to quer
 
 ### Setting Up Your Subgraph
 
-#### 1. Create Subgraph on The Graph
-
-- Visit [Quick Start](https://thegraph.com/docs/it/subgraphs/quick-start/)
-
-### 1. Key Snapshots
+Visit [The Graph Quick Start](https://thegraph.com/docs/it/subgraphs/quick-start/) to create and deploy a subgraph for your staking contract.
 
 | Step                       | Description                                        | Screenshot                                                  |
 | -------------------------- | -------------------------------------------------- | ----------------------------------------------------------- |
@@ -221,76 +169,10 @@ A subgraph is a GraphQL API that indexes blockchain data, making it easy to quer
 | **2. Get Deploy Key**      | Obtain the deployment key for your subgraph        | ![How to get deploy key](./snapshots/deploy-key.png)        |
 | **3. Initialize Subgraph** | Set up your local subgraph development environment | ![Initialize subgraph](./snapshots/initialise-subgraph.png) |
 
-#### 2. Query from DApp
+## Important Notes
 
-```typescript
-const query = gql`
-  {
-    rewardClaimeds(first: 10, orderBy: blockNumber, orderDirection: desc) {
-      id
-      user
-      reward
-      blockNumber
-    }
-  }
-`;
-
-const { data, refetch, isLoading, error } = useQuery<{
-  rewardClaimeds: RewardRecord[];
-}>({
-  queryKey: ["reward-history"],
-  async queryFn() {
-    return await request(
-      process.env.NEXT_PUBLIC_GRAPH_URL || "",
-      query,
-      {},
-      headers
-    );
-  },
-  refetchInterval: 30000, // Refetch every 30 seconds
-  refetchOnWindowFocus: true, // Refetch when window gains focus
-  staleTime: 10000, // Data is considered stale after 10 seconds
-});
-```
-
-## 🔍 Key Learning Points
-
-### 1. Wallet Connection with RainbowKit
-
-- Automatic wallet detection and connection
-- Support for multiple wallet providers
-- Real-time connection state management
-
-### 2. Contract Interaction Patterns
-
-- Reading contract state with `useReadContract`
-- Writing to contracts with `useWriteContract`
-- Transaction receipt monitoring with `useWaitForTransactionReceipt`
-
-### 3. Transaction Flow Management
-
-- Approval → Staking sequence
-- Allowance validation and auto-staking
-- Error handling and user feedback
-
-### 4. Subgraph Integration
-
-- Real-time event tracking
-- Historical data queries
-- Automatic data refresh
-
-### 5. State Management
-
-- React Query for server state
-- Local state for UI interactions
-- Proper dependency management in useEffect
-
-## 🚨 Important Notes
-
-1. **⚠️ Testnet Only (Sepolia)**: This application runs exclusively on **Ethereum Sepolia Testnet**. **Do NOT use mainnet tokens or real funds.**
-2. **Testnet Tokens Required**: Get Sepolia ETH from [Sepolia Faucet](https://sepoliafaucet.com/) to pay for gas fees
-3. **Staking Tokens**: Mint test tokens via the deployed contract on Etherscan (owner only) or contact the project maintainer
-4. **Contract Deployment**: The staking contracts are already deployed on Sepolia (see contract addresses in the code)
-5. **Subgraph API Key**: You need a Graph API key to query reward history
-
-**Happy Building on Ethereum! 🚀**
+1. **Testnet Only (Sepolia)**: This application runs exclusively on **Ethereum Sepolia Testnet**. **Do NOT use mainnet tokens or real funds.**
+2. **Sepolia ETH Required**: Get from faucets linked above to pay for gas fees.
+3. **Minting Tokens**: Only the contract owner (deployer wallet) can call `mint()`. Use Etherscan's Write Contract UI to mint tokens to test wallets.
+4. **Never hardcode private keys**: Use environment variables for all sensitive credentials. The `.env` file is gitignored.
+5. **Subgraph API Key**: You need a Graph API key to query reward history.

@@ -82,7 +82,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
 
   const handleUnstake = async () => {
     if (!isConnected) {
-      alert("Please connect your wallet first");
+      onError("Please connect your wallet first");
       return;
     }
 

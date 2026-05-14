@@ -47,7 +47,6 @@ export const useStakeEvents = ({
     onLogs(logs) {
       if (logs.length > 0) {
         const latestLog = logs[logs.length - 1]; // Get the most recent event
-        console.log("New Staked event detected:", latestLog);
 
         // Type guard to check if this is a decoded log with args
         const isStakedEventLog = (log: Log): log is StakedEventLog => {
@@ -78,7 +77,6 @@ export const useStakeEvents = ({
             transactionHash: latestLog.transactionHash,
           };
           setLatestStakeEvent(eventData);
-          console.log("Stake event confirmed for our transaction:", eventData);
         }
       }
     },

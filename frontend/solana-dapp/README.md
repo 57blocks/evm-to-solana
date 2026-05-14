@@ -115,7 +115,6 @@ solana-dapp/
 │       ├── idl.json                 # Program IDL (Interface Definition Language)
 │       └── solana_staking.ts        # TypeScript types generated from IDL
 ├── scripts/
-│   ├── mint-tokens.ts               # Token minting script for testing
 │   ├── fund-rewards.ts              # Fund reward vault script
 │   └── deployment-info.json         # Deployment configuration
 ├── package.json                     # Dependencies and scripts
@@ -148,24 +147,11 @@ cd evm-to-solana-contract/frontend/solana-dapp
 pnpm install
 ```
 
-### 3. Get Test Tokens
+### 3. Deploy Program & Mint Test Tokens
 
-**🚨 Important: You need tokens to test the staking functionality!**
+Before using the DApp, you need to deploy the Solana staking program and mint test tokens. See [`contract/solana-staking/README.md`](../../contract/solana-staking/README.md) for full deployment instructions.
 
-Use the mint-token script to get test tokens to your wallet:
-
-```bash
-# 1. Update the TARGET_WALLET in scripts/mint-tokens.ts with your wallet address
-# 2. Run the minting script
-npx tsx scripts/mint-tokens.ts
-```
-
-This script will:
-
-- Mint 1000 staking tokens to your wallet
-- Mint 100 reward tokens to your wallet
-
-**Note**: The script uses a test wallet for transaction fees. If the balance is not enough, you can send SOL to the wallet by using the [faucet](https://faucet.solana.com/). Make sure to update the `TARGET_WALLET` constant in the script with your actual wallet address.
+After deployment, update `scripts/deployment-info.json` with your program ID and token mint addresses.
 
 ### 4. Start Development Server
 

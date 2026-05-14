@@ -1,6 +1,10 @@
 import { forwardRef, useImperativeHandle } from "react";
+import { useAccount, useReadContract } from "wagmi";
+import { Address } from "viem";
 import { gql, request } from "graphql-request";
 import { useQuery } from "@tanstack/react-query";
+import { STAKING_CONTRACT_ADDRESS } from "../../consts";
+import { stakingAbi } from "../../abi/stakeAbi";
 import { formatTokenAmount } from "../utils/tokenUtils";
 
 export interface RewardHistoryRef {
@@ -17,9 +21,9 @@ const query = gql`
   }
 `;
 
-const headers = {
-  Authorization: "Bearer 099ba4084bb01a1926ff1b9ba9e4ff02",
-};
+const GRAPH_URL = import.meta.env.VITE_GRAPH_URL || "";
+const GRAPH_API_KEY = import.meta.env.VITE_GRAPH_API_KEY || "";
+const headers: Record<string, string> = GRAPH_API_KEY ? { Authorization: `Bearer ${GRAPH_API_KEY}` } : {};
 interface RewardRecord {
   id: string;
   user: string;
@@ -28,67 +32,92 @@ interface RewardRecord {
 }
 
 const RewardHistory = forwardRef<RewardHistoryRef>((_, ref) => {
-  const { data, refetch, isLoading, error, } = useQuery<{
+  const { address, isConnected } = useAccount();
+
+  // Stake info from contract
+  const {
+    data: stakeInfoData,
+    refetch: refetchStakeInfo,
+  } = useReadContract({
+    address: STAKING_CONTRACT_ADDRESS,
+    abi: stakingAbi,
+    functionName: "getStakeInfo",
+    args: [address as Address],
+    query: {
+      enabled: !!address && isConnected,
+    },
+  });
+
+  const stakedAmount = stakeInfoData && Array.isArray(stakeInfoData) ? stakeInfoData[0] as bigint : 0n;
+  const claimedReward = stakeInfoData && Array.isArray(stakeInfoData) ? stakeInfoData[2] as bigint : 0n;
+
+  // Reward history from subgraph
+  const { data, refetch, isLoading, error } = useQuery<{
     rewardClaimeds: RewardRecord[];
   }>({
     queryKey: ["reward-history"],
     async queryFn() {
-      return await request(
-        "https://api.studio.thegraph.com/query/118408/stake/version/latest",
-        query,
-        {},
-        headers
-      );
+      return await request(GRAPH_URL, query, {}, headers);
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
-    refetchOnWindowFocus: true, // Refetch when window gains focus
-    staleTime: 10000, // Data is considered stale after 10 seconds
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+    staleTime: 10000,
   });
+
   const handleRefresh = async () => {
-    await refetch();
+    await Promise.all([refetch(), refetchStakeInfo()]);
   };
 
   useImperativeHandle(ref, () => ({
     refresh: handleRefresh,
   }));
 
-  if (error) {
-    return (
-      <div className="w-full bg-white/95 rounded-2xl shadow-lg backdrop-blur-md border border-white/20 p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="m-0 text-gray-800 text-2xl font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
-            Reward History
-          </h2>
-          <button
-            onClick={handleRefresh}
-            className="px-4 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white font-semibold rounded-lg hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-            title="Refresh reward history"
-          >
-            🔄 Refresh
-          </button>
-        </div>
-        <div className="bg-red-50 border border-red-300 rounded-lg p-4 text-red-700">
-          Error loading reward history: {error.message}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full bg-white/95 rounded-2xl shadow-lg backdrop-blur-md border border-white/20 p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="m-0 text-gray-800 text-2xl font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
-          Reward History
+          Stake Overview & Reward History
         </h2>
         <button
           onClick={handleRefresh}
           className="px-4 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white font-semibold rounded-lg hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-          title="Refresh reward history"
+          title="Refresh"
           disabled={isLoading}
         >
-          {isLoading ? "⏳ Loading..." : "🔄 Refresh"}
+          {isLoading ? "Loading..." : "Refresh"}
         </button>
       </div>
+
+      {/* Summary Cards */}
+      {isConnected && (
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/20 rounded-xl p-4 text-center">
+            <h4 className="m-0 mb-2 text-sm font-medium text-gray-600 uppercase tracking-wider">
+              Staked Amount
+            </h4>
+            <p className="m-0 text-xl font-bold bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
+              {formatTokenAmount(stakedAmount)} Tokens
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-[#667eea]/10 to-[#764ba2]/10 border border-[#667eea]/20 rounded-xl p-4 text-center">
+            <h4 className="m-0 mb-2 text-sm font-medium text-gray-600 uppercase tracking-wider">
+              Claimed Rewards
+            </h4>
+            <p className="m-0 text-xl font-bold bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
+              {formatTokenAmount(claimedReward)} Tokens
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="bg-red-50 border border-red-300 rounded-lg p-4 text-red-700 mb-4">
+          Error loading reward history: {error.message}
+        </div>
+      )}
+
+      {/* History Table */}
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
@@ -104,11 +133,7 @@ const RewardHistory = forwardRef<RewardHistoryRef>((_, ref) => {
                 <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                   <div className="flex items-center justify-center gap-3">
                     <div className="w-5 h-5 border-2 border-[#667eea] border-t-transparent rounded-full animate-spin"></div>
-                    <span>
-                      {isLoading
-                        ? "Loading reward history..."
-                        : "Refreshing reward history..."}
-                    </span>
+                    <span>Loading reward history...</span>
                   </div>
                 </td>
               </tr>

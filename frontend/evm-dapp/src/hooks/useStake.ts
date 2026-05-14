@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
-import { Hash, maxUint256 } from "viem";
+import { Hash } from "viem";
 import {
   STAKING_CONTRACT_ADDRESS,
   STAKING_TOKEN_ADDRESS,
@@ -98,7 +98,7 @@ export const useStake = (
         args: [address, STAKING_CONTRACT_ADDRESS],
       });
 
-      // Step 2: If allowance insufficient, approve maxUint256
+      // Step 2: If allowance insufficient, approve exact stake amount
       if (
         typeof currentAllowance === "bigint" &&
         currentAllowance < stakeAmountWei
@@ -110,7 +110,7 @@ export const useStake = (
           address: STAKING_TOKEN_ADDRESS as `0x${string}`,
           abi: stakingTokenAbi,
           functionName: "approve",
-          args: [STAKING_CONTRACT_ADDRESS, maxUint256],
+          args: [STAKING_CONTRACT_ADDRESS, stakeAmountWei],
         });
 
         setIsWaitingForWallet(false);
