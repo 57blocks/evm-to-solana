@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run verify:*)",
+      "Bash(echo:*)",
+      "Bash(ANCHOR_WALLET=~/.config/solana/id.json npm run verify:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)",
+      "Bash(solana program show:*)",
+      "Bash(open:*)"
+    ]
+  }
+}

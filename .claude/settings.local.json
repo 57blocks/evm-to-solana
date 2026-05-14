@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "mcp__playwright__browser_navigate",
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:sepolia.etherscan.io)"
+    ]
+  }
+}

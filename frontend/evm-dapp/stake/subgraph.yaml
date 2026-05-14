@@ -1,0 +1,41 @@
+specVersion: 1.3.0
+indexerHints:
+  prune: auto
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: Staking
+    network: sepolia
+    source:
+      address: "0xE4a35E1Ea3A5C2c5296FCE9C8Dc5B3aB25511C90"
+      abi: Staking
+      startBlock: 10849479
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - OwnershipTransferred
+        - RemainingRewardsWithdrawn
+        - RewardClaimed
+        - RewardsFunded
+        - Staked
+        - Unstaked
+      abis:
+        - name: Staking
+          file: ./abis/Staking.json
+      eventHandlers:
+        - event: OwnershipTransferred(indexed address,indexed address)
+          handler: handleOwnershipTransferred
+        - event: RemainingRewardsWithdrawn(indexed address,uint256)
+          handler: handleRemainingRewardsWithdrawn
+        - event: RewardClaimed(indexed address,uint256)
+          handler: handleRewardClaimed
+        - event: RewardsFunded(indexed address,uint256)
+          handler: handleRewardsFunded
+        - event: Staked(indexed address,uint256)
+          handler: handleStaked
+        - event: Unstaked(indexed address,uint256)
+          handler: handleUnstaked
+      file: ./src/staking.ts

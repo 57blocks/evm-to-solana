@@ -1,13 +1,10 @@
 import { createWalletClient, createPublicClient, http, formatEther } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { sepolia } from "viem/chains";
-
-// Contract address
-const STAKING_TOKEN_ADDRESS = "0xADC6ab58C08C0649326F1185a661C41Bdd112447";
-
+import { stakingTokenAbi } from "../abi/StakingTokenABI";
+import { STAKING_TOKEN_ADDRESS } from "../consts";
 // Deployer account (owner of the contracts)
-const DEPLOYER_PRIVATE_KEY = "0x3a890247503953c9b4ecbe5ec7ce5ec7f9927a378f90da0b75702faa78650c5c";
-
+const DEPLOYER_PRIVATE_KEY = "0x9250a87e7f1f53d91e0f7c414cec275db49081a3f2283c4ce46b395921f5fa2d";
 // ============================================
 // UPDATE THIS ADDRESS TO MINT TOKENS TO
 // ============================================
@@ -15,41 +12,6 @@ const TARGET_WALLET = "0xD5c34B91a2B9ea935d2a7a8eb538a6Ee99B81dd3";
 
 // Amount to mint (in tokens, will be converted to wei)
 const MINT_AMOUNT = 10n; // 1000 tokens
-
-// Minimal ABI for minting
-const tokenAbi = [
-  {
-    inputs: [
-      { internalType: "address", name: "to", type: "address" },
-      { internalType: "uint256", name: "amount", type: "uint256" },
-    ],
-    name: "mint",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "account", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "name",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "symbol",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
 
 async function main() {
   console.log("=".repeat(50));
@@ -84,13 +46,13 @@ async function main() {
   try {
     const stakingTokenName = await publicClient.readContract({
       address: STAKING_TOKEN_ADDRESS,
-      abi: tokenAbi,
+      abi: stakingTokenAbi,
       functionName: "name",
     });
 
     const stakingTokenSymbol = await publicClient.readContract({
       address: STAKING_TOKEN_ADDRESS,
-      abi: tokenAbi,
+      abi: stakingTokenAbi,
       functionName: "symbol",
     });
 
@@ -99,7 +61,7 @@ async function main() {
     // Check balance before
     const balanceBefore = await publicClient.readContract({
       address: STAKING_TOKEN_ADDRESS,
-      abi: tokenAbi,
+      abi: stakingTokenAbi,
       functionName: "balanceOf",
       args: [TARGET_WALLET as `0x${string}`],
     });
@@ -108,7 +70,7 @@ async function main() {
     // Mint tokens
     const hash = await walletClient.writeContract({
       address: STAKING_TOKEN_ADDRESS,
-      abi: tokenAbi,
+      abi: stakingTokenAbi,
       functionName: "mint",
       args: [TARGET_WALLET as `0x${string}`, amountWei],
     });
@@ -122,7 +84,7 @@ async function main() {
     // Check balance after
     const balanceAfter = await publicClient.readContract({
       address: STAKING_TOKEN_ADDRESS,
-      abi: tokenAbi,
+      abi: stakingTokenAbi,
       functionName: "balanceOf",
       args: [TARGET_WALLET as `0x${string}`],
     });

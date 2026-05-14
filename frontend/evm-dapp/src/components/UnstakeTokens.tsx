@@ -27,6 +27,7 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
     writeContract,
     data: unstakeHash,
     error: writeError,
+    reset: resetWrite,
   } = useWriteContract();
 
   const {
@@ -50,16 +51,17 @@ const UnstakeTokens: React.FC<UnstakeTokensProps> = ({
       onError(
         `Transaction failed: ${writeError.message || "Unknown error occurred"}`
       );
-      setIsButtonClicked(false); // Re-enable button on write error
+      setIsButtonClicked(false);
+      resetWrite();
     } else if (isUnstakingError) {
       onError(
         `Unstaking failed: ${
           isUnstakingError.message || "Transaction reverted"
         }`
       );
-      setIsButtonClicked(false); // Re-enable button on transaction error
+      setIsButtonClicked(false);
     }
-  }, [writeError, isUnstakingError, onError]);
+  }, [writeError, isUnstakingError, onError, resetWrite]);
 
   // Handle unstaking success separately
   useEffect(() => {
